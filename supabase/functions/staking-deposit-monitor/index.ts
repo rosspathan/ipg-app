@@ -22,44 +22,76 @@ const FORBIDDEN_CONTRACTS = [
 // ERC-20 Transfer event topic
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
-async function getTransfersByRPC(hotWallet: string, fromBlock: string = '0x4E00000'): Promise<any[]> {
-  // Encode the recipient (to) topic — padded to 32 bytes
+// BSC public nodes restrict eth_getLogs to ~2000 blocks per request — chunk accordingly
+const BSC_CHUNK_SIZE = 2000;
+
+const BSC_RPC_ENDPOINTS = [
+  BSC_RPC_URL,
+  'https://bsc-dataseed1.binance.org/',
+  'https://bsc-dataseed2.binance.org/',
+  'https://bsc-dataseed1.ninicoin.io/',
+  'https://bsc-dataseed1.defibit.io/',
+];
+
+async function rpcCall(body: object): Promise<any> {
+  for (const endpoint of BSC_RPC_ENDPOINTS) {
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await resp.json();
+      if (data.result !== undefined && data.result !== null) return data;
+    } catch (e) {
+      console.warn(`[staking-deposit-monitor] RPC endpoint failed: ${endpoint}`, e);
+    }
+  }
+  return { result: null };
+}
+
+async function getTransfersByRPC(hotWallet: string, fromBlock: number, toBlock: number): Promise<any[]> {
   const paddedTo = '0x000000000000000000000000' + hotWallet.replace('0x', '').toLowerCase();
+  const allLogs: any[] = [];
 
-  const rpcBody = {
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'eth_getLogs',
-    params: [{
-      fromBlock,
-      toBlock: 'latest',
-      address: IPG_CONTRACT,
-      topics: [TRANSFER_TOPIC, null, paddedTo]
-    }]
-  };
+  // Chunk the block range to stay within public RPC limits
+  for (let start = fromBlock; start <= toBlock; start += BSC_CHUNK_SIZE) {
+    const end = Math.min(start + BSC_CHUNK_SIZE - 1, toBlock);
+    const rpcBody = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_getLogs',
+      params: [{
+        fromBlock: '0x' + start.toString(16),
+        toBlock: '0x' + end.toString(16),
+        address: IPG_CONTRACT,
+        topics: [TRANSFER_TOPIC, null, paddedTo]
+      }]
+    };
 
-  const resp = await fetch(BSC_RPC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(rpcBody),
-  });
+    try {
+      const data = await rpcCall(rpcBody);
+      if (Array.isArray(data.result)) {
+        allLogs.push(...data.result);
+        if (data.result.length > 0) {
+          console.log(`[staking-deposit-monitor] Chunk ${start}-${end}: found ${data.result.length} logs`);
+        }
+      }
+    } catch (e) {
+      console.warn(`[staking-deposit-monitor] Chunk ${start}-${end} failed:`, e);
+    }
+  }
 
-  const data = await resp.json();
-  return data.result || [];
+  return allLogs;
 }
 
 async function getTransactionDetails(txHash: string): Promise<any> {
-  const resp = await fetch(BSC_RPC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'eth_getTransactionReceipt',
-      params: [txHash]
-    }),
+  const data = await rpcCall({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'eth_getTransactionReceipt',
+    params: [txHash]
   });
-  const data = await resp.json();
   return data.result;
 }
 
@@ -108,7 +140,6 @@ async function processDeposit(
         console.error(
           `[staking-deposit-monitor] ⚠️ AMBIGUOUS WALLET: ${fromAddress} is registered to ${strictMatches.length} users. Blocking deposit of ${amount} IPG (tx: ${txHash})`
         );
-        // Insert an admin notification
         await supabase.from('admin_notifications').insert({
           title: '⚠️ Ambiguous Staking Deposit Blocked',
           message: `Deposit of ${amount} IPG (tx: ${txHash}) from wallet ${fromAddress} was BLOCKED because ${strictMatches.length} user accounts share this wallet address. Manual review required.`,
@@ -274,43 +305,47 @@ serve(async (req) => {
     let usedRPC = false;
 
     if (BSCSCAN_API_KEY) {
-      const apiUrl = `https://api.bscscan.com/api?module=account&action=tokentx&contractaddress=${IPG_CONTRACT}&address=${hotWalletAddress}&page=1&offset=200&sort=desc&apikey=${BSCSCAN_API_KEY}`;
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-      console.log('[staking-deposit-monitor] BscScan status:', data.status, 'message:', data.message);
+      // Use BscScan V2 API (chainid=56 for BSC)
+      const apiUrl = `https://api.bscscan.com/v2/api?chainid=56&module=account&action=tokentx&contractaddress=${IPG_CONTRACT}&address=${hotWalletAddress}&page=1&offset=200&sort=desc&apikey=${BSCSCAN_API_KEY}`;
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        console.log('[staking-deposit-monitor] BscScan status:', data.status, 'message:', data.message);
 
-      if (data.status === '1' && data.result?.length > 0) {
-        // Filter strictly to IPG only
-        transactions = data.result.filter((tx: any) => {
-          const addr = (tx.contractAddress || '').toLowerCase();
-          if (addr !== IPG_CONTRACT.toLowerCase()) return false;
-          if (FORBIDDEN_CONTRACTS.includes(addr)) return false;
-          return tx.to?.toLowerCase() === hotWalletAddress;
-        }).map((tx: any) => ({
-          hash: tx.hash,
-          from: tx.from.toLowerCase(),
-          amount: parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal || '18')),
-        }));
+        if (data.status === '1' && data.result?.length > 0) {
+          // Filter strictly to IPG only
+          transactions = data.result.filter((tx: any) => {
+            const addr = (tx.contractAddress || '').toLowerCase();
+            if (addr !== IPG_CONTRACT.toLowerCase()) return false;
+            if (FORBIDDEN_CONTRACTS.includes(addr)) return false;
+            return tx.to?.toLowerCase() === hotWalletAddress;
+          }).map((tx: any) => ({
+            hash: tx.hash,
+            from: tx.from.toLowerCase(),
+            amount: parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal || '18')),
+          }));
+          console.log('[staking-deposit-monitor] BscScan found', transactions.length, 'IPG transfers');
+        }
+      } catch (bscErr) {
+        console.error('[staking-deposit-monitor] BscScan error:', bscErr);
       }
     }
 
     // ── Mode 3: BSC RPC fallback if BscScan failed or empty ──
     if (transactions.length === 0) {
-      console.log('[staking-deposit-monitor] BscScan empty, trying RPC...');
+      console.log('[staking-deposit-monitor] BscScan empty/failed, trying chunked RPC scan...');
       usedRPC = true;
       try {
-        // Start from a recent block (~1 week ago on BSC = ~201600 blocks)
-        const currentBlockResp = await fetch(BSC_RPC_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
-        });
-        const currentBlockData = await currentBlockResp.json();
-        const currentBlock = parseInt(currentBlockData.result, 16);
-        // ~7 days on BSC (3s blocks = 28800 blocks/day * 7 = 201600), but cap at last 30 days for new deposits
-        const fromBlock = '0x' + Math.max(0, currentBlock - 864000).toString(16);
+        // Get current block number
+        const blockNumData = await rpcCall({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] });
+        const currentBlock = parseInt(blockNumData.result, 16);
+        // Scan last 7 days (~201,600 blocks on BSC at ~3s/block), chunked at 2000 blocks
+        const lookbackBlocks = 201600;
+        const fromBlock = Math.max(0, currentBlock - lookbackBlocks);
+        const toBlock = currentBlock;
 
-        const logs = await getTransfersByRPC(hotWalletAddress, fromBlock);
+        console.log(`[staking-deposit-monitor] RPC scan: blocks ${fromBlock}→${toBlock} (${Math.ceil((toBlock - fromBlock) / BSC_CHUNK_SIZE)} chunks)`);
+        const logs = await getTransfersByRPC(hotWalletAddress, fromBlock, toBlock);
         console.log('[staking-deposit-monitor] RPC logs found:', logs.length);
 
         for (const log of logs) {
