@@ -27,7 +27,7 @@ const programs = [
     description: "Stake tokens, earn rewards",
     icon: <Sparkles className="h-6 w-6" />,
     category: "finance" as const,
-    route: "/app/programs/staking"
+    route: "/app/staking"
   },
   {
     id: "referrals",

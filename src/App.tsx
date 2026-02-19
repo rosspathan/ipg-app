@@ -529,7 +529,7 @@ function AppContent() {
                 <Route path="programs/team-referrals/team" element={<React.Suspense fallback={<LoadingFallback />}><TeamTreeView /></React.Suspense>} />
                 <Route path="programs/team-referrals/earnings" element={<React.Suspense fallback={<LoadingFallback />}><CommissionHistory /></React.Suspense>} />
                 <Route path="programs/team-referrals/vip-milestone-history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/programs/VIPMilestoneHistoryPage')))}</React.Suspense>} />
-                <Route path="programs/staking" element={<React.Suspense fallback={<LoadingFallback />}><StakingPage /></React.Suspense>} />
+                <Route path="programs/staking" element={<Navigate to="/app/staking" replace />} />
                 <Route path="programs/trading" element={<React.Suspense fallback={<LoadingFallback />}><TradingPageNew /></React.Suspense>} />
                 <Route path="programs/insurance" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/bsk-loans" element={<Navigate to="/app/programs" replace />} />
@@ -568,8 +568,8 @@ function AppContent() {
                 
                 <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><OneTimePurchasePage /></React.Suspense>} />
                 <Route path="programs/bsk-purchase-history" element={<React.Suspense fallback={<LoadingFallback />}><PurchaseHistoryPage /></React.Suspense>} />
-                <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
-                <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
+                <Route path="programs/staking/:id" element={<Navigate to="/app/staking" replace />} />
+                <Route path="programs/staking/:poolId/submit" element={<Navigate to="/app/staking" replace />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
                 <Route path="programs/bsk/history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/BSKWalletHistoryPage')))}</React.Suspense>} />
                 <Route path="programs/bsk-purchase-manual" element={<ManualBSKPurchaseScreen />} />
@@ -738,7 +738,7 @@ function AppContent() {
               <Route path="/trading" element={<Navigate to="/app/trade" replace />} />
               <Route path="/swap" element={<Navigate to="/app/swap" replace />} />
               <Route path="/programs" element={<Navigate to="/app/programs" replace />} />
-              <Route path="/staking" element={<Navigate to="/app/programs/staking" replace />} />
+              <Route path="/staking" element={<Navigate to="/app/staking" replace />} />
               <Route path="/referrals" element={<Navigate to="/app/programs/referrals" replace />} />
               <Route path="/subscriptions" element={<Navigate to="/app/programs/subscriptions" replace />} />
               <Route path="/insurance" element={<Navigate to="/app/programs" replace />} />

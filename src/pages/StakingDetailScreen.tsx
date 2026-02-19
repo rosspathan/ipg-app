@@ -59,7 +59,7 @@ const StakingDetailScreen = () => {
     });
 
     setTimeout(() => {
-      navigate("/app/programs/staking");
+      navigate("/app/staking");
     }, 2000);
   };
 
