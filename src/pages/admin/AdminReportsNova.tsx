@@ -4,12 +4,33 @@ import { CardLane } from "@/components/admin/nova/CardLane";
 import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { DataGridAdaptive } from "@/components/admin/nova/DataGridAdaptive";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, TrendingUp, Users, DollarSign, Calendar, Filter } from "lucide-react";
+import { Download, FileText, TrendingUp, Users, DollarSign, Calendar, Filter, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { generateUserBskReportPDF } from "@/lib/generateUserBskReport";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminReportsNova() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const { toast } = useToast();
+
+  const handleGenerateBskReport = async () => {
+    setGeneratingReport(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-user-bsk-report');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to fetch report data');
+      generateUserBskReportPDF(data.data, data.generated_at);
+      toast({ title: 'Report Generated', description: `PDF with ${data.total_users} users downloaded.` });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Report Failed', description: err.message });
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
 
   const reports = [
     { id: "1", name: "User Activity Report", period: "Monthly", lastRun: "2025-01-15", category: "Users" },
@@ -177,6 +198,31 @@ export default function AdminReportsNova() {
               </div>
             )}
           />
+        </div>
+
+        {/* BSK User Balance Report */}
+        <div
+          className={cn(
+            "p-6 rounded-2xl border",
+            "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
+            "border-[hsl(225_24%_22%/0.16)]"
+          )}
+        >
+          <h3 className="text-sm font-medium text-foreground mb-2">
+            All Users BSK Balance Report
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Download a comprehensive PDF with all users' BSK withdrawable balance, holding balance, total balance, wallet status, and wallet address. Audit-ready format.
+          </p>
+          <Button
+            size="sm"
+            className="gap-2 bg-primary hover:bg-primary/90"
+            onClick={handleGenerateBskReport}
+            disabled={generatingReport}
+          >
+            {generatingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {generatingReport ? 'Generating...' : 'Download BSK Report PDF'}
+          </Button>
         </div>
 
         {/* Custom Report Builder */}
