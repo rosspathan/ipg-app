@@ -26,7 +26,7 @@ export function useActivePrograms() {
   const queryClient = useQueryClient();
   const offerStatus = useActivePurchaseOffersStatus();
   
-  const REMOVED_KEYS = ['loan', 'ad_mining', 'advertising', 'lucky_draw', 'lucky-draw', 'spin_wheel', 'spin', 'insurance'];
+  const REMOVED_KEYS = ['loan', 'ad_mining', 'advertising', 'lucky_draw', 'lucky-draw', 'spin_wheel', 'spin', 'insurance', 'staking'];
   
   const isRemovedProgram = (module: any) => {
     const key = String(module?.key || '').toLowerCase();
@@ -165,16 +165,6 @@ export function useActivePrograms() {
       route: "/app/programs/referrals",
       category: "earn",
       order_index: 5
-    },
-    {
-      id: "staking",
-      key: "staking",
-      name: "Staking",
-      description: "Earn passive rewards",
-      icon: "Star",
-      route: "/app/programs/staking",
-      category: "finance",
-      order_index: 6
     },
     {
       id: "badge-subscription",
