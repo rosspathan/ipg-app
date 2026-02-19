@@ -4,9 +4,15 @@
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  background: hsl(var(--background));
   overflow-x: hidden;
 }
+
+/* Dark mode root background */
+.dark #root {
+  background: hsl(var(--background));
+}
+
+/* Light mode: premium gradient applied via index.css .light #root */
 
 /* Mobile app optimizations */
 .app-container {
