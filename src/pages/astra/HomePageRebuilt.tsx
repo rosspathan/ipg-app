@@ -23,7 +23,7 @@ import { formatDistanceToNow } from "date-fns"
 
 /**
  * HomePageRebuilt - Premium Web3 futuristic home screen
- * Apple × Coinbase × Stripe inspired dark quantum interface
+ * Apple × Coinbase × Stripe inspired interface with theme support
  */
 export function HomePageRebuilt() {
   const { navigate } = useNavigation()
@@ -81,40 +81,39 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="min-h-screen pb-20" data-testid="page-home" style={{ background: '#0B1020' }}>
+    <div className="min-h-screen pb-20 bg-background" data-testid="page-home">
       <RefreshControl onRefresh={handleRefresh} className="min-h-screen">
         <div className="space-y-6">
 
           {/* ── HERO SECTION ── */}
           <div className="relative px-4 pt-6 pb-5 overflow-hidden">
             {/* Subtle ambient glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'radial-gradient(circle, #16F2C6 0%, transparent 70%)' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full opacity-[0.07] pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent))_0%,transparent_70%)]" />
 
             <div className="relative z-10 space-y-5">
               {/* Welcome */}
-              <p className="text-[13px] font-medium" style={{ color: 'hsl(160, 60%, 65%)' }}>
+              <p className="text-[13px] font-medium text-accent">
                 Welcome back
               </p>
 
               {/* Portfolio Value */}
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-[32px] font-bold tracking-tight tabular-nums" style={{ color: 'hsl(0, 0%, 95%)', fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h1 className="text-[32px] font-bold tracking-tight tabular-nums text-foreground font-heading">
                     {balanceHidden ? '••••••' : `₹${(balance.total * BSK_TO_INR).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </h1>
                   <button
                     onClick={() => setBalanceHidden(!balanceHidden)}
-                    className="p-1.5 rounded-lg transition-colors"
-                    style={{ background: 'hsla(220, 20%, 20%, 0.5)' }}
+                    className="p-1.5 rounded-lg transition-colors bg-muted/50"
                   >
-                    {balanceHidden ? <Eye className="h-4 w-4" style={{ color: 'hsl(0, 0%, 55%)' }} /> : <EyeOff className="h-4 w-4" style={{ color: 'hsl(0, 0%, 55%)' }} />}
+                    {balanceHidden ? <Eye className="h-4 w-4 text-muted-foreground" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
                   </button>
                 </div>
 
                 {/* Today's change */}
                 <div className="flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#16F2C6' }} />
-                  <span className="text-[13px] font-semibold tabular-nums" style={{ color: '#16F2C6' }}>
+                  <div className="h-1.5 w-1.5 rounded-full bg-success" />
+                  <span className="text-[13px] font-semibold tabular-nums text-success">
                     {balanceHidden ? '••••' : `+₹${(balance.todayEarned * BSK_TO_INR).toFixed(2)} Today`}
                   </span>
                 </div>
@@ -130,13 +129,7 @@ export function HomePageRebuilt() {
                   <button
                     key={btn.label}
                     onClick={btn.action}
-                    className="flex-1 flex items-center justify-center gap-2 h-[42px] rounded-xl text-[13px] font-semibold transition-colors"
-                    style={{
-                      background: 'hsla(220, 25%, 14%, 0.7)',
-                      border: '1px solid hsla(160, 50%, 50%, 0.15)',
-                      color: 'hsl(0, 0%, 90%)',
-                      backdropFilter: 'blur(12px)',
-                    }}
+                    className="flex-1 flex items-center justify-center gap-2 h-[42px] rounded-xl text-[13px] font-semibold transition-colors bg-card/70 border border-accent/15 text-foreground/90 backdrop-blur-xl"
                   >
                     {btn.icon}
                     {btn.label}
@@ -149,31 +142,22 @@ export function HomePageRebuilt() {
           {/* ── BALANCE MODULE ── */}
           <div className="px-4 grid grid-cols-2 gap-3">
             {/* Tradable */}
-            <div
-              className="p-4 rounded-[14px] space-y-2"
-              style={{
-                background: 'hsla(220, 25%, 12%, 0.6)',
-                border: '1px solid hsla(160, 50%, 50%, 0.12)',
-                backdropFilter: 'blur(16px)',
-              }}
-            >
-              <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'hsl(0, 0%, 50%)' }}>Tradable</p>
-              <p className="text-lg font-bold tabular-nums" style={{ color: '#16F2C6', fontFamily: "'Space Grotesk', sans-serif" }}>
+            <div className="p-4 rounded-[14px] space-y-2 bg-card/60 border border-accent/12 backdrop-blur-2xl">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tradable</p>
+              <p className="text-lg font-bold tabular-nums text-success font-heading">
                 {balanceHidden ? '••••' : balance.withdrawable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px]" style={{ color: 'hsl(0, 0%, 45%)' }}>BSK</p>
+              <p className="text-[10px] text-muted-foreground">BSK</p>
               <div className="flex gap-1.5 pt-1">
                 <button
                   onClick={() => navigate("/app/programs/bsk-withdraw")}
-                  className="flex-1 h-7 rounded-lg text-[10px] font-semibold"
-                  style={{ background: 'hsla(160, 50%, 50%, 0.1)', border: '1px solid hsla(160, 50%, 50%, 0.2)', color: '#16F2C6' }}
+                  className="flex-1 h-7 rounded-lg text-[10px] font-semibold bg-success/10 border border-success/20 text-success"
                 >
                   Withdraw
                 </button>
                 <button
                   onClick={() => navigate("/app/programs/bsk-transfer")}
-                  className="flex-1 h-7 rounded-lg text-[10px] font-semibold"
-                  style={{ background: 'hsla(220, 30%, 20%, 0.5)', border: '1px solid hsla(0, 0%, 100%, 0.08)', color: 'hsl(0, 0%, 70%)' }}
+                  className="flex-1 h-7 rounded-lg text-[10px] font-semibold bg-muted/50 border border-border text-muted-foreground"
                 >
                   Transfer
                 </button>
@@ -181,26 +165,18 @@ export function HomePageRebuilt() {
             </div>
 
             {/* Locked */}
-            <div
-              className="p-4 rounded-[14px] space-y-2"
-              style={{
-                background: 'hsla(220, 25%, 12%, 0.6)',
-                border: '1px solid hsla(250, 50%, 50%, 0.12)',
-                backdropFilter: 'blur(16px)',
-              }}
-            >
+            <div className="p-4 rounded-[14px] space-y-2 bg-card/60 border border-primary/12 backdrop-blur-2xl">
               <div className="flex items-center gap-1.5">
-                <Lock className="h-3 w-3" style={{ color: 'hsl(0, 0%, 50%)' }} />
-                <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'hsl(0, 0%, 50%)' }}>Locked</p>
+                <Lock className="h-3 w-3 text-muted-foreground" />
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Locked</p>
               </div>
-              <p className="text-lg font-bold tabular-nums" style={{ color: 'hsl(250, 80%, 72%)', fontFamily: "'Space Grotesk', sans-serif" }}>
+              <p className="text-lg font-bold tabular-nums text-primary font-heading">
                 {balanceHidden ? '••••' : balance.holding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px]" style={{ color: 'hsl(0, 0%, 45%)' }}>BSK</p>
+              <p className="text-[10px] text-muted-foreground">BSK</p>
               <button
                 onClick={() => setShowRewardsBreakdown(true)}
-                className="w-full h-7 rounded-lg text-[10px] font-semibold mt-1"
-                style={{ background: 'hsla(250, 50%, 50%, 0.1)', border: '1px solid hsla(250, 50%, 50%, 0.2)', color: 'hsl(250, 80%, 72%)' }}
+                className="w-full h-7 rounded-lg text-[10px] font-semibold mt-1 bg-primary/10 border border-primary/20 text-primary"
               >
                 <Calendar className="inline h-3 w-3 mr-1" />
                 Schedule
@@ -212,21 +188,13 @@ export function HomePageRebuilt() {
           <div className="px-4">
             <button
               onClick={() => navigate("/app/wallet/history/bsk")}
-              className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-[12px] font-medium"
-              style={{
-                background: 'hsla(220, 25%, 14%, 0.5)',
-                border: '1px solid hsla(0, 0%, 100%, 0.06)',
-                color: 'hsl(0, 0%, 60%)',
-              }}
+              className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-[12px] font-medium bg-card/50 border border-border text-muted-foreground"
             >
               <History className="h-3.5 w-3.5" />
               View Full History
               <ChevronRight className="h-3.5 w-3.5 ml-auto" />
             </button>
           </div>
-
-
-
 
           {/* ── IMAGE CAROUSEL ── */}
           <ImageCarousel />
@@ -239,46 +207,38 @@ export function HomePageRebuilt() {
           {/* ── MARKETS PREVIEW ── */}
           <div className="px-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Markets</h2>
+              <h2 className="text-[14px] font-semibold text-foreground/75">Markets</h2>
               <button
                 onClick={() => navigate("/app/trade")}
-                className="text-[12px] font-medium flex items-center gap-1"
-                style={{ color: '#16F2C6' }}
+                className="text-[12px] font-medium flex items-center gap-1 text-accent"
               >
                 View All <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{
-                background: 'hsla(220, 25%, 11%, 0.8)',
-                border: '1px solid hsla(0, 0%, 100%, 0.05)',
-              }}
-            >
+            <div className="rounded-xl overflow-hidden bg-card/80 border border-border/50">
               {(tradingPairs || []).slice(0, 5).map((pair, i) => {
                 const isPositive = pair.change24h >= 0
                 return (
                   <div key={pair.id}>
                     <button
                       onClick={() => navigate(`/app/trade/${pair.symbol.replace('/', '_')}`)}
-                      className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]"
+                      className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-muted/30"
                     >
                       <div className="text-left">
-                        <p className="text-[13px] font-semibold" style={{ color: 'hsl(0, 0%, 92%)' }}>
-                          {pair.baseAsset}<span style={{ color: 'hsl(0, 0%, 45%)' }}>/{pair.quoteAsset}</span>
+                        <p className="text-[13px] font-semibold text-foreground">
+                          {pair.baseAsset}<span className="text-muted-foreground">/{pair.quoteAsset}</span>
                         </p>
                       </div>
                       <div className="flex items-center gap-4">
-                        <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: 'hsl(0, 0%, 92%)' }}>
+                        <p className="text-[13px] font-mono font-semibold tabular-nums text-foreground">
                           {pair.price >= 1 ? pair.price.toFixed(2) : pair.price.toFixed(6)}
                         </p>
                         <div
-                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold min-w-[72px] justify-center"
-                          style={{
-                            background: isPositive ? 'hsla(154, 67%, 52%, 0.1)' : 'hsla(0, 70%, 68%, 0.1)',
-                            color: isPositive ? 'hsl(154, 67%, 52%)' : 'hsl(0, 70%, 68%)',
-                          }}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold min-w-[72px] justify-center",
+                            isPositive ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                          )}
                         >
                           {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                           {isPositive ? '+' : ''}{pair.change24h.toFixed(2)}%
@@ -286,13 +246,13 @@ export function HomePageRebuilt() {
                       </div>
                     </button>
                     {i < Math.min((tradingPairs || []).length, 5) - 1 && (
-                      <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+                      <div className="mx-4 h-px bg-border/30" />
                     )}
                   </div>
                 )
               })}
               {(!tradingPairs || tradingPairs.length === 0) && (
-                <div className="text-center py-8 text-[12px]" style={{ color: 'hsl(0, 0%, 40%)' }}>
+                <div className="text-center py-8 text-[12px] text-muted-foreground">
                   Loading markets...
                 </div>
               )}
@@ -301,20 +261,15 @@ export function HomePageRebuilt() {
 
           {/* ── SMART ACTION STRIP ── */}
           <div className="px-4 space-y-3">
-            <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Quick Actions</h2>
+            <h2 className="text-[14px] font-semibold text-foreground/75">Quick Actions</h2>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {quickActions.map((action) => (
                 <button
                   key={action.id}
                   onClick={() => navigate(action.route)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-[12px] font-medium flex-shrink-0 transition-colors"
-                  style={{
-                    background: 'hsla(220, 25%, 14%, 0.7)',
-                    border: '1px solid hsla(160, 50%, 50%, 0.1)',
-                    color: 'hsl(0, 0%, 80%)',
-                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-[12px] font-medium flex-shrink-0 transition-colors bg-card/70 border border-accent/10 text-foreground/80"
                 >
-                  <span style={{ color: '#16F2C6' }}>{action.icon}</span>
+                  <span className="text-accent">{action.icon}</span>
                   {action.label}
                 </button>
               ))}
@@ -324,11 +279,10 @@ export function HomePageRebuilt() {
           {/* ── FEATURE GRID ── */}
           <div className="px-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Programs</h2>
+              <h2 className="text-[14px] font-semibold text-foreground/75">Programs</h2>
               <button
                 onClick={() => navigate("/app/programs")}
-                className="text-[12px] font-medium flex items-center gap-1"
-                style={{ color: '#16F2C6' }}
+                className="text-[12px] font-medium flex items-center gap-1 text-accent"
               >
                 View All <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -341,18 +295,14 @@ export function HomePageRebuilt() {
                   <button
                     key={prog.id}
                     onClick={() => navigate(prog.route)}
-                    className="p-4 rounded-xl text-left space-y-3 transition-colors"
-                    style={{
-                      background: 'hsla(220, 25%, 11%, 0.8)',
-                      border: '1px solid hsla(0, 0%, 100%, 0.05)',
-                    }}
+                    className="p-4 rounded-xl text-left space-y-3 transition-colors bg-card/80 border border-border/50"
                   >
-                    <div className="h-9 w-9 rounded-lg flex items-center justify-center" style={{ background: 'hsla(160, 50%, 50%, 0.08)' }}>
-                      <IconComponent className="h-4.5 w-4.5" style={{ color: '#16F2C6' }} />
+                    <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-accent/8">
+                      <IconComponent className="h-4.5 w-4.5 text-accent" />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold" style={{ color: 'hsl(0, 0%, 88%)' }}>{prog.name}</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'hsl(0, 0%, 45%)' }}>Tap to start</p>
+                      <p className="text-[13px] font-semibold text-foreground">{prog.name}</p>
+                      <p className="text-[11px] mt-0.5 text-muted-foreground">Tap to start</p>
                     </div>
                   </button>
                 )
@@ -362,10 +312,10 @@ export function HomePageRebuilt() {
 
           {/* ── LIVE ACTIVITY FEED ── */}
           <div className="px-4 space-y-3">
-            <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Recent Activity</h2>
+            <h2 className="text-[14px] font-semibold text-foreground/75">Recent Activity</h2>
             
             {activities.length === 0 ? (
-              <div className="text-center py-10 text-[13px]" style={{ color: 'hsl(0, 0%, 40%)' }}>
+              <div className="text-center py-10 text-[13px] text-muted-foreground">
                 No recent activity
               </div>
             ) : (
@@ -373,29 +323,25 @@ export function HomePageRebuilt() {
                 {activities.slice(0, 5).map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex items-center gap-3 p-3 rounded-xl"
-                    style={{
-                      background: 'hsla(220, 25%, 11%, 0.6)',
-                      border: '1px solid hsla(0, 0%, 100%, 0.04)',
-                    }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card/60 border border-border/40"
                   >
                     {/* Glow dot */}
-                    <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: '#16F2C6', boxShadow: '0 0 6px hsla(160, 80%, 50%, 0.4)' }} />
+                    <div className="h-2 w-2 rounded-full flex-shrink-0 bg-success shadow-[0_0_6px_hsl(var(--success)/0.4)]" />
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold truncate" style={{ color: 'hsl(0, 0%, 85%)' }}>
+                      <p className="text-[12px] font-semibold truncate text-foreground/85">
                         {activity.title}
                       </p>
-                      <p className="text-[10px] truncate" style={{ color: 'hsl(0, 0%, 45%)' }}>
+                      <p className="text-[10px] truncate text-muted-foreground">
                         {activity.subtitle}
                       </p>
                     </div>
 
                     <div className="text-right flex-shrink-0">
-                      <p className="text-[12px] font-bold tabular-nums" style={{ color: '#16F2C6' }}>
+                      <p className="text-[12px] font-bold tabular-nums text-success">
                         +{activity.amount.toFixed(2)}
                       </p>
-                      <p className="text-[10px]" style={{ color: 'hsl(0, 0%, 45%)' }}>
+                      <p className="text-[10px] text-muted-foreground">
                         {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
                       </p>
                     </div>

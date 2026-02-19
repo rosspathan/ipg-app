@@ -38,22 +38,11 @@ const formatNumber = (num: number, maxDecimals: number = 8): string => {
 };
 
 export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
-  label,
-  value,
-  onChange,
-  step,
-  min = 0,
-  max,
-  suffix,
-  disabled = false,
-  className,
-  decimals = 8,
-  quickAction,
+  label, value, onChange, step, min = 0, max, suffix, disabled = false, className, decimals = 8, quickAction,
 }) => {
   const numValue = parseFloat(value) || 0;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   const effectiveStep = step ?? getSmartStep(numValue);
 
   const handleDecrement = useCallback(() => {
@@ -74,37 +63,22 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
   }, []);
 
   const stopLongPress = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
   }, []);
 
-  useEffect(() => {
-    return () => {
-      stopLongPress();
-    };
-  }, [stopLongPress]);
+  useEffect(() => { return () => { stopLongPress(); }; }, [stopLongPress]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      handleIncrement();
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      handleDecrement();
-    }
+    if (e.key === 'ArrowUp') { e.preventDefault(); handleIncrement(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); handleDecrement(); }
   };
 
   return (
     <div className={cn("relative", className)}>
-      <div className="bg-[#111827] border border-[#1F2937]/80 rounded-md px-2.5 py-1.5">
+      <div className="bg-card border border-border/80 rounded-md px-2.5 py-1.5">
         <div className="flex items-center justify-between mb-0.5">
-          <label className="text-[10px] text-[#6B7280]">{label}</label>
+          <label className="text-[10px] text-muted-foreground">{label}</label>
           {quickAction && quickAction.value > 0 && (
             <button
               type="button"
@@ -112,8 +86,8 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               className={cn(
                 "text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors",
                 quickAction.color === 'red'
-                  ? "bg-[#EA3943]/10 text-[#EA3943] active:bg-[#EA3943]/20"
-                  : "bg-[#16C784]/10 text-[#16C784] active:bg-[#16C784]/20"
+                  ? "bg-danger/10 text-danger active:bg-danger/20"
+                  : "bg-success/10 text-success active:bg-success/20"
               )}
             >
               {quickAction.label}
@@ -127,7 +101,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
-            className="flex-1 bg-transparent text-[#E5E7EB] font-mono text-sm py-0.5 outline-none min-w-0 overflow-x-auto text-ellipsis"
+            className="flex-1 bg-transparent text-foreground font-mono text-sm py-0.5 outline-none min-w-0 overflow-x-auto text-ellipsis"
           />
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
@@ -138,7 +112,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               onTouchStart={() => startLongPress(handleDecrement)}
               onTouchEnd={stopLongPress}
               disabled={disabled || numValue <= min}
-              className="w-6 h-6 flex items-center justify-center border border-[#1F2937] rounded text-[#6B7280] active:text-[#E5E7EB] active:border-[#9CA3AF] disabled:opacity-30 select-none touch-manipulation"
+              className="w-6 h-6 flex items-center justify-center border border-border rounded text-muted-foreground active:text-foreground active:border-foreground/50 disabled:opacity-30 select-none touch-manipulation"
             >
               <Minus className="h-3 w-3" />
             </button>
@@ -150,7 +124,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               onTouchStart={() => startLongPress(handleIncrement)}
               onTouchEnd={stopLongPress}
               disabled={disabled || (max !== undefined && numValue >= max)}
-              className="w-6 h-6 flex items-center justify-center border border-[#1F2937] rounded text-[#6B7280] active:text-[#E5E7EB] active:border-[#9CA3AF] disabled:opacity-30 select-none touch-manipulation"
+              className="w-6 h-6 flex items-center justify-center border border-border rounded text-muted-foreground active:text-foreground active:border-foreground/50 disabled:opacity-30 select-none touch-manipulation"
             >
               <Plus className="h-3 w-3" />
             </button>
