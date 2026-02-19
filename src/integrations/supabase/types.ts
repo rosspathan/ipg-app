@@ -2680,6 +2680,13 @@ export type Database = {
             foreignKeyName: "bsk_loans_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bsk_loans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -7889,6 +7896,13 @@ export type Database = {
             foreignKeyName: "profiles_sponsor_id_fkey"
             columns: ["sponsor_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profiles_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -8598,6 +8612,13 @@ export type Database = {
             foreignKeyName: "referral_commissions_earner_id_fkey"
             columns: ["earner_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -8606,6 +8627,13 @@ export type Database = {
             columns: ["payer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
           {
@@ -8911,6 +8939,13 @@ export type Database = {
             foreignKeyName: "fk_sponsor_profile"
             columns: ["sponsor_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_sponsor_profile"
+            columns: ["sponsor_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -8925,6 +8960,13 @@ export type Database = {
             foreignKeyName: "referral_links_new_sponsor_id_fkey"
             columns: ["sponsor_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_links_new_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -8933,6 +8975,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_links_new_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
           {
@@ -9055,6 +9104,13 @@ export type Database = {
             foreignKeyName: "referral_tree_ancestor_id_fkey"
             columns: ["ancestor_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_tree_ancestor_id_fkey"
+            columns: ["ancestor_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -9063,6 +9119,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_tree_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
           {
@@ -12690,6 +12753,13 @@ export type Database = {
             foreignKeyName: "vip_milestone_tracker_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vip_milestone_tracker_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -13080,6 +13150,13 @@ export type Database = {
             foreignKeyName: "referral_tree_ancestor_id_fkey"
             columns: ["sponsor_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_tree_ancestor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -13154,6 +13231,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_public: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          full_name: string | null
+          referral_code: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          full_name?: string | null
+          referral_code?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          full_name?: string | null
+          referral_code?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       referral_relationships: {
         Row: {
           first_touch_at: string | null
@@ -13179,6 +13283,13 @@ export type Database = {
             foreignKeyName: "fk_sponsor_profile"
             columns: ["sponsor_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_sponsor_profile"
+            columns: ["sponsor_id"]
+            isOneToOne: false
             referencedRelation: "referral_relationships"
             referencedColumns: ["referee_id"]
           },
@@ -13187,6 +13298,13 @@ export type Database = {
             columns: ["sponsor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_links_new_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
           {
