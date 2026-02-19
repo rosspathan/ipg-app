@@ -4,12 +4,7 @@ import {
   Award, ChevronRight, Archive, CreditCard
 } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-
-const bg = '#0B1020'
-const surface = 'hsla(220, 25%, 11%, 0.8)'
-const teal = '#16F2C6'
-const violet = '#7C3AED'
-const borderSub = 'hsla(160, 50%, 50%, 0.08)'
+import { cn } from "@/lib/utils"
 
 interface ProgramItem {
   id: string
@@ -17,7 +12,7 @@ interface ProgramItem {
   subtitle: string
   icon: React.ReactNode
   route: string
-  badge?: { text: string; color: string }
+  badge?: { text: string; variant: 'success' | 'danger' | 'warning' | 'accent' | 'primary' | 'muted' }
 }
 
 interface CategorySection {
@@ -26,53 +21,44 @@ interface CategorySection {
   programs: ProgramItem[]
 }
 
+const badgeClasses: Record<string, string> = {
+  success: "bg-success/10 text-success border-success/30",
+  danger: "bg-danger/10 text-danger border-danger/30",
+  warning: "bg-warning/10 text-warning border-warning/30",
+  accent: "bg-accent/10 text-accent border-accent/30",
+  primary: "bg-primary/10 text-primary border-primary/30",
+  muted: "bg-muted text-muted-foreground border-border",
+}
+
 function ProgramTileCompact({ program, onPress }: { program: ProgramItem; onPress: () => void }) {
   return (
     <button
       onClick={onPress}
-      className="relative w-full text-left rounded-xl p-4 transition-all duration-200"
-      style={{
-        background: '#121826',
-        border: `1px solid ${borderSub}`,
-        height: '116px',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'hsla(160, 50%, 50%, 0.2)'
-        e.currentTarget.style.boxShadow = `0 0 24px hsla(160, 80%, 50%, 0.08)`
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = borderSub
-        e.currentTarget.style.boxShadow = 'none'
-      }}
+      className={cn(
+        "relative w-full text-left rounded-xl p-4 h-[116px]",
+        "bg-card border border-border/50",
+        "transition-all duration-200",
+        "hover:border-accent/20 hover:shadow-[0_0_24px_hsl(var(--accent)/0.08)]"
+      )}
     >
       {program.badge && (
-        <span
-          className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider"
-          style={{
-            background: `${program.badge.color}18`,
-            color: program.badge.color,
-            border: `1px solid ${program.badge.color}30`,
-          }}
-        >
+        <span className={cn(
+          "absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider border",
+          badgeClasses[program.badge.variant]
+        )}>
           {program.badge.text}
         </span>
       )}
 
       <div className="flex flex-col items-center justify-center h-full gap-2.5">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{
-            background: 'hsla(220, 30%, 18%, 0.8)',
-            border: `1px solid hsla(160, 50%, 50%, 0.1)`,
-          }}
-        >
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted/50 border border-border/50">
           {program.icon}
         </div>
         <div className="text-center">
-          <p className="text-xs font-semibold" style={{ color: 'hsl(0, 0%, 90%)' }}>
+          <p className="text-xs font-semibold text-foreground">
             {program.title}
           </p>
-          <p className="text-[10px] mt-0.5" style={{ color: 'hsl(220, 10%, 55%)' }}>
+          <p className="text-[10px] mt-0.5 text-muted-foreground">
             {program.subtitle}
           </p>
         </div>
@@ -93,32 +79,32 @@ export function ProgramsPageRebuilt() {
           id: "staking",
           title: "Staking",
           subtitle: "Earn monthly yield",
-          icon: <Star className="h-5 w-5" style={{ color: teal }} />,
+          icon: <Star className="h-5 w-5 text-accent" />,
           route: "/app/programs/staking",
         },
         {
           id: "ad-mining",
           title: "Ad Mining",
           subtitle: "Watch ads, earn BSK",
-          icon: <Gift className="h-5 w-5" style={{ color: teal }} />,
+          icon: <Gift className="h-5 w-5 text-accent" />,
           route: "/app/programs/ads",
-          badge: { text: "DAILY", color: teal },
+          badge: { text: "DAILY", variant: "accent" },
         },
         {
           id: "lucky-draw",
           title: "Lucky Draw",
           subtitle: "Win big prizes",
-          icon: <Target className="h-5 w-5" style={{ color: '#F59E0B' }} />,
+          icon: <Target className="h-5 w-5 text-warning" />,
           route: "/app/programs/lucky-draw",
-          badge: { text: "HOT", color: '#EF4444' },
+          badge: { text: "HOT", variant: "danger" },
         },
         {
           id: "spin-wheel",
           title: "Spin Wheel",
           subtitle: "Provably fair spins",
-          icon: <Zap className="h-5 w-5" style={{ color: violet }} />,
+          icon: <Zap className="h-5 w-5 text-primary" />,
           route: "/app/programs/spin",
-          badge: { text: "LIVE", color: '#22C55E' },
+          badge: { text: "LIVE", variant: "success" },
         },
       ],
     },
@@ -130,22 +116,22 @@ export function ProgramsPageRebuilt() {
           id: "referrals",
           title: "Team Referrals",
           subtitle: "Invite & earn together",
-          icon: <Users className="h-5 w-5" style={{ color: teal }} />,
+          icon: <Users className="h-5 w-5 text-accent" />,
           route: "/app/programs/referrals",
-          badge: { text: "NEW", color: teal },
+          badge: { text: "NEW", variant: "accent" },
         },
         {
           id: "badges",
           title: "Badge System",
           subtitle: "Unlock tiers & perks",
-          icon: <Award className="h-5 w-5" style={{ color: '#F59E0B' }} />,
+          icon: <Award className="h-5 w-5 text-warning" />,
           route: "/app/programs/achievements",
         },
         {
           id: "subscriptions",
           title: "Subscriptions",
           subtitle: "Premium benefits",
-          icon: <CreditCard className="h-5 w-5" style={{ color: violet }} />,
+          icon: <CreditCard className="h-5 w-5 text-primary" />,
           route: "/app/programs/subscriptions",
         },
       ],
@@ -158,16 +144,16 @@ export function ProgramsPageRebuilt() {
           id: "insurance",
           title: "Insurance",
           subtitle: "Protect your assets",
-          icon: <Shield className="h-5 w-5" style={{ color: teal }} />,
+          icon: <Shield className="h-5 w-5 text-accent" />,
           route: "/app/programs/insurance",
         },
         {
           id: "loans",
           title: "Loans",
           subtitle: "USDI collateral loans",
-          icon: <Coins className="h-5 w-5" style={{ color: 'hsl(220, 10%, 50%)' }} />,
+          icon: <Coins className="h-5 w-5 text-muted-foreground" />,
           route: "/app/programs/loans",
-          badge: { text: "ARCHIVED", color: '#CA8A04' },
+          badge: { text: "ARCHIVED", variant: "warning" },
         },
       ],
     },
@@ -179,7 +165,7 @@ export function ProgramsPageRebuilt() {
           id: "trading",
           title: "Trading",
           subtitle: "Real-time exchange",
-          icon: <TrendingUp className="h-5 w-5" style={{ color: teal }} />,
+          icon: <TrendingUp className="h-5 w-5 text-accent" />,
           route: "/app/trade",
         },
       ],
@@ -187,12 +173,12 @@ export function ProgramsPageRebuilt() {
   ]
 
   return (
-    <div className="min-h-screen pb-32" style={{ background: bg }} data-testid="page-programs">
+    <div className="min-h-screen pb-32 bg-background" data-testid="page-programs">
       <div className="px-4 pt-5 pb-4 space-y-5">
         {/* Header */}
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'hsl(0, 0%, 95%)' }}>Programs</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'hsl(220, 10%, 50%)' }}>
+          <h1 className="text-xl font-bold text-foreground">Programs</h1>
+          <p className="text-xs mt-0.5 text-muted-foreground">
             Explore the IPG ecosystem
           </p>
         </div>
@@ -200,21 +186,17 @@ export function ProgramsPageRebuilt() {
         {/* Promo Banner */}
         <button
           onClick={() => navigate("/app/programs/bsk-bonus")}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200"
-          style={{
-            background: `linear-gradient(135deg, hsla(160, 80%, 40%, 0.12) 0%, hsla(260, 60%, 50%, 0.08) 100%)`,
-            border: `1px solid hsla(160, 50%, 50%, 0.15)`,
-          }}
+          className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 bg-accent/5 border border-accent/15 hover:bg-accent/10"
         >
           <div className="flex items-center gap-2.5">
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: `${teal}20`, color: teal }}>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent/20 text-accent">
               NEW
             </span>
-            <span className="text-xs font-medium" style={{ color: 'hsl(0, 0%, 85%)' }}>
+            <span className="text-xs font-medium text-foreground/85">
               BSK Purchase Bonus — Get 50% extra
             </span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5" style={{ color: 'hsl(220, 10%, 45%)' }} />
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
 
         {/* Categories */}
@@ -222,7 +204,7 @@ export function ProgramsPageRebuilt() {
           <div key={cat.title} className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">{cat.emoji}</span>
-              <h2 className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'hsl(220, 10%, 45%)' }}>
+              <h2 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                 {cat.title}
               </h2>
             </div>

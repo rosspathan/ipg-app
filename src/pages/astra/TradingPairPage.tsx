@@ -42,8 +42,8 @@ export function TradingPairPage() {
   
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0B1220]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#9CA3AF]" />
+      <div className="flex items-center justify-center h-screen bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -167,8 +167,8 @@ function TradingPairPageContent() {
 
   if (!pair) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0B1220]">
-        <div className="text-[#9CA3AF]">Loading...</div>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -292,32 +292,32 @@ function TradingPairPageContent() {
       requireTermsAcceptance
       requireRiskDisclosure
     >
-      <div className="flex flex-col bg-[#0B1220] min-h-0">
+      <div className="flex flex-col bg-background min-h-0">
         {/* ═══ ZONE 1: Header ═══ */}
-        <div className="bg-[#0B1220] border-b border-[#1F2937]/50">
+        <div className="bg-background border-b border-border/50">
           <div className="flex items-center h-[40px] px-3">
             <button 
               onClick={() => navigate("/app/trade")} 
-              className="p-1 -ml-1 mr-1 active:bg-white/10 rounded"
+              className="p-1 -ml-1 mr-1 active:bg-muted rounded"
             >
-              <ArrowLeft className="h-4 w-4 text-[#9CA3AF]" />
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
             </button>
             
             <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-0.5 mr-3 active:bg-white/5 rounded px-1 py-0.5">
-                  <span className="text-[#F0F1F3] font-bold text-[14px] tracking-tight">{pair.symbol}</span>
-                  <ChevronDown className={cn("h-3 w-3 text-[#6B7280] ml-0.5", pairPickerOpen && "rotate-180")} />
+                <button className="flex items-center gap-0.5 mr-3 active:bg-muted/50 rounded px-1 py-0.5">
+                  <span className="text-foreground font-bold text-[14px] tracking-tight">{pair.symbol}</span>
+                  <ChevronDown className={cn("h-3 w-3 text-muted-foreground ml-0.5", pairPickerOpen && "rotate-180")} />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-72 bg-[#111827] border-[#1F2937] p-2 shadow-2xl rounded-xl z-50">
+              <DropdownMenuContent align="start" className="w-72 bg-popover border-border p-2 shadow-2xl rounded-xl z-50">
                 <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9CA3AF]" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Search pairs..."
                     value={pairSearch}
                     onChange={(e) => setPairSearch(e.target.value)}
-                    className="pl-9 h-8 bg-[#0B1220] border-[#1F2937] text-[#E5E7EB] rounded-lg text-xs"
+                    className="pl-9 h-8 bg-background border-border text-foreground rounded-lg text-xs"
                     autoFocus
                   />
                 </div>
@@ -328,17 +328,17 @@ function TradingPairPageContent() {
                       onClick={() => handlePairSelect(p.symbol)}
                       className={cn(
                         "flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer text-xs",
-                        p.symbol === pair.symbol && "bg-white/5"
+                        p.symbol === pair.symbol && "bg-muted/50"
                       )}
                     >
-                      <span className="font-semibold text-[#E5E7EB]">{p.symbol}</span>
+                      <span className="font-semibold text-foreground">{p.symbol}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[#9CA3AF] font-mono text-[11px]">
+                        <span className="text-muted-foreground font-mono text-[11px]">
                           {p.price >= 1 ? p.price.toFixed(2) : p.price.toFixed(6)}
                         </span>
                         <span className={cn(
                           "font-medium text-[10px] px-1 py-0.5 rounded",
-                          p.change24h >= 0 ? "text-[#16C784] bg-[#16C784]/10" : "text-[#EA3943] bg-[#EA3943]/10"
+                          p.change24h >= 0 ? "text-success bg-success/10" : "text-danger bg-danger/10"
                         )}>
                           {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
                         </span>
@@ -346,7 +346,7 @@ function TradingPairPageContent() {
                     </DropdownMenuItem>
                   ))}
                   {sortedPairs.length === 0 && (
-                    <div className="text-center py-4 text-[#9CA3AF] text-xs">No pairs found</div>
+                    <div className="text-center py-4 text-muted-foreground text-xs">No pairs found</div>
                   )}
                 </div>
               </DropdownMenuContent>
@@ -355,13 +355,13 @@ function TradingPairPageContent() {
             <div className="flex items-baseline gap-1.5 flex-1 min-w-0">
               <span className={cn(
                 "text-[16px] font-bold font-mono tabular-nums tracking-tight",
-                isPositive ? "text-[#2EBD85]" : "text-[#F6465D]"
+                isPositive ? "text-success" : "text-danger"
               )}>
                 {formatPrice(pair.price)}
               </span>
               <span className={cn(
                 "text-[10px] font-semibold px-1.5 py-[1px] rounded-sm",
-                isPositive ? "text-[#2EBD85] bg-[#2EBD85]/10" : "text-[#F6465D] bg-[#F6465D]/10"
+                isPositive ? "text-success bg-success/10" : "text-danger bg-danger/10"
               )}>
                 {isPositive ? "+" : ""}{pair.change24h.toFixed(2)}%
               </span>
@@ -375,15 +375,15 @@ function TradingPairPageContent() {
                   localStorage.setItem('favorite-pairs', JSON.stringify(newFavs));
                   setIsFavorite(!isFavorite);
                 }}
-                className="p-1.5 active:bg-white/10 rounded"
+                className="p-1.5 active:bg-muted rounded"
               >
-                <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-[#F0B90B] text-[#F0B90B]" : "text-[#4B5563]")} />
+                <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-warning text-warning" : "text-muted-foreground")} />
               </button>
               <button
                 onClick={() => toast({ title: "Price Alerts", description: "Coming soon!" })}
-                className="p-1.5 active:bg-white/10 rounded"
+                className="p-1.5 active:bg-muted rounded"
               >
-                <Bell className="h-3.5 w-3.5 text-[#4B5563]" />
+                <Bell className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
               <AdminMarketMakerControls isAdmin={isAdmin} />
             </div>
@@ -391,16 +391,16 @@ function TradingPairPageContent() {
 
           <div className="flex items-center gap-4 px-3 pb-1 text-[10px]">
             <div className="flex items-center gap-1">
-              <span className="text-[#4B5563] font-medium">H</span>
-              <span className="font-mono tabular-nums text-[#2EBD85]">{formatPrice(pair.high24h || 0)}</span>
+              <span className="text-muted-foreground font-medium">H</span>
+              <span className="font-mono tabular-nums text-success">{formatPrice(pair.high24h || 0)}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#4B5563] font-medium">L</span>
-              <span className="font-mono tabular-nums text-[#F6465D]">{formatPrice(pair.low24h || 0)}</span>
+              <span className="text-muted-foreground font-medium">L</span>
+              <span className="font-mono tabular-nums text-danger">{formatPrice(pair.low24h || 0)}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#4B5563] font-medium">Vol</span>
-              <span className="font-mono tabular-nums text-[#9CA3AF]">{formatVolume(pair.volume24h || 0)}</span>
+              <span className="text-muted-foreground font-medium">Vol</span>
+              <span className="font-mono tabular-nums text-muted-foreground">{formatVolume(pair.volume24h || 0)}</span>
             </div>
           </div>
         </div>
@@ -409,10 +409,10 @@ function TradingPairPageContent() {
         <div className="flex flex-col">
 
           {/* ── Chart toggle ── */}
-          <div className="border-b border-[#1F2937]/30">
+          <div className="border-b border-border/30">
             <button
               onClick={() => setChartOpen(!chartOpen)}
-              className="flex items-center gap-1 text-[10px] text-[#6B7280] px-3 py-1 active:text-[#9CA3AF] w-full"
+              className="flex items-center gap-1 text-[10px] text-muted-foreground px-3 py-1 active:text-foreground/70 w-full"
             >
               <span className="font-medium">Chart</span>
               <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", chartOpen && "rotate-180")} />
