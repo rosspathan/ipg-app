@@ -3,8 +3,8 @@ import { Megaphone } from "lucide-react"
 
 const announcements = [
   "New: BSK Purchase Bonus - Get 50% extra!",
-  "Lucky Draw pool reaching 100 seats - Join now!",
-  "Staking APY increased to 12.4%"
+  "Staking APY increased to 12.4%",
+  "Refer friends and earn commissions!"
 ]
 
 export function AnnouncementsBar() {

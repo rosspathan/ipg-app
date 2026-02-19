@@ -27,14 +27,14 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
     {
       id: "1",
       image: "/placeholder.svg",
-      title: "Lucky Draw",
-      description: "Win amazing prizes daily"
+      title: "BSK Purchase Bonus",
+      description: "Get 50% extra on purchases"
     },
     {
       id: "2",
       image: "/placeholder.svg",
-      title: "Spin Wheel",
-      description: "Try your luck today"
+      title: "Staking Rewards",
+      description: "Earn passive income daily"
     },
     {
       id: "3",

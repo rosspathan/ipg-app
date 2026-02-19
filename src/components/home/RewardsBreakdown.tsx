@@ -77,11 +77,10 @@ export function RewardsBreakdown({ isOpen, onClose }: RewardsBreakdownProps) {
             <TabsContent value="sources" className="mt-0 space-y-4">
               <div className="space-y-3">
                 {[
-                  { label: "Ad Mining", amount: 0, percent: 0, color: "bg-success" },
+                  { label: "Staking Rewards", amount: 0, percent: 0, color: "bg-success" },
                   { label: "Referral Rewards", amount: 0, percent: 0, color: "bg-primary" },
-                  { label: "Spin Wheel", amount: 0, percent: 0, color: "bg-accent" },
-                  { label: "Lucky Draw", amount: 0, percent: 0, color: "bg-warning" },
-                  { label: "One-time Purchase", amount: 0, percent: 0, color: "bg-danger" },
+                  { label: "Trading", amount: 0, percent: 0, color: "bg-accent" },
+                  { label: "One-time Purchase", amount: 0, percent: 0, color: "bg-warning" },
                   { label: "Other", amount: 0, percent: 0, color: "bg-muted" }
                 ].map((source, index) => (
                   <div key={index} className="space-y-2">
