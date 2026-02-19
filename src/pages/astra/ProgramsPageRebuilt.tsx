@@ -74,15 +74,7 @@ export function ProgramsPageRebuilt() {
     {
       title: "Earn",
       emoji: "💰",
-      programs: [
-        {
-          id: "staking",
-          title: "Staking",
-          subtitle: "Earn monthly yield",
-          icon: <Star className="h-5 w-5 text-accent" />,
-          route: "/app/staking",
-        },
-      ],
+      programs: [],
     },
     {
       title: "Growth",
