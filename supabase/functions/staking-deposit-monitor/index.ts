@@ -318,12 +318,21 @@ serve(async (req) => {
         // Get current block number
         const blockNumData = await rpcCall({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] });
         const currentBlock = parseInt(blockNumData.result, 16);
-        // Scan last 7 days (~201,600 blocks on BSC at ~3s/block), chunked at 2000 blocks
-        const lookbackBlocks = 201600;
-        const fromBlock = Math.max(0, currentBlock - lookbackBlocks);
+        
+        // Use last_scanned_block from DB to avoid re-scanning old blocks
+        // This prevents CPU timeout from scanning too many blocks
+        const { data: scanState } = await supabase
+          .from('crypto_staking_config')
+          .select('last_scanned_block')
+          .single();
+        
+        const savedBlock = scanState?.last_scanned_block ? parseInt(scanState.last_scanned_block) : 0;
+        // Scan from last checkpoint, or last 2000 blocks (~100 mins) if no checkpoint
+        const fromBlock = savedBlock > 0 ? savedBlock + 1 : Math.max(0, currentBlock - 2000);
         const toBlock = currentBlock;
 
-        console.log(`[staking-deposit-monitor] RPC scan: blocks ${fromBlock}→${toBlock} (${Math.ceil((toBlock - fromBlock) / BSC_CHUNK_SIZE)} chunks)`);
+        const numChunks = Math.ceil((toBlock - fromBlock) / BSC_CHUNK_SIZE);
+        console.log(`[staking-deposit-monitor] RPC scan: blocks ${fromBlock}→${toBlock} (${numChunks} chunks)`);
         const logs = await getTransfersByRPC(hotWalletAddress, fromBlock, toBlock);
         console.log('[staking-deposit-monitor] RPC logs found:', logs.length);
 
@@ -342,6 +351,15 @@ serve(async (req) => {
             from: from.toLowerCase(),
             amount,
           });
+        }
+
+        // Save last scanned block so next run picks up from here (prevents CPU timeout from full rescans)
+        if (toBlock > 0) {
+          await supabase
+            .from('crypto_staking_config')
+            .update({ last_scanned_block: toBlock })
+            .not('id', 'is', null);
+          console.log('[staking-deposit-monitor] Saved last_scanned_block:', toBlock);
         }
       } catch (rpcErr) {
         console.error('[staking-deposit-monitor] RPC error:', rpcErr);
