@@ -59,9 +59,18 @@ import BigNumber from 'bignumber.js';
       );
    }
  
-   return (
-     <div className="space-y-2">
-       {/* Filters */}
+  return (
+    <div className="space-y-2">
+      {/* Premium Transfer Button */}
+      <Button
+        className="w-full h-[50px] rounded-xl font-semibold text-sm bg-gradient-to-r from-[hsl(220,90%,50%)] to-[hsl(260,70%,55%)] text-white shadow-[0_4px_20px_rgba(99,102,241,0.35)] hover:shadow-[0_6px_28px_rgba(99,102,241,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 px-4"
+        onClick={() => navigate('/app/wallet/transfer')}
+      >
+        <ArrowLeftRight className="h-4 w-4 mr-2" />
+        Transfer Funds
+      </Button>
+
+      {/* Filters */}
        <div className="flex items-center gap-2 pb-2 border-b border-border/50 overflow-x-auto">
          <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
          {uniqueTypes.length > 1 && (
