@@ -119,7 +119,6 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
     return [allLow - padding, allHigh + padding];
   }, [candles]);
 
-  // Determine trend color
   const trendUp = useMemo(() => {
     if (!candles || candles.length < 2) return true;
     return candles[candles.length - 1].close >= candles[0].close;
@@ -131,10 +130,10 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
   if (isBinancePair) {
     const tvSymbol = `BINANCE:${symbol.replace('/', '')}`;
     return (
-      <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <Suspense fallback={
           <div className="h-[200px] flex items-center justify-center">
-            <Loader2 className="h-4 w-4 animate-spin text-[#9CA3AF]" />
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         }>
           <TradingViewWidget
@@ -152,7 +151,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
 
   const IntervalBar = () => (
     <div className="flex items-center justify-between px-3 py-2">
-      <span className="text-[11px] font-medium text-[#6B7280]">Chart</span>
+      <span className="text-[11px] font-medium text-muted-foreground">Chart</span>
       <div className="flex gap-0.5">
         {INTERVALS.map((i) => (
           <button
@@ -161,8 +160,8 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
             className={cn(
               "px-2 py-1 text-[10px] font-semibold rounded-md transition-colors duration-150",
               interval === i.value
-                ? "bg-[#1A2235] text-[#E5E7EB]"
-                : "text-[#6B7280] hover:text-[#9CA3AF]"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground/70"
             )}
           >
             {i.label}
@@ -174,10 +173,10 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <IntervalBar />
         <div className="h-[180px] flex items-center justify-center">
-          <Loader2 className="h-4 w-4 animate-spin text-[#6B7280]" />
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
@@ -185,18 +184,18 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
 
   if (!candles || candles.length === 0) {
     return (
-      <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <IntervalBar />
         <div className="h-[160px] flex flex-col items-center justify-center gap-1.5">
-          <Clock className="h-4 w-4 text-[#4B5563]" />
-          <span className="text-[#4B5563] text-[11px]">Waiting for first trade...</span>
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground text-[11px]">Waiting for first trade...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
       <IntervalBar />
 
       {/* Area Chart */}
@@ -219,14 +218,14 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
             </defs>
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 9, fill: '#4B5563' }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={yDomain}
-              tick={{ fontSize: 9, fill: '#4B5563' }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={formatPrice}
@@ -235,16 +234,16 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#0D1421',
-                border: '1px solid #1A2235',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 borderRadius: '10px',
                 fontSize: '11px',
-                color: '#E2E8F0',
+                color: 'hsl(var(--foreground))',
                 boxShadow: `0 4px 20px ${accentColor}15`,
               }}
-              labelStyle={{ color: '#6B7280', fontSize: '10px' }}
+              labelStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '10px' }}
               formatter={(value: number) => [formatPrice(value), 'Price']}
-              cursor={{ stroke: '#1A2235', strokeWidth: 1 }}
+              cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
             />
             <Area
               type="monotone"
@@ -257,7 +256,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
               activeDot={{
                 r: 4,
                 fill: accentColor,
-                stroke: '#0B1020',
+                stroke: 'hsl(var(--card))',
                 strokeWidth: 2,
               }}
             />
