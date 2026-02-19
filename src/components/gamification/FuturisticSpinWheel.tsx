@@ -331,41 +331,7 @@ export const FuturisticSpinWheel = ({
 
   return (
     <div className="space-y-4">
-      {/* Custom CSS for mobile animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes spinWheelMobile {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(var(--final-rotation, 2880deg)); }
-          }
-          
-          @keyframes neonPulseMobile {
-            0%, 100% { box-shadow: 0 0 15px rgba(147, 51, 234, 0.4), 0 0 30px rgba(147, 51, 234, 0.2); }
-            50% { box-shadow: 0 0 25px rgba(147, 51, 234, 0.6), 0 0 50px rgba(147, 51, 234, 0.3); }
-          }
-          
-          @keyframes glowButtonMobile {
-            0%, 100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.7), 0 0 50px rgba(168, 85, 247, 0.3); }
-          }
-          
-          .mobile-spin-wheel-container {
-            position: relative;
-            background: radial-gradient(circle, rgba(147, 51, 234, 0.15) 0%, rgba(168, 85, 247, 0.1) 50%, transparent 100%);
-            border-radius: 50%;
-            animation: neonPulseMobile 2s ease-in-out infinite;
-            padding: 20px;
-          }
-          
-          .mobile-spin-wheel-canvas {
-            filter: drop-shadow(0 0 15px rgba(147, 51, 234, 0.4));
-          }
-          
-          .mobile-spin-button-glow {
-            animation: glowButtonMobile 2s ease-in-out infinite;
-          }
-        `
-      }} />
+      {/* CSS moved to src/styles/spin-wheel.css */}
       
       {/* Wheel Container - Mobile Optimized */}
       <div className="flex justify-center">

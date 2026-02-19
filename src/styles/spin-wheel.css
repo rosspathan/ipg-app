@@ -1,0 +1,92 @@
+/* Spin wheel animations - extracted from inline dangerouslySetInnerHTML for security */
+
+/* FuturisticSpinWheel animations */
+@keyframes spinWheelMobile {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(var(--final-rotation, 2880deg)); }
+}
+
+@keyframes neonPulseMobile {
+  0%, 100% { box-shadow: 0 0 15px rgba(147, 51, 234, 0.4), 0 0 30px rgba(147, 51, 234, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(147, 51, 234, 0.6), 0 0 50px rgba(147, 51, 234, 0.3); }
+}
+
+@keyframes glowButtonMobile {
+  0%, 100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.7), 0 0 50px rgba(168, 85, 247, 0.3); }
+}
+
+.mobile-spin-wheel-container {
+  position: relative;
+  background: radial-gradient(circle, rgba(147, 51, 234, 0.15) 0%, rgba(168, 85, 247, 0.1) 50%, transparent 100%);
+  border-radius: 50%;
+  animation: neonPulseMobile 2s ease-in-out infinite;
+  padding: 20px;
+}
+
+.mobile-spin-wheel-canvas {
+  filter: drop-shadow(0 0 15px rgba(147, 51, 234, 0.4));
+}
+
+.mobile-spin-button-glow {
+  animation: glowButtonMobile 2s ease-in-out infinite;
+}
+
+/* SpinWheelEnhancedFixed animations */
+.spin-wheel-container .animate-spin-wheel {
+  animation: spinWheel 3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes spinWheel {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(var(--final-rotation, 1800deg)); }
+}
+
+.confetti {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  animation: confetti 3s ease-out forwards;
+}
+
+@keyframes confetti {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* SpinWheelPage.legacy slider styles */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(136, 83, 255, 0.4);
+}
+
+.slider::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(136, 83, 255, 0.4);
+}

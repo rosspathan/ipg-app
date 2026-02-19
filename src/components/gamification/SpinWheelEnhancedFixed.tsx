@@ -171,46 +171,7 @@ export const SpinWheelEnhanced = ({
 
   return (
     <div className="space-y-6">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .spin-wheel-container .animate-spin-wheel {
-            animation: spinWheel 3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-          }
-          
-          @keyframes spinWheel {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(var(--final-rotation, 1800deg)); }
-          }
-          
-          .confetti {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            pointer-events: none;
-          }
-          
-          .confetti-piece {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            animation: confetti 3s ease-out forwards;
-          }
-          
-          @keyframes confetti {
-            0% {
-              transform: translateY(-100vh) rotate(0deg);
-              opacity: 1;
-            }
-            100% {
-              transform: translateY(100vh) rotate(360deg);
-              opacity: 0;
-            }
-          }
-        `
-      }} />
+      {/* CSS moved to src/styles/spin-wheel.css */}
       
       {/* Wheel Container */}
       <Card className="relative overflow-hidden">
