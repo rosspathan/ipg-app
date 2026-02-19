@@ -13679,6 +13679,14 @@ export type Database = {
         Args: { p_amount: number; p_recipient_id: string; p_sender_id: string }
         Returns: Json
       }
+      execute_early_unstake: {
+        Args: {
+          p_idempotency_key?: string
+          p_stake_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       execute_internal_balance_transfer: {
         Args: {
           p_amount: number

@@ -85,27 +85,56 @@ async function processDeposit(
   // Find user by wallet address if userId not provided
   let depositUserId = userId;
   if (!depositUserId) {
-    const { data: profile } = await supabase
+    // ── Enhancement 1: Strict wallet matching — detect ambiguous senders ──
+    const { data: matchingProfiles } = await supabase
       .from('profiles')
       .select('user_id')
-      .or(`bsc_wallet_address.ilike.${fromAddress},wallet_address.ilike.${fromAddress}`)
-      .maybeSingle();
+      .or(`bsc_wallet_address.ilike.${fromAddress},wallet_address.ilike.${fromAddress}`);
 
-    if (!profile) {
-      // Try case-insensitive exact match
-      const { data: profile2 } = await supabase
+    if (!matchingProfiles || matchingProfiles.length === 0) {
+      // Fallback: exact case-insensitive match on bsc_wallet_address only
+      const { data: strictMatches } = await supabase
         .from('profiles')
         .select('user_id')
-        .ilike('bsc_wallet_address', fromAddress)
-        .maybeSingle();
+        .ilike('bsc_wallet_address', fromAddress);
 
-      if (!profile2) {
+      if (!strictMatches || strictMatches.length === 0) {
         console.log('[staking-deposit-monitor] Unknown sender:', fromAddress);
         return { success: false, credited: 0, error: 'Unknown sender' };
       }
-      depositUserId = profile2.user_id;
+
+      if (strictMatches.length > 1) {
+        // AMBIGUOUS: multiple users registered the same wallet — block and alert admin
+        console.error(
+          `[staking-deposit-monitor] ⚠️ AMBIGUOUS WALLET: ${fromAddress} is registered to ${strictMatches.length} users. Blocking deposit of ${amount} IPG (tx: ${txHash})`
+        );
+        // Insert an admin notification
+        await supabase.from('admin_notifications').insert({
+          title: '⚠️ Ambiguous Staking Deposit Blocked',
+          message: `Deposit of ${amount} IPG (tx: ${txHash}) from wallet ${fromAddress} was BLOCKED because ${strictMatches.length} user accounts share this wallet address. Manual review required.`,
+          type: 'security_alert',
+          priority: 'critical',
+          metadata: { tx_hash: txHash, from_address: fromAddress, amount, user_ids: strictMatches.map((p: any) => p.user_id) }
+        });
+        return { success: false, credited: 0, error: `Ambiguous wallet: ${strictMatches.length} users share address ${fromAddress}` };
+      }
+
+      depositUserId = strictMatches[0].user_id;
+    } else if (matchingProfiles.length > 1) {
+      // AMBIGUOUS: multiple users match this wallet — block and alert
+      console.error(
+        `[staking-deposit-monitor] ⚠️ AMBIGUOUS WALLET: ${fromAddress} matched ${matchingProfiles.length} profiles. Blocking deposit.`
+      );
+      await supabase.from('admin_notifications').insert({
+        title: '⚠️ Ambiguous Staking Deposit Blocked',
+        message: `Deposit of ${amount} IPG (tx: ${txHash}) from wallet ${fromAddress} was BLOCKED because ${matchingProfiles.length} user accounts share this wallet address. Manual review required.`,
+        type: 'security_alert',
+        priority: 'critical',
+        metadata: { tx_hash: txHash, from_address: fromAddress, amount, user_ids: matchingProfiles.map((p: any) => p.user_id) }
+      });
+      return { success: false, credited: 0, error: `Ambiguous wallet: ${matchingProfiles.length} users share address ${fromAddress}` };
     } else {
-      depositUserId = profile.user_id;
+      depositUserId = matchingProfiles[0].user_id;
     }
   }
 
