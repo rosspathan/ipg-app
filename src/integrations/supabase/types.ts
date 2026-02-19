@@ -4028,6 +4028,8 @@ export type Database = {
           is_active: boolean
           min_stake_amount: number
           staking_fee_percent: number
+          staking_token_contract: string
+          staking_token_symbol: string
           unstaking_fee_percent: number
           updated_at: string
         }
@@ -4038,6 +4040,8 @@ export type Database = {
           is_active?: boolean
           min_stake_amount?: number
           staking_fee_percent?: number
+          staking_token_contract?: string
+          staking_token_symbol?: string
           unstaking_fee_percent?: number
           updated_at?: string
         }
@@ -4048,6 +4052,8 @@ export type Database = {
           is_active?: boolean
           min_stake_amount?: number
           staking_fee_percent?: number
+          staking_token_contract?: string
+          staking_token_symbol?: string
           unstaking_fee_percent?: number
           updated_at?: string
         }
@@ -13494,6 +13500,10 @@ export type Database = {
       admin_update_bsk_rate: {
         Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
+      }
+      assert_ipg_staking_currency: {
+        Args: { p_currency: string }
+        Returns: undefined
       }
       atomic_badge_purchase: {
         Args: {
