@@ -123,12 +123,8 @@ const navItems: NavItem[] = [
     url: "/admin/program-controls",
     icon: Zap,
     children: [
-      
-      { title: "Lucky Draw", url: "/admin/programs/lucky-draw", icon: Gift },
-      { title: "Spin Wheel", url: "/admin/programs/spin-wheel", icon: Target },
       { title: "Staking", url: "/admin/staking", icon: Coins },
       { title: "Subscriptions", url: "/admin/subscriptions", icon: CreditCard },
-      { title: "Insurance", url: "/admin/insurance", icon: Shield },
       { title: "Purchase Bonus", url: "/admin/purchase-bonus", icon: Gift },
     ],
   },

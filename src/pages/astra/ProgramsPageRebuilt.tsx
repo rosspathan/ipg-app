@@ -82,22 +82,6 @@ export function ProgramsPageRebuilt() {
           icon: <Star className="h-5 w-5 text-accent" />,
           route: "/app/programs/staking",
         },
-        {
-          id: "lucky-draw",
-          title: "Lucky Draw",
-          subtitle: "Win big prizes",
-          icon: <Target className="h-5 w-5 text-warning" />,
-          route: "/app/programs/lucky-draw",
-          badge: { text: "HOT", variant: "danger" },
-        },
-        {
-          id: "spin-wheel",
-          title: "Spin Wheel",
-          subtitle: "Provably fair spins",
-          icon: <Zap className="h-5 w-5 text-primary" />,
-          route: "/app/programs/spin",
-          badge: { text: "LIVE", variant: "success" },
-        },
       ],
     },
     {
@@ -132,13 +116,6 @@ export function ProgramsPageRebuilt() {
       title: "Protection",
       emoji: "🛡",
       programs: [
-        {
-          id: "insurance",
-          title: "Insurance",
-          subtitle: "Protect your assets",
-          icon: <Shield className="h-5 w-5 text-accent" />,
-          route: "/app/programs/insurance",
-        },
         {
           id: "loans",
           title: "Loans",

@@ -14,12 +14,9 @@ interface ProgramFlag {
 }
 
 const PROGRAMS = [
-  { code: 'spin_wheel', name: 'Spin Wheel', description: 'Lucky spin game with BSK bets and prizes' },
-  { code: 'lucky_draw', name: 'Lucky Draw', description: '100-participant draw with multiple winners' },
-  
   { code: 'one_time_purchase', name: 'One-Time Purchase', description: '+50% holding bonus with tier requirement' },
   { code: 'team_referrals', name: 'Team & Referrals', description: '50-level referral system with badges' },
-  { code: 'insurance', name: 'Insurance', description: 'Accident, Trading, and Life insurance plans' },
+  { code: 'staking', name: 'Staking', description: 'Real crypto staking pools' },
   { code: 'loans', name: 'BSK Loans', description: '0% interest loans with collateral' },
   { code: 'staking', name: 'Staking', description: 'Real crypto staking pools' },
   { code: 'trading', name: 'Trading', description: 'Crypto spot trading and swaps' },
