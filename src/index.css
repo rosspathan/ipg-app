@@ -457,7 +457,32 @@ All colors MUST be HSL.
     border-color: rgba(0, 102, 255, 0.15);
     transform: translateY(-1px);
   }
-  
+
+  /* ─── LIGHT MODE: Premium glass for ALL card-like elements ─── */
+  .light [class*="bg-card"],
+  .light [class*="bg-muted\\/"] {
+    background: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.03),
+      0 8px 32px rgba(0, 80, 200, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .light [class*="border-border"] {
+    border-color: rgba(0, 80, 200, 0.08) !important;
+  }
+
+  .light .bottom-bar-blur {
+    background: rgba(255, 255, 255, 0.72) !important;
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    box-shadow: 
+      0 -4px 24px rgba(0, 80, 200, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
   * {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
