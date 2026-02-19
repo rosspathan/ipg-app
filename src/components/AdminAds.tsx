@@ -436,10 +436,6 @@ export const AdminAds = () => {
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = '<div class="h-6 w-6 text-gray-400">📷</div>';
-                            }
                           }}
                         />
                       ) : (
