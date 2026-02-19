@@ -130,17 +130,14 @@ export function HomePageRebuilt() {
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 h-[46px] rounded-2xl",
                       "text-[13px] font-semibold",
-                      "bg-card/70 backdrop-blur-xl",
-                      "border border-primary/10",
+                      "glass-card backdrop-blur-xl",
+                      "border border-primary/15",
                       "text-foreground/90",
                       "shadow-card",
                       "transition-all duration-200",
-                      "hover:shadow-elevated hover:border-primary/20 hover:-translate-y-0.5",
+                      "hover:shadow-elevated hover:border-primary/30 hover:-translate-y-0.5",
                       "active:scale-[0.98]"
                     )}
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(240,245,255,0.5))',
-                    }}
                   >
                     <span className="text-primary">{btn.icon}</span>
                     {btn.label}
@@ -154,10 +151,7 @@ export function HomePageRebuilt() {
           <div className="px-4 grid grid-cols-2 gap-3">
             {/* Tradable */}
             <div
-              className="p-4 rounded-3xl space-y-2 backdrop-blur-xl border border-primary/8 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
-              style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.7), rgba(240,245,255,0.5))',
-              }}
+              className="p-4 rounded-3xl space-y-2 glass-card backdrop-blur-xl border border-primary/15 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
             >
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tradable</p>
               <p className="text-lg font-extrabold tabular-nums text-success font-heading">
@@ -182,10 +176,7 @@ export function HomePageRebuilt() {
 
             {/* Locked */}
             <div
-              className="p-4 rounded-3xl space-y-2 backdrop-blur-xl border border-primary/8 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
-              style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.7), rgba(235,240,255,0.5))',
-              }}
+              className="p-4 rounded-3xl space-y-2 glass-card backdrop-blur-xl border border-primary/15 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
             >
               <div className="flex items-center gap-1.5">
                 <Lock className="h-3 w-3 text-primary/60" />
@@ -209,10 +200,7 @@ export function HomePageRebuilt() {
           <div className="px-4">
             <button
               onClick={() => navigate("/app/wallet/history/bsk")}
-              className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl text-[12px] font-medium backdrop-blur-xl border border-border/50 text-muted-foreground shadow-card transition-all hover:shadow-elevated hover:-translate-y-0.5"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.6), rgba(240,245,255,0.4))',
-              }}
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl text-[12px] font-medium glass-card backdrop-blur-xl border border-border/50 text-muted-foreground shadow-card transition-all hover:shadow-elevated hover:-translate-y-0.5"
             >
               <History className="h-3.5 w-3.5" />
               View Full History
@@ -240,8 +228,7 @@ export function HomePageRebuilt() {
               </button>
             </div>
 
-            <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-border/40 shadow-card"
-              style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.65), rgba(240,245,255,0.4))' }}
+            <div className="rounded-3xl overflow-hidden glass-card backdrop-blur-xl border border-border/40 shadow-card"
             >
               {(tradingPairs || []).slice(0, 5).map((pair, i) => {
                 const isPositive = pair.change24h >= 0
@@ -296,14 +283,11 @@ export function HomePageRebuilt() {
                   className={cn(
                     "flex items-center gap-2 px-5 py-3 rounded-2xl whitespace-nowrap",
                     "text-[12px] font-semibold flex-shrink-0",
-                    "backdrop-blur-xl border border-primary/10",
+                    "glass-card backdrop-blur-xl border border-primary/15",
                     "text-foreground/85 shadow-card",
                     "transition-all duration-200",
-                    "hover:shadow-elevated hover:-translate-y-0.5 hover:border-primary/20"
+                    "hover:shadow-elevated hover:-translate-y-0.5 hover:border-primary/30"
                   )}
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(240,245,255,0.5))',
-                  }}
                 >
                   <span className="text-primary">{action.icon}</span>
                   {action.label}
@@ -333,13 +317,10 @@ export function HomePageRebuilt() {
                     onClick={() => navigate(prog.route)}
                     className={cn(
                       "p-4 rounded-3xl text-left space-y-3",
-                      "backdrop-blur-xl border border-primary/8 shadow-card",
+                      "glass-card backdrop-blur-xl border border-primary/15 shadow-card",
                       "transition-all duration-200",
-                      "hover:shadow-elevated hover:-translate-y-0.5 hover:border-primary/15"
+                      "hover:shadow-elevated hover:-translate-y-0.5 hover:border-primary/30"
                     )}
-                    style={{
-                      background: 'linear-gradient(145deg, rgba(255,255,255,0.7), rgba(240,245,255,0.5))',
-                    }}
                   >
                     <div className="h-10 w-10 rounded-2xl flex items-center justify-center bg-primary/8 shadow-sm">
                       <IconComponent className="h-5 w-5 text-primary" />
@@ -367,10 +348,7 @@ export function HomePageRebuilt() {
                 {activities.slice(0, 5).map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex items-center gap-3 p-3.5 rounded-2xl backdrop-blur-xl border border-border/30 shadow-card transition-all duration-150 hover:shadow-elevated"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.6), rgba(240,245,255,0.4))',
-                    }}
+                    className="flex items-center gap-3 p-3.5 rounded-2xl glass-card backdrop-blur-xl border border-border/30 shadow-card transition-all duration-150 hover:shadow-elevated"
                   >
                     {/* Glow dot */}
                     <div className="h-2.5 w-2.5 rounded-full flex-shrink-0 bg-success shadow-[0_0_8px_hsl(var(--success)/0.5)]" />
