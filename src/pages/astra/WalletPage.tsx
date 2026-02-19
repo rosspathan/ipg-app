@@ -190,17 +190,12 @@ export function WalletPage() {
                 setHideBalance(next)
                 localStorage.setItem('ipg_hide_balance', String(next))
               }}
-              className={cn(
-                "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-200",
-                "bg-accent/10 hover:bg-accent/20 active:scale-90",
-                "border border-accent/20 hover:border-accent/40",
-                "shadow-[0_0_12px_hsl(var(--accent)/0.08)] hover:shadow-[0_0_16px_hsl(var(--accent)/0.15)]"
-              )}
+              className="p-2 rounded-lg transition-all duration-200 bg-muted/50 hover:bg-muted active:scale-95 border border-border/50"
               aria-label={hideBalance ? "Show balance" : "Hide balance"}
             >
               {hideBalance
-                ? <Eye className="h-3.5 w-3.5 text-accent" />
-                : <EyeOff className="h-3.5 w-3.5 text-accent" />
+                ? <Eye className="h-4 w-4 text-foreground/70" />
+                : <EyeOff className="h-4 w-4 text-foreground/70" />
               }
             </button>
           </div>
