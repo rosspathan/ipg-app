@@ -261,7 +261,7 @@ export function useCryptoStakingAccount() {
     depositAddress: config?.admin_hot_wallet_address || null,
     stakingFee: config?.staking_fee_percent || 0.5,
     unstakingFee: config?.unstaking_fee_percent || 0.5,
-    earlyUnstakePenalty: 10, // 10% penalty + rewards forfeited
+    earlyUnstakePenalty: 5, // 5% penalty + rewards forfeited
     isEnabled: config?.is_active ?? true,
     availableBalance: account?.available_balance || 0,
     stakedBalance: account?.staked_balance || 0,
