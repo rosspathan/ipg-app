@@ -12,6 +12,8 @@ serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url);
+    const minBalance = Number(url.searchParams.get('min_withdrawable') || '0');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -86,7 +88,7 @@ serve(async (req) => {
     }
 
     // Merge data
-    const reportData = allProfiles.map(p => {
+    let reportData = allProfiles.map(p => {
       const bal = balanceMap.get(p.user_id);
       const walletAddr = p.bsc_wallet_address || p.wallet_address || null;
       return {
@@ -100,6 +102,11 @@ serve(async (req) => {
         created_at: p.created_at,
       };
     });
+
+    // Apply minimum withdrawable balance filter
+    if (minBalance > 0) {
+      reportData = reportData.filter(u => u.withdrawable_balance >= minBalance);
+    }
 
     console.log(`[Admin BSK Report] Generated report for ${reportData.length} users`);
 
