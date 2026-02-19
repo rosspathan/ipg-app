@@ -148,7 +148,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         staking_account_id: account.id,
-        tx_type: 'withdrawal',
+        tx_type: 'withdraw',
         amount: netAmount,
         fee_amount: feeAmount,
         currency: 'IPG',
