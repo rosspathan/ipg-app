@@ -72,10 +72,7 @@ export function HomePageRebuilt() {
   }))
 
   const quickActions = [
-    { id: "mining", label: "Ad Mining", icon: <Pickaxe className="h-4 w-4" />, route: "/app/programs/ad-mining" },
     { id: "team", label: "Team", icon: <Users className="h-4 w-4" />, route: "/app/programs/referral" },
-    { id: "lucky", label: "Lucky Draw", icon: <Dices className="h-4 w-4" />, route: "/app/programs/lucky-draw" },
-    { id: "spin", label: "Spin Wheel", icon: <RotateCw className="h-4 w-4" />, route: "/app/programs/spin-wheel" },
     { id: "staking", label: "Staking", icon: <Landmark className="h-4 w-4" />, route: "/app/programs/staking" },
     { id: "trading", label: "Trading", icon: <TrendingUp className="h-4 w-4" />, route: "/app/trade" },
   ]
