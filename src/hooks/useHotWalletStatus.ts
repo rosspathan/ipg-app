@@ -21,11 +21,13 @@ export function useHotWalletStatus() {
     queryKey: ['hot-wallet-status'],
     queryFn: async (): Promise<HotWalletStatus | null> => {
       // Get active hot wallet from database
+      // Scoped to Trading Hot Wallet only — never return staking or migration wallets
       const { data: wallet, error } = await supabase
         .from('platform_hot_wallet')
         .select('address, chain, label, is_active')
         .eq('is_active', true)
         .eq('chain', 'BSC')
+        .eq('label', 'Trading Hot Wallet')
         .maybeSingle();
 
       if (error) throw error;
