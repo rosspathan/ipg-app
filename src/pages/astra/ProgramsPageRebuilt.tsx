@@ -80,7 +80,7 @@ export function ProgramsPageRebuilt() {
           title: "Staking",
           subtitle: "Earn monthly yield",
           icon: <Star className="h-5 w-5 text-accent" />,
-          route: "/app/programs/staking",
+          route: "/app/staking",
         },
       ],
     },

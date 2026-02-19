@@ -54,7 +54,7 @@ const WalletHomeScreen = () => {
     { name: "Swap", icon: Repeat, color: "text-secondary", route: "/app/swap" },
     { name: "Send", icon: Send, color: "text-warning", route: "/app/wallet/send" },
     { name: "Trade", icon: TrendingUp, color: "text-primary", route: "/app/trade" },
-    { name: "Staking", icon: Coins, color: "text-accent", route: "/app/programs/staking" },
+    { name: "Staking", icon: Coins, color: "text-accent", route: "/app/staking" },
     { name: "Programs", icon: Gift, color: "text-primary", route: "/app/programs" },
     ...(isAdmin ? [{ name: "Admin", icon: Shield, color: "text-danger", route: "/admin" }] : []),
   ];

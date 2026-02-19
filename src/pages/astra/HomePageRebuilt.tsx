@@ -73,7 +73,7 @@ export function HomePageRebuilt() {
 
   const quickActions = [
     { id: "team", label: "Team", icon: <Users className="h-4 w-4" />, route: "/app/programs/referral" },
-    { id: "staking", label: "Staking", icon: <Landmark className="h-4 w-4" />, route: "/app/programs/staking" },
+    { id: "staking", label: "Staking", icon: <Landmark className="h-4 w-4" />, route: "/app/staking" },
     { id: "trading", label: "Trading", icon: <TrendingUp className="h-4 w-4" />, route: "/app/trade" },
   ]
 
