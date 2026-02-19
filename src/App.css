@@ -7,9 +7,14 @@
   overflow-x: hidden;
 }
 
-/* Dark mode root background */
+/* Dark mode root background - deep galaxy base */
 .dark #root {
-  background: hsl(var(--background));
+  background: linear-gradient(165deg, 
+    hsl(230 80% 4%) 0%, 
+    hsl(232 55% 5%) 40%, 
+    hsl(235 45% 4%) 70%, 
+    hsl(230 80% 4%) 100%
+  );
 }
 
 /* Light mode: premium gradient applied via index.css .light #root */
