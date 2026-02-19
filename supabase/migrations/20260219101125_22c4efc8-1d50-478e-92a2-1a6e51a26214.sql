@@ -1,0 +1,1 @@
+UPDATE program_modules SET status = 'archived' WHERE key IN ('insurance', 'spin_wheel', 'lucky_draw', 'adverts_mining', 'ad-mining', 'spin-wheel', 'lucky-draw');
