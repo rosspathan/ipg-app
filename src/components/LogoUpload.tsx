@@ -87,7 +87,6 @@ const LogoUpload: React.FC<LogoUploadProps> = ({
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
-                        target.parentElement!.innerHTML = '<ImageIcon className="w-6 h-6 text-muted-foreground" />';
                       }}
                     />
                   </div>

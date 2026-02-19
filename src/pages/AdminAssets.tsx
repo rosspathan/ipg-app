@@ -526,7 +526,10 @@ const AdminAssets = () => {
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
-                            target.parentElement!.innerHTML = asset.symbol.charAt(0);
+                            const span = document.createElement('span');
+                            span.textContent = asset.symbol.charAt(0);
+                            span.className = 'text-xs font-bold';
+                            target.parentElement?.appendChild(span);
                           }}
                         />
                       </div>
