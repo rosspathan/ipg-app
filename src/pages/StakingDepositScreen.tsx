@@ -38,7 +38,7 @@ const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ];
-const IPG_CONTRACT = '0x7437d96D2dca13525B4A6021865d41997deE1F09';
+const IPG_CONTRACT = '0x05002c24c2A999253f5eEe44A85C2B6BAD7f656E';
 
 type Direction = 'deposit' | 'withdraw';
 
