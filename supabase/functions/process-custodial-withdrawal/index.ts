@@ -62,12 +62,45 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabase = createClient(
+  const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
   try {
+    // P0 FIX: Enforce JWT authentication + admin role check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authorization required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: adminUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !adminUser) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify caller is admin using has_role RPC
+    const { data: isAdmin } = await supabaseAdmin.rpc('has_role', { 
+      _user_id: adminUser.id, 
+      _role: 'admin' 
+    });
+    if (!isAdmin) {
+      console.error(`[process-custodial-withdrawal] Non-admin user ${adminUser.email} attempted to process withdrawals`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[process-custodial-withdrawal] Admin ${adminUser.email} initiating withdrawal processing`);
+
     const body: WithdrawalRequest = await req.json().catch(() => ({}));
     const { withdrawal_id, process_pending = false } = body;
 
@@ -97,7 +130,7 @@ Deno.serve(async (req) => {
     console.log(`[process-custodial-withdrawal] Hot wallet: ${account.address}`);
 
     // Fetch pending withdrawals
-    let query = supabase
+    let query = supabaseAdmin
       .from('custodial_withdrawals')
       .select(`
         *,
@@ -142,7 +175,7 @@ Deno.serve(async (req) => {
         console.log(`[process-custodial-withdrawal] Processing: ${withdrawal.amount} ${asset.symbol} to ${withdrawal.to_address}`);
 
         // Mark as processing
-        await supabase
+        await supabaseAdmin
           .from('custodial_withdrawals')
           .update({ status: 'processing', updated_at: new Date().toISOString() })
           .eq('id', withdrawal.id);
@@ -186,7 +219,7 @@ Deno.serve(async (req) => {
 
         if (receipt.status === 'success') {
           // Update withdrawal as completed
-          await supabase
+          await supabaseAdmin
             .from('custodial_withdrawals')
             .update({
               status: 'completed',
@@ -212,7 +245,7 @@ Deno.serve(async (req) => {
         console.error(`[process-custodial-withdrawal] Error processing ${withdrawal.id}:`, withdrawalError);
 
         // Mark as failed
-        await supabase
+        await supabaseAdmin
           .from('custodial_withdrawals')
           .update({
             status: 'failed',
@@ -222,7 +255,7 @@ Deno.serve(async (req) => {
           .eq('id', withdrawal.id);
 
         // Refund to wallet_balances (the correct trading balance table)
-        const { data: balance } = await supabase
+        const { data: balance } = await supabaseAdmin
           .from('wallet_balances')
           .select('available, locked, total')
           .eq('user_id', withdrawal.user_id)
@@ -233,7 +266,7 @@ Deno.serve(async (req) => {
 
         if (balance) {
           // Update existing balance (total is auto-calculated from available + locked)
-          await supabase
+          await supabaseAdmin
             .from('wallet_balances')
             .update({
               available: (balance.available || 0) + refundAmount,
@@ -245,7 +278,7 @@ Deno.serve(async (req) => {
           console.log(`[process-custodial-withdrawal] Refunded ${refundAmount} to wallet_balances`);
         } else {
           // Insert new balance row if none exists (total is auto-calculated)
-          await supabase
+          await supabaseAdmin
             .from('wallet_balances')
             .insert({
               user_id: withdrawal.user_id,

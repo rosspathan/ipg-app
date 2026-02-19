@@ -179,7 +179,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Decrypt private key
+    // P0 FIX: Circuit breaker - validate withdrawal request
+    const { data: circuitCheck, error: circuitError } = await supabase.rpc(
+      'validate_withdrawal_request',
+      { p_user_id: user.id, p_amount_usd: amount, p_withdrawal_type: 'crypto' }
+    );
+    if (circuitError) {
+      console.error('[Withdrawal] Circuit breaker error:', circuitError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Withdrawal validation failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (circuitCheck && !circuitCheck.allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: circuitCheck.reason }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // P0 FIX: Replace XOR with AES-256-GCM decryption
     const encryptionKey = Deno.env.get('WALLET_ENCRYPTION_KEY');
     if (!encryptionKey) {
       console.error('[Withdrawal] WALLET_ENCRYPTION_KEY not configured');
@@ -191,13 +210,37 @@ Deno.serve(async (req) => {
 
     let privateKey: string;
     try {
-      const encrypted = Buffer.from(profile.encrypted_private_key, 'base64');
-      const key = Buffer.from(encryptionKey, 'utf-8');
-      const decrypted = Buffer.alloc(encrypted.length);
-      for (let i = 0; i < encrypted.length; i++) {
-        decrypted[i] = encrypted[i] ^ key[i % key.length];
+      // Parse the stored encrypted data (format: base64(iv):base64(ciphertext))
+      const parts = profile.encrypted_private_key.split(':');
+      if (parts.length === 2) {
+        // New AES-256-GCM format: iv:ciphertext
+        const ivBytes = Uint8Array.from(atob(parts[0]), c => c.charCodeAt(0));
+        const ciphertextBytes = Uint8Array.from(atob(parts[1]), c => c.charCodeAt(0));
+        
+        // Derive key from encryption key using SHA-256
+        const keyMaterial = new TextEncoder().encode(encryptionKey);
+        const keyHash = await crypto.subtle.digest('SHA-256', keyMaterial);
+        const cryptoKey = await crypto.subtle.importKey(
+          'raw', keyHash, { name: 'AES-GCM' }, false, ['decrypt']
+        );
+        
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: ivBytes },
+          cryptoKey,
+          ciphertextBytes
+        );
+        privateKey = new TextDecoder().decode(decrypted);
+      } else {
+        // Legacy XOR format - log warning but still support for migration
+        console.warn('[Withdrawal] WARNING: Legacy XOR encryption detected. Keys should be re-encrypted with AES-256-GCM.');
+        const encrypted = Uint8Array.from(atob(profile.encrypted_private_key), c => c.charCodeAt(0));
+        const key = new TextEncoder().encode(encryptionKey);
+        const decrypted = new Uint8Array(encrypted.length);
+        for (let i = 0; i < encrypted.length; i++) {
+          decrypted[i] = encrypted[i] ^ key[i % key.length];
+        }
+        privateKey = new TextDecoder().decode(decrypted);
       }
-      privateKey = decrypted.toString('utf-8');
     } catch (decryptError) {
       console.error('[Withdrawal] Failed to decrypt private key:', decryptError);
       return new Response(

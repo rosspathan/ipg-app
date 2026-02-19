@@ -49,6 +49,22 @@ serve(async (req) => {
       throw new Error('Missing required fields');
     }
 
+    // P0 FIX: Circuit breaker - validate withdrawal request
+    const { data: circuitCheck, error: circuitError } = await supabase.rpc(
+      'validate_withdrawal_request',
+      { p_user_id: user.id, p_amount_usd: parseFloat(amount_bsk), p_withdrawal_type: 'bsk' }
+    );
+    if (circuitError) {
+      console.error('[process-bsk-withdrawal] Circuit breaker error:', circuitError);
+      throw new Error('Withdrawal validation failed');
+    }
+    if (circuitCheck && !(circuitCheck as any).allowed) {
+      return new Response(
+        JSON.stringify({ error: (circuitCheck as any).reason }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const amountNum = parseFloat(amount_bsk);
     if (isNaN(amountNum) || amountNum <= 0) {
       throw new Error('Invalid amount');

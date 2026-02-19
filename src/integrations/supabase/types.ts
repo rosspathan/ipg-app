@@ -12921,6 +12921,36 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_rate_limits: {
+        Row: {
+          amount_usd: number
+          block_reason: string | null
+          blocked: boolean
+          id: string
+          requested_at: string
+          user_id: string
+          withdrawal_type: string
+        }
+        Insert: {
+          amount_usd?: number
+          block_reason?: string | null
+          blocked?: boolean
+          id?: string
+          requested_at?: string
+          user_id: string
+          withdrawal_type?: string
+        }
+        Update: {
+          amount_usd?: number
+          block_reason?: string | null
+          blocked?: boolean
+          id?: string
+          requested_at?: string
+          user_id?: string
+          withdrawal_type?: string
+        }
+        Relationships: []
+      }
       withdrawal_security_config: {
         Row: {
           anomaly_threshold_multiplier: number
@@ -14120,15 +14150,24 @@ export type Database = {
         Returns: undefined
       }
       validate_referral_code: { Args: { code: string }; Returns: boolean }
-      validate_withdrawal_request: {
-        Args: {
-          _amount: number
-          _asset_symbol: string
-          _destination_address?: string
-          _user_id: string
-        }
-        Returns: Json
-      }
+      validate_withdrawal_request:
+        | {
+            Args: {
+              _amount: number
+              _asset_symbol: string
+              _destination_address?: string
+              _user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount_usd: number
+              p_user_id: string
+              p_withdrawal_type?: string
+            }
+            Returns: Json
+          }
       verify_transfer_recipient: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {
