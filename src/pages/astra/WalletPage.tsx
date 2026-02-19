@@ -91,6 +91,7 @@ export function WalletPage() {
   const displayName = useDisplayName()
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(true)
+  const [hideBalance, setHideBalance] = useState(() => localStorage.getItem('ipg_hide_balance') === 'true')
   const [showQrDialog, setShowQrDialog] = useState(false)
   const [integrityDismissed, setIntegrityDismissed] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -181,11 +182,32 @@ export function WalletPage() {
       {/* ── 1. PORTFOLIO SUMMARY (On-Chain Balance) ── */}
       <div className="px-4 pt-4">
         <div className="p-5 rounded-xl space-y-4 bg-card/80 border border-accent/12 backdrop-blur-xl">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">On-Chain Balance</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">On-Chain Balance</p>
+            <button
+              onClick={() => {
+                const next = !hideBalance
+                setHideBalance(next)
+                localStorage.setItem('ipg_hide_balance', String(next))
+              }}
+              className={cn(
+                "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-200",
+                "bg-accent/10 hover:bg-accent/20 active:scale-90",
+                "border border-accent/20 hover:border-accent/40",
+                "shadow-[0_0_12px_hsl(var(--accent)/0.08)] hover:shadow-[0_0_16px_hsl(var(--accent)/0.15)]"
+              )}
+              aria-label={hideBalance ? "Show balance" : "Hide balance"}
+            >
+              {hideBalance
+                ? <Eye className="h-3.5 w-3.5 text-accent" />
+                : <EyeOff className="h-3.5 w-3.5 text-accent" />
+              }
+            </button>
+          </div>
           
           <div className="relative">
             <p className="text-[28px] font-bold tabular-nums text-foreground font-heading">
-              {portfolioLoading || onchainLoading ? '...' : formatCurrency(portfolio?.total_usd || 0)}
+              {portfolioLoading || onchainLoading ? '...' : hideBalance ? '••••••' : formatCurrency(portfolio?.total_usd || 0)}
             </p>
             <div className="absolute -inset-6 rounded-full opacity-[0.06] pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent))_0%,transparent_70%)]" />
           </div>
@@ -201,7 +223,7 @@ export function WalletPage() {
                 <span className="text-[12px] font-medium text-muted-foreground">Available</span>
               </div>
               <span className="text-[14px] font-bold tabular-nums text-accent">
-                {formatCurrency(portfolio?.available_usd || 0)}
+                {hideBalance ? '••••••' : formatCurrency(portfolio?.available_usd || 0)}
               </span>
             </div>
 
@@ -213,7 +235,7 @@ export function WalletPage() {
                 <span className="text-[12px] font-medium text-muted-foreground">In Orders</span>
               </div>
               <span className="text-[14px] font-bold tabular-nums text-warning">
-                {formatCurrency(portfolio?.locked_usd || 0)}
+                {hideBalance ? '••••••' : formatCurrency(portfolio?.locked_usd || 0)}
               </span>
             </div>
           </div>
