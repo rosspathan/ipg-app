@@ -202,6 +202,7 @@ export function useCryptoStakingAccount() {
       });
       
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => {
@@ -212,6 +213,32 @@ export function useCryptoStakingAccount() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to unstake');
+    }
+  });
+
+  // Early unstake mutation (with 10% penalty, rewards forfeited)
+  const earlyUnstakeMutation = useMutation({
+    mutationFn: async ({ stakeId }: { stakeId: string }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      
+      const { data, error } = await supabase.functions.invoke('process-staking-early-unstake', {
+        body: { stake_id: stakeId }
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['user-staking-account'] });
+      queryClient.invalidateQueries({ queryKey: ['user-active-stakes'] });
+      queryClient.invalidateQueries({ queryKey: ['staking-ledger'] });
+      toast.success(`Early exit: ${Number(data.returned_amount).toFixed(4)} IPG returned`, {
+        description: `${Number(data.penalty).toFixed(4)} IPG penalty + ${Number(data.rewards_forfeited).toFixed(4)} IPG rewards forfeited`
+      });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to early unstake');
     }
   });
 
@@ -234,6 +261,7 @@ export function useCryptoStakingAccount() {
     depositAddress: config?.admin_hot_wallet_address || null,
     stakingFee: config?.staking_fee_percent || 0.5,
     unstakingFee: config?.unstaking_fee_percent || 0.5,
+    earlyUnstakePenalty: 10, // 10% penalty + rewards forfeited
     isEnabled: config?.is_active ?? true,
     availableBalance: account?.available_balance || 0,
     stakedBalance: account?.staked_balance || 0,
@@ -242,8 +270,10 @@ export function useCryptoStakingAccount() {
     // Actions
     createStake: createStakeMutation.mutate,
     unstake: unstakeMutation.mutate,
+    earlyUnstake: earlyUnstakeMutation.mutate,
     isStaking: createStakeMutation.isPending,
     isUnstaking: unstakeMutation.isPending,
+    isEarlyUnstaking: earlyUnstakeMutation.isPending,
     
     // Refetch
     refetchAccount,
