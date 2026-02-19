@@ -376,28 +376,3 @@ export function SpinWheelPage() {
     </div>
   )
 }
-
-      {/* Custom slider styles */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .slider::-webkit-slider-thumb {
-            appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: hsl(var(--primary));
-            cursor: pointer;
-            box-shadow: 0 0 8px rgba(136, 83, 255, 0.4);
-          }
-
-          .slider::-moz-range-thumb {
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: hsl(var(--primary));
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 8px rgba(136, 83, 255, 0.4);
-          }
-        `
-      }} />
