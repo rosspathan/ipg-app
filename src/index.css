@@ -181,38 +181,38 @@ All colors MUST be HSL.
     --clean-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   }
 
-  /* Light mode - Premium Clean */
+  /* Light mode - Clean Fintech Glass */
   .light {
-    --background: 220 30% 97%;
-    --foreground: 222 47% 11%;
+    --background: 228 40% 98%;        /* soft blue-white #f8f9ff */
+    --foreground: 222 47% 11%;        /* deep navy text */
     
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-    --card-glass: 0 0% 100% / 0.85;
+    --card-glass: 0 0% 100% / 0.6;
     
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     
-    --primary: 252 85% 60%;
+    --primary: 220 100% 50%;          /* #0066FF */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 252 85% 72%;
+    --primary-glow: 220 100% 65%;
     
-    --secondary: 220 14% 96%;
+    --secondary: 228 30% 96%;
     --secondary-foreground: 222 47% 11%;
     
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 228 25% 95%;
+    --muted-foreground: 222 12% 46%;
     
-    --accent: 252 85% 60%;
+    --accent: 245 58% 57%;            /* #6366f1 indigo */
     --accent-foreground: 0 0% 100%;
-    --accent-glow: 252 85% 72%;
+    --accent-glow: 245 58% 70%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 252 85% 60%;
+    --border: 228 20% 92%;
+    --input: 228 20% 93%;
+    --ring: 220 100% 50%;
     
     --success: 152 64% 42%;
     --success-foreground: 0 0% 100%;
@@ -223,32 +223,34 @@ All colors MUST be HSL.
     --danger: 0 84% 60%;
     --danger-foreground: 0 0% 100%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(252 85% 60%), hsl(252 90% 68%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 30% 98%));
-    --gradient-neon: linear-gradient(90deg, hsl(252 85% 60%), hsl(280 80% 65%));
-    --gradient-glow: radial-gradient(circle at center, hsl(252 85% 60% / 0.08), transparent 70%);
-    --gradient-ring: conic-gradient(from 0deg, hsl(252 85% 60%), hsl(280 80% 65%), hsl(252 85% 60%));
-    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.9), hsl(220 30% 98% / 0.7));
+    /* Clean Fintech Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 100% 50%), hsl(245 58% 57%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(228 40% 98%));
+    --gradient-neon: linear-gradient(90deg, hsl(220 100% 50%), hsl(245 58% 57%));
+    --gradient-glow: radial-gradient(circle at center, hsl(220 100% 50% / 0.06), transparent 70%);
+    --gradient-ring: conic-gradient(from 0deg, hsl(220 100% 50%), hsl(245 58% 57%), hsl(220 100% 50%));
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.9), hsl(228 40% 98% / 0.6));
     
-    --shadow-card: 0 1px 3px hsl(222 47% 11% / 0.04), 0 4px 16px hsl(222 47% 11% / 0.06);
-    --shadow-button: 0 2px 8px hsl(252 85% 60% / 0.2);
-    --shadow-elevated: 0 4px 24px hsl(222 47% 11% / 0.08), 0 1px 4px hsl(222 47% 11% / 0.04);
-    --shadow-neon: 0 0 12px hsl(252 85% 60% / 0.2);
-    --shadow-fab: 0 4px 16px hsl(252 85% 60% / 0.3);
-    --shadow-ambient: 0 2px 12px hsl(222 47% 11% / 0.06);
+    /* Premium Fintech Shadows */
+    --shadow-card: 0 1px 3px hsl(222 47% 11% / 0.03), 0 8px 24px hsl(220 100% 50% / 0.04);
+    --shadow-button: 0 4px 14px hsl(220 100% 50% / 0.2), 0 1px 3px hsl(222 47% 11% / 0.06);
+    --shadow-elevated: 0 8px 32px hsl(222 47% 11% / 0.06), 0 2px 6px hsl(222 47% 11% / 0.03);
+    --shadow-neon: 0 0 16px hsl(220 100% 50% / 0.15);
+    --shadow-fab: 0 6px 20px hsl(220 100% 50% / 0.25);
+    --shadow-ambient: 0 2px 16px hsl(222 47% 11% / 0.04);
     
-    --glow-primary: hsl(252 85% 60% / 0.15);
-    --glow-accent: hsl(252 85% 60% / 0.1);
-    --rim-light: hsl(0 0% 100% / 0.8);
+    --glow-primary: hsl(220 100% 50% / 0.1);
+    --glow-accent: hsl(245 58% 57% / 0.08);
+    --rim-light: hsl(0 0% 100% / 0.9);
     
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 252 85% 60%;
+    --sidebar-primary: 220 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent: 228 30% 96%;
     --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 252 85% 60%;
+    --sidebar-border: 228 20% 92%;
+    --sidebar-ring: 220 100% 50%;
   }
 
   /* Dark mode - Deep Galaxy */
@@ -376,8 +378,41 @@ All colors MUST be HSL.
       opacity: 0.8;
     }
   }
+
+  /* Clean Fintech Glass ambient background - light mode only */
+  .light body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: 
+      linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(228 40% 98%) 100%),
+      radial-gradient(ellipse 600px 400px at 15% 10%, hsl(220 100% 50% / 0.04), transparent),
+      radial-gradient(ellipse 500px 500px at 85% 85%, hsl(245 58% 57% / 0.04), transparent);
+    pointer-events: none;
+  }
+
+  /* Light mode glass cards override */
+  .light .glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.02),
+      0 8px 24px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .light .glass-card:hover {
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.03),
+      0 12px 32px rgba(0, 102, 255, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 102, 255, 0.12);
+  }
   
-  /* Smooth scrolling with momentum */
   * {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
