@@ -72,10 +72,11 @@ export default function FinancialReports() {
     }
   });
 
-  const handleDownloadBskPdf = async () => {
+  const handleDownloadBskPdf = async (minWithdrawable = 0) => {
     setGeneratingPdf(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-user-bsk-report');
+      const queryParams = minWithdrawable > 0 ? `?min_withdrawable=${minWithdrawable}` : '';
+      const { data, error } = await supabase.functions.invoke(`admin-user-bsk-report${queryParams}`);
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Failed to fetch report data');
       generateUserBskReportPDF(data.data, data.generated_at);
@@ -113,10 +114,14 @@ export default function FinancialReports() {
           <h1 className="text-2xl md:text-3xl font-bold">Financial Reports</h1>
           <p className="text-muted-foreground mt-1">Comprehensive financial analytics</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleDownloadBskPdf} disabled={generatingPdf} size="sm">
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => handleDownloadBskPdf(0)} disabled={generatingPdf} variant="outline" size="sm">
             {generatingPdf ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-            {generatingPdf ? 'Generating...' : 'Download BSK Report PDF'}
+            All Users BSK PDF
+          </Button>
+          <Button onClick={() => handleDownloadBskPdf(100)} disabled={generatingPdf} size="sm">
+            {generatingPdf ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+            {generatingPdf ? 'Generating...' : '100+ BSK Users PDF'}
           </Button>
           <Button onClick={exportCSV} variant="outline" size="sm">
             <Download className="w-4 h-4 mr-2" />
