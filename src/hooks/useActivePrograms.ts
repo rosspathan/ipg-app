@@ -26,11 +26,14 @@ export function useActivePrograms() {
   const queryClient = useQueryClient();
   const offerStatus = useActivePurchaseOffersStatus();
   
-  const isLoanProgramModule = (module: any) => {
+  const REMOVED_KEYS = ['loan', 'ad_mining', 'advertising', 'lucky_draw', 'lucky-draw', 'spin_wheel', 'spin', 'insurance'];
+  
+  const isRemovedProgram = (module: any) => {
     const key = String(module?.key || '').toLowerCase();
     const name = String(module?.name || '').toLowerCase();
     const route = String(module?.route || '').toLowerCase();
-    return key.includes('loan') || name.includes('loan') || route.includes('/loans');
+    return REMOVED_KEYS.some(k => key.includes(k) || route.includes(`/${k}`)) ||
+      key.includes('loan') || name.includes('loan') || route.includes('/loans');
   };
   
   const { data: programs, isLoading, error } = useQuery({
@@ -71,7 +74,7 @@ export function useActivePrograms() {
         );
 
         // Hard-remove decommissioned loans from user-facing program lists
-        const safeModules = modules.filter((m) => !isLoanProgramModule(m));
+        const safeModules = modules.filter((m) => !isRemovedProgram(m));
 
         // Transform modules to UI format, using configs when available
         const programList = safeModules.map(module => {
@@ -142,42 +145,6 @@ export function useActivePrograms() {
   // Default fallback programs if database is empty or error
   const defaultPrograms: ActiveProgram[] = [
     {
-      id: "advertising",
-      key: "advertising",
-      name: "Ad Mining",
-      description: "Watch ads & earn",
-      icon: "Monitor",
-      badge: "DAILY",
-      badgeColor: "bg-success/20 text-success",
-      route: "/app/programs/advertising",
-      category: "earn",
-      order_index: 1
-    },
-    {
-      id: "lucky-draw",
-      key: "lucky-draw",
-      name: "Lucky Draw",
-      description: "Win big prizes",
-      icon: "Target",
-      badge: "HOT",
-      badgeColor: "bg-danger/20 text-danger",
-      route: "/app/programs/lucky-draw",
-      category: "games",
-      order_index: 2
-    },
-    {
-      id: "spin-wheel",
-      key: "spin",
-      name: "Spin Wheel",
-      description: "Daily spins",
-      icon: "Trophy",
-      badge: "LIVE",
-      badgeColor: "bg-warning/20 text-warning",
-      route: "/app/programs/spin",
-      category: "games",
-      order_index: 3
-    },
-    {
       id: "purchase",
       key: "bsk-bonus",
       name: "Purchase",
@@ -208,16 +175,6 @@ export function useActivePrograms() {
       route: "/app/programs/staking",
       category: "finance",
       order_index: 6
-    },
-    {
-      id: "insurance",
-      key: "insurance",
-      name: "Insurance",
-      description: "Protect assets",
-      icon: "Shield",
-      route: "/app/programs/insurance",
-      category: "finance",
-      order_index: 8
     },
     {
       id: "badge-subscription",
