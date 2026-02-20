@@ -3,6 +3,7 @@ import { NavigationStateManager } from "@/components/navigation/NavigationGuards
 import { AdminHeaderUnified } from "@/components/admin/unified/AdminHeaderUnified";
 import { AdminSidebarUnified } from "@/components/admin/unified/AdminSidebarUnified";
 import { AdminDockUnified } from "@/components/admin/unified/AdminDockUnified";
+import { MobileDrawerSidebar } from "@/components/admin/unified/MobileDrawerSidebar";
 import { CommandPalette } from "@/components/admin/unified/CommandPalette";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useState, useEffect } from "react";
@@ -19,6 +20,7 @@ import { useTheme } from "next-themes";
  */
 const AdminLayoutUnified = () => {
   const [commandOpen, setCommandOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { setTheme } = useTheme();
   
   // Force dark mode in admin panel
@@ -33,15 +35,24 @@ const AdminLayoutUnified = () => {
     <NavigationStateManager>
       <SidebarProvider defaultOpen={true}>
         <div className="flex min-h-screen w-full bg-[hsl(240_35%_7%)] text-foreground">
-          {/* Desktop Sidebar - Hidden on mobile */}
-          <div className="hidden md:block">
+          {/* Desktop Sidebar - Hidden on mobile/tablet */}
+          <div className="hidden lg:block">
             <AdminSidebarUnified />
           </div>
+
+          {/* Mobile Drawer Sidebar - slides in on lg:hidden */}
+          <MobileDrawerSidebar
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+          />
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Header - Always visible */}
-            <AdminHeaderUnified onCommandOpen={() => setCommandOpen(true)} />
+            <AdminHeaderUnified
+              onCommandOpen={() => setCommandOpen(true)}
+              onMobileMenuOpen={() => setMobileMenuOpen(true)}
+            />
 
             {/* Page Content - Scrollable */}
             <main className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -57,7 +68,7 @@ const AdminLayoutUnified = () => {
           </div>
 
           {/* Mobile Bottom Dock - Hidden on desktop, fixed position */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <AdminDockUnified onCommandOpen={() => setCommandOpen(true)} />
           </div>
 
