@@ -315,10 +315,10 @@ export function WalletPage() {
               label: "Swap",
               icon: ArrowLeftRight,
               route: "/app/swap",
-              iconColor: "text-secondary",
-              bgColor: "bg-secondary/10",
-              borderColor: "border-secondary/20",
-              glowColor: "hover:shadow-[0_0_16px_hsl(245_80%_68%/0.2)]"
+              iconColor: "text-accent",
+              bgColor: "bg-accent/10",
+              borderColor: "border-accent/20",
+              glowColor: "hover:shadow-[0_0_16px_hsl(var(--accent)/0.2)]"
             },
             {
               label: "History",
