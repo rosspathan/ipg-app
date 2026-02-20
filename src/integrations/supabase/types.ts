@@ -7620,6 +7620,24 @@ export type Database = {
         }
         Relationships: []
       }
+      order_rate_limits: {
+        Row: {
+          order_count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          order_count?: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          order_count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount: number
@@ -11122,6 +11140,9 @@ export type Database = {
         Row: {
           admin_fee_wallet: string | null
           auto_matching_enabled: boolean
+          auto_withdrawal_batch_size: number
+          auto_withdrawal_enabled: boolean
+          auto_withdrawal_threshold: number
           circuit_breaker_active: boolean
           created_at: string
           id: string
@@ -11139,6 +11160,9 @@ export type Database = {
         Insert: {
           admin_fee_wallet?: string | null
           auto_matching_enabled?: boolean
+          auto_withdrawal_batch_size?: number
+          auto_withdrawal_enabled?: boolean
+          auto_withdrawal_threshold?: number
           circuit_breaker_active?: boolean
           created_at?: string
           id?: string
@@ -11156,6 +11180,9 @@ export type Database = {
         Update: {
           admin_fee_wallet?: string | null
           auto_matching_enabled?: boolean
+          auto_withdrawal_batch_size?: number
+          auto_withdrawal_enabled?: boolean
+          auto_withdrawal_threshold?: number
           circuit_breaker_active?: boolean
           created_at?: string
           id?: string
@@ -11268,6 +11295,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trading_pair_settings: {
+        Row: {
+          circuit_breaker_percent: number
+          circuit_breaker_window_minutes: number
+          created_at: string
+          id: string
+          is_active: boolean
+          max_order_size: number | null
+          max_orders_per_level: number
+          min_order_size: number
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          circuit_breaker_percent?: number
+          circuit_breaker_window_minutes?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_order_size?: number | null
+          max_orders_per_level?: number
+          min_order_size?: number
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          circuit_breaker_percent?: number
+          circuit_breaker_window_minutes?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_order_size?: number | null
+          max_orders_per_level?: number
+          min_order_size?: number
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       trading_pairs: {
         Row: {
@@ -13655,7 +13721,12 @@ export type Database = {
         Args: { p_phone_number: string; p_user_id?: string }
         Returns: Json
       }
+      check_pair_circuit_breaker: {
+        Args: { p_symbol: string; p_trade_price: number }
+        Returns: Json
+      }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
+      cleanup_order_rate_limits: { Args: never; Returns: undefined }
       clone_program_module: {
         Args: {
           p_module_id: string
