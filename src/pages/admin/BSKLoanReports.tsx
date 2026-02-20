@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthAdmin } from "@/hooks/useAuthAdmin";
 import { format, parseISO } from "date-fns";
 import {
   Search, Download, FileText, Users, DollarSign,
@@ -44,15 +45,20 @@ export default function BSKLoanReports() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedLoan, setExpandedLoan] = useState<string | null>(null);
+  const { user, isAdmin, loading: authLoading } = useAuthAdmin();
 
-  const { data: loans = [], isLoading } = useQuery<LoanRecord[]>({
-    queryKey: ["admin-bsk-loan-reports"],
+  const { data: loans = [], isLoading, error: loansError } = useQuery<LoanRecord[]>({
+    queryKey: ["admin-bsk-loan-reports", user?.id],
+    // Only fetch when admin session is confirmed
+    enabled: !!user && isAdmin && !authLoading,
+
     queryFn: async () => {
       // Query the correct table: bsk_loans (not bsk_loan_applications)
       const { data: loanData, error } = await supabase
         .from("bsk_loans")
         .select("id, loan_number, user_id, principal_bsk, paid_bsk, outstanding_bsk, total_due_bsk, tenor_weeks, status, applied_at")
         .order("applied_at", { ascending: false });
+      console.log("[BSKLoanReports] bsk_loans result:", { count: loanData?.length, error });
       if (error) throw error;
 
       // Fetch installment counts per loan
@@ -225,8 +231,17 @@ export default function BSKLoanReports() {
     { label: "Outstanding", value: `${fmt(totalPending)} BSK`, icon: BarChart3, color: "text-[hsl(0_70%_60%)]" },
   ];
 
+  if (authLoading) {
+    return <div className="flex items-center justify-center h-64 text-[hsl(240_10%_50%)]">Verifying admin session…</div>;
+  }
+
   return (
     <div className="space-y-5 pb-6">
+      {loansError && (
+        <div className="border border-destructive/30 rounded-xl p-4 text-destructive text-sm bg-destructive/10">
+          Error loading loans: {(loansError as any)?.message || "Unknown error"}
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
