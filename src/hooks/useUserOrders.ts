@@ -62,16 +62,18 @@ export const useUserOrders = (symbol?: string) => {
         let errorMessage = error.message || 'Failed to place order';
         
         // Try to parse error body for detailed message
-        if (error.context?.body) {
-          try {
-            const bodyText = await error.context.body.text?.() || error.context.body;
-            const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
-            if (parsed?.error) {
-              errorMessage = parsed.error;
-            }
-          } catch {
-            // Keep original error message if parsing fails
+        try {
+          const bodyText = error.context?.body
+            ? (typeof error.context.body.text === 'function' 
+                ? await error.context.body.text() 
+                : String(error.context.body))
+            : null;
+          if (bodyText) {
+            const parsed = JSON.parse(bodyText);
+            if (parsed?.error) errorMessage = parsed.error;
           }
+        } catch {
+          // Keep original error message if parsing fails
         }
         
         throw new Error(errorMessage);
