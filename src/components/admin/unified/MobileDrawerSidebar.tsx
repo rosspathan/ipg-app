@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
 import {
   LayoutDashboard, Users, FolderKanban, TrendingUp, Settings, Shield,
-  Wallet, FileText, DollarSign, Bell, BarChart3, Database, Coins, Gift,
+  Wallet, FileText, DollarSign, Bell, BarChart3, Database, Coins,
   Crown, AlertTriangle, Link as LinkIcon, Activity, ClipboardList, Key,
-  ChevronDown, X,
+  ChevronDown, X, FileBarChart, ScrollText, Download,
 } from "lucide-react";
 
 interface NavItem {
@@ -49,6 +49,13 @@ const systemNav: NavItem[] = [
   { title: "Hot Wallet", url: "/admin/generate-hot-wallet", icon: Key },
   { title: "Migration Wallet", url: "/admin/migration-hot-wallet", icon: Coins },
   { title: "Settings", url: "/admin/settings", icon: Settings },
+];
+
+const reportsNav: NavItem[] = [
+  { title: "Migration Reports", url: "/admin/bsk-migration-reports", icon: FileBarChart },
+  { title: "Loan Reports", url: "/admin/bsk-loan-reports", icon: ScrollText },
+  { title: "Loan Audit", url: "/admin/loan-audit", icon: BarChart3 },
+  { title: "Export Center", url: "/admin/reports", icon: Download },
 ];
 
 interface SectionProps {
@@ -205,8 +212,8 @@ export function MobileDrawerSidebar({ open, onClose }: MobileDrawerSidebarProps)
             defaultOpen={true}
           />
           <NavSection
-            label="System"
-            items={systemNav}
+            label="BSK Reports"
+            items={reportsNav}
             location={location}
             onNavigate={handleNavigate}
             defaultOpen={false}
@@ -216,3 +223,4 @@ export function MobileDrawerSidebar({ open, onClose }: MobileDrawerSidebarProps)
     </>
   );
 }
+

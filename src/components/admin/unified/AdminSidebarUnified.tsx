@@ -19,6 +19,9 @@ import {
   Activity,
   ClipboardList,
   Key,
+  FileBarChart,
+  ScrollText,
+  Download,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -63,6 +66,13 @@ const managementNav: NavItem[] = [
   { title: "Insurance", url: "/admin/insurance", icon: FileText },
   { title: "Loans", url: "/admin/bsk-loans", icon: DollarSign },
   { title: "Badges", url: "/admin/badges", icon: Crown },
+];
+
+const reportsNav: NavItem[] = [
+  { title: "Migration Reports", url: "/admin/bsk-migration-reports", icon: FileBarChart },
+  { title: "Loan Reports", url: "/admin/bsk-loan-reports", icon: ScrollText },
+  { title: "Loan Audit", url: "/admin/loan-audit", icon: BarChart3 },
+  { title: "Export Center", url: "/admin/reports", icon: Download },
 ];
 
 const systemNav: NavItem[] = [
@@ -180,6 +190,29 @@ export function AdminSidebarUnified() {
           <SidebarGroupContent>
             <SidebarMenu>
               {systemNav.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} className={getNavClassName(item.url)}>
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* BSK Reports Section */}
+        <SidebarGroup>
+          {!collapsed && (
+            <SidebarGroupLabel className="text-[hsl(240_10%_50%)] uppercase text-xs font-semibold px-3 py-2">
+              BSK Reports
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {reportsNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClassName(item.url)}>
