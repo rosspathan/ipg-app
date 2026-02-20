@@ -10,14 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
-
-// Extend jsPDF with autotable
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import autoTable from "jspdf-autotable";
 
 interface MigrationRecord {
   user_id: string;
@@ -153,7 +146,7 @@ export default function BSKMigrationReports() {
     doc.text(`Total Users: ${totalUsers}  |  Total Migrated: ${fmt(totalMigrated)} BSK  |  Fees: ${fmt(totalFees)} BSK`, 100, 22);
 
     // Table
-    doc.autoTable({
+    autoTable(doc, {
       startY: 36,
       head: [["#", "User ID", "Email", "Username", "Wallet", "Migrated BSK", "Fee BSK", "Net BSK", "Status", "Date"]],
       body: filtered.map((r, i) => [

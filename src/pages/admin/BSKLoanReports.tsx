@@ -11,13 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
-
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import autoTable from "jspdf-autotable";
 
 interface LoanRecord {
   id: string;
@@ -170,7 +164,7 @@ export default function BSKLoanReports() {
     doc.text(`Generated: ${now}`, 14, 22);
     doc.text(`Total: ${loans.length} loans  |  Issued: ${fmt(totalIssued)} BSK  |  Collected: ${fmt(totalCollected)} BSK  |  Pending: ${fmt(totalPending)} BSK`, 80, 22);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 36,
       head: [["#", "User", "Email", "Loan (BSK)", "EMI", "Duration", "Status", "Paid", "Outstanding", "Applied"]],
       body: filtered.map((l, i) => [
