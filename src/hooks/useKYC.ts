@@ -66,11 +66,16 @@ export const useKYC = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
+      // Generate a signed URL (valid for 1 hour) — bucket is private
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('kyc')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      return data.publicUrl;
+      if (signedError || !signedData?.signedUrl) {
+        throw new Error('Failed to generate document URL');
+      }
+
+      return signedData.signedUrl;
     } catch (error) {
       console.error('Error uploading file:', error);
       toast({
