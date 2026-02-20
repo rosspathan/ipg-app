@@ -1,5 +1,5 @@
 import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
-import { Search, User } from "lucide-react";
+import { Search, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar, SidebarTrigger } from "@/components/ui/sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -16,6 +16,7 @@ import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCen
 
 interface AdminHeaderUnifiedProps {
   onCommandOpen: () => void;
+  onMobileMenuOpen?: () => void;
 }
 
 const getBreadcrumbs = (pathname: string) => {
@@ -38,7 +39,7 @@ const getBreadcrumbs = (pathname: string) => {
   return breadcrumbs;
 };
 
-export function AdminHeaderUnified({ onCommandOpen }: AdminHeaderUnifiedProps) {
+export function AdminHeaderUnified({ onCommandOpen, onMobileMenuOpen }: AdminHeaderUnifiedProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = useSidebar();
@@ -64,20 +65,31 @@ export function AdminHeaderUnified({ onCommandOpen }: AdminHeaderUnifiedProps) {
       }}
     >
       <div className="flex items-center justify-between h-16 px-4 gap-3">
-        {/* Left: Sidebar Trigger (desktop) + Mobile Logo */}
+        {/* Left: Hamburger (mobile) + Sidebar Trigger (desktop) + Logo/Breadcrumbs */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Mobile: Hamburger menu button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMobileMenuOpen}
+            className="lg:hidden h-10 w-10 text-[hsl(240_10%_70%)] hover:text-[hsl(0_0%_98%)] hover:bg-[hsl(235_28%_18%)] shrink-0"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
           {/* Desktop: Sidebar trigger */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <SidebarTrigger />
           </div>
           
-          {/* Mobile: Logo + Menu */}
-          <div className="md:hidden flex items-center gap-3">
+          {/* Mobile: Logo */}
+          <div className="lg:hidden flex items-center">
             <BrandLogoBlink className="shrink-0" />
           </div>
 
           {/* Breadcrumbs - Hidden on mobile */}
-          <div className="hidden md:flex items-center gap-3 min-w-0">
+          <div className="hidden lg:flex items-center gap-3 min-w-0">
             <div className="h-6 w-px bg-[hsl(235_20%_22%/0.12)]" />
             <Breadcrumb>
               <BreadcrumbList>
