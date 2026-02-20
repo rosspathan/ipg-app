@@ -12,18 +12,6 @@ import { useNavigate } from "react-router-dom";
 import { useAdminDashboardData } from "@/hooks/useAdminDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-/**
- * Unified Admin Dashboard - World-Class Overview
- * 
- * Features:
- * - Critical alerts at top
- * - 4 key metrics with sparklines
- * - Pending action queues
- * - Quick actions grid
- * - Program health stats
- * - Real-time activity feed
- * - User growth chart
- */
 export default function AdminDashboardUnified() {
   const navigate = useNavigate();
   const { data, loading, refetch } = useAdminDashboardData();
@@ -45,22 +33,20 @@ export default function AdminDashboardUnified() {
   }
 
   const { kpiMetrics, queues, programHealth, recentActivity } = data;
-
-  // Critical alerts - show if any queue has high count
   const criticalAlerts = queues.filter(q => q.count > 10 || q.variant === "danger");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Critical Alerts Banner */}
       {criticalAlerts.length > 0 && (
         <CleanCard padding="md" className="border-l-4 border-l-[hsl(0_70%_68%)] bg-[hsl(0_70%_68%/0.05)]">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-[hsl(0_70%_68%)] shrink-0 mt-0.5" />
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-semibold text-[hsl(0_0%_98%)] mb-1">
                 Critical Actions Required
               </h3>
-              <p className="text-xs text-[hsl(240_10%_70%)]">
+              <p className="text-xs text-[hsl(240_10%_70%)] leading-relaxed">
                 {criticalAlerts.map(a => `${a.count} ${a.title}`).join(", ")} need immediate attention
               </p>
             </div>
@@ -68,8 +54,8 @@ export default function AdminDashboardUnified() {
         </CleanCard>
       )}
 
-      {/* Top KPIs with Sparklines */}
-      <CleanGrid cols={4} gap="md">
+      {/* Top KPIs — 2 cols mobile, 4 cols desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {kpiMetrics.map((metric, index) => (
           <CleanMetricCard
             key={metric.label}
@@ -79,68 +65,63 @@ export default function AdminDashboardUnified() {
             icon={[Users, Shield, DollarSign, Wallet][index]}
           />
         ))}
-      </CleanGrid>
+      </div>
 
       {/* User Growth Chart */}
       {kpiMetrics[0].sparkline && (
         <CleanCard padding="lg">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-[hsl(0_0%_98%)]">User Growth Trend</h3>
-            <button
-              onClick={refetch}
-              className="text-xs text-[hsl(262_100%_65%)] hover:underline"
-            >
-              Refresh Data
+            <h3 className="text-sm sm:text-base font-bold text-[hsl(0_0%_98%)]">User Growth Trend</h3>
+            <button onClick={refetch} className="text-xs text-[hsl(262_100%_65%)] hover:underline">
+              Refresh
             </button>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={160}>
             <LineChart
-              data={kpiMetrics[0].sparkline?.map((value, idx) => ({
-                day: `Day ${idx + 1}`,
-                value,
-              }))}
+              data={kpiMetrics[0].sparkline?.map((value, idx) => ({ day: `D${idx + 1}`, value }))}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(235_20%_22%/0.2)" />
-              <XAxis dataKey="day" stroke="hsl(240_10%_70%)" fontSize={12} />
-              <YAxis stroke="hsl(240_10%_70%)" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(235 20% 22% / 0.2)" />
+              <XAxis dataKey="day" stroke="hsl(240 10% 70%)" tick={{ fontSize: 10 }} />
+              <YAxis stroke="hsl(240 10% 70%)" tick={{ fontSize: 10 }} width={30} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "hsl(235_28%_13%)",
-                  border: "1px solid hsl(235_20%_22%/0.4)",
+                  backgroundColor: "hsl(235 28% 13%)",
+                  border: "1px solid hsl(235 20% 22% / 0.4)",
                   borderRadius: "8px",
-                  color: "hsl(0_0%_98%)",
+                  color: "hsl(0 0% 98%)",
+                  fontSize: "12px",
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="hsl(262_100%_65%)"
-                strokeWidth={3}
-                dot={{ fill: "hsl(262_100%_65%)", r: 4 }}
-                activeDot={{ r: 6 }}
+                stroke="hsl(262 100% 65%)"
+                strokeWidth={2}
+                dot={{ fill: "hsl(262 100% 65%)", r: 3 }}
+                activeDot={{ r: 5 }}
               />
             </LineChart>
           </ResponsiveContainer>
         </CleanCard>
       )}
 
-      {/* Two-Column Layout: Left (Queues + Activity) | Right (Actions + Health) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - 66% width */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* NEW: User Quick Access - Import will be added */}
-          <UserQuickAccessCard 
-            maxHeight="400px"
+      {/* Main Grid — stacked on mobile, 3-col on large screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <UserQuickAccessCard
+            maxHeight="360px"
             showRecentUsers={true}
             showQuickStats={true}
           />
-          {/* Pending Action Queues */}
+
+          {/* Pending Actions */}
           <div>
-            <h2 className="text-lg font-bold text-[hsl(0_0%_98%)] mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[hsl(262_100%_65%)]" />
+            <h2 className="text-sm sm:text-base font-bold text-[hsl(0_0%_98%)] mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[hsl(262_100%_65%)]" />
               Pending Actions
             </h2>
-            <CleanGrid cols={1} gap="sm">
+            <div className="space-y-2">
               {queues.map((queue) => (
                 <QueueCard
                   key={queue.title}
@@ -160,13 +141,13 @@ export default function AdminDashboardUnified() {
                   actionLabel="Review"
                 />
               ))}
-            </CleanGrid>
+            </div>
           </div>
 
-          {/* Real-Time Activity Feed */}
+          {/* Live Activity */}
           <div>
-            <h2 className="text-lg font-bold text-[hsl(0_0%_98%)] mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-[hsl(262_100%_65%)]" />
+            <h2 className="text-sm sm:text-base font-bold text-[hsl(0_0%_98%)] mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[hsl(262_100%_65%)]" />
               Live Activity
             </h2>
             <ActivityFeed
@@ -182,30 +163,26 @@ export default function AdminDashboardUnified() {
           </div>
         </div>
 
-        {/* Right Column - 33% width */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
+        {/* Right Column */}
+        <div className="space-y-4 sm:space-y-6">
           <div>
-            <h2 className="text-lg font-bold text-[hsl(0_0%_98%)] mb-4">Quick Actions</h2>
+            <h2 className="text-sm sm:text-base font-bold text-[hsl(0_0%_98%)] mb-3">Quick Actions</h2>
             <QuickActionsGrid />
           </div>
 
-          {/* Program Health Stats */}
           <div>
-            <h2 className="text-lg font-bold text-[hsl(0_0%_98%)] mb-4">Program Health</h2>
+            <h2 className="text-sm sm:text-base font-bold text-[hsl(0_0%_98%)] mb-3">Program Health</h2>
             <ProgramHealthMini />
-            
-            {/* Additional Health Metrics */}
-            <CleanCard padding="lg" className="mt-4">
+            <CleanCard padding="md" className="mt-3">
               <div className="space-y-3">
                 {programHealth.map((stat) => (
-                  <div key={stat.label} className="flex items-center justify-between">
-                    <span className="text-sm text-[hsl(240_10%_70%)]">{stat.label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-[hsl(0_0%_98%)]">{stat.value}</span>
+                  <div key={stat.label} className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-[hsl(240_10%_70%)] truncate">{stat.label}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-xs font-bold text-[hsl(0_0%_98%)]">{stat.value}</span>
                       {stat.delta && (
-                        <span className={`text-xs ${stat.delta.trend === "up" ? "text-[hsl(152_64%_48%)]" : "text-[hsl(0_70%_68%)]"}`}>
-                          {stat.delta.trend === "up" ? "↑" : "↓"} {stat.delta.value}%
+                        <span className={`text-[10px] font-semibold ${stat.delta.trend === "up" ? "text-[hsl(152_64%_48%)]" : "text-[hsl(0_70%_68%)]"}`}>
+                          {stat.delta.trend === "up" ? "↑" : "↓"}{Math.abs(stat.delta.value)}%
                         </span>
                       )}
                     </div>
@@ -216,30 +193,22 @@ export default function AdminDashboardUnified() {
           </div>
 
           {/* System Status */}
-          <CleanCard padding="lg">
-            <h3 className="text-sm font-semibold text-[hsl(0_0%_98%)] mb-3">System Status</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[hsl(240_10%_70%)]">Database</span>
-                <div className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-[hsl(152_64%_48%)]" />
-                  <span className="text-xs text-[hsl(152_64%_48%)]">Healthy</span>
+          <CleanCard padding="md">
+            <h3 className="text-xs sm:text-sm font-semibold text-[hsl(0_0%_98%)] mb-3">System Status</h3>
+            <div className="space-y-2.5">
+              {[
+                { label: "Database", status: "Healthy" },
+                { label: "API", status: "Operational" },
+                { label: "Trading Engine", status: "Active" },
+              ].map(({ label, status }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-xs text-[hsl(240_10%_70%)]">{label}</span>
+                  <div className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-[hsl(152_64%_48%)]" />
+                    <span className="text-xs text-[hsl(152_64%_48%)]">{status}</span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[hsl(240_10%_70%)]">API</span>
-                <div className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-[hsl(152_64%_48%)]" />
-                  <span className="text-xs text-[hsl(152_64%_48%)]">Operational</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[hsl(240_10%_70%)]">Trading Engine</span>
-                <div className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-[hsl(152_64%_48%)]" />
-                  <span className="text-xs text-[hsl(152_64%_48%)]">Active</span>
-                </div>
-              </div>
+              ))}
             </div>
           </CleanCard>
         </div>
