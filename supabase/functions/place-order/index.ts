@@ -1,7 +1,12 @@
 /**
- * Place Order Edge Function - ATOMIC VERSION
- * Uses place_order_atomic RPC for guaranteed consistency
- * No orphan locks possible - lock + order creation in single transaction
+ * Place Order Edge Function - EXCHANGE GRADE v2
+ * 
+ * Enhancements:
+ * 1. Per-user rate limiting (max_orders_per_user_per_minute from trading_engine_settings)
+ * 2. Min/max order size enforcement per pair (trading_pair_settings)
+ * 3. Per-pair circuit breaker (5% per 5 min, configurable per pair)
+ * 4. Self-trade prevention (existing)
+ * 5. Atomic RPC for zero orphan locks (existing)
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -34,6 +39,12 @@ serve(async (req) => {
       }
     );
 
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
       console.error('[place-order] Auth error:', userError);
@@ -44,8 +55,6 @@ serve(async (req) => {
     const idempotencyKey = req.headers.get('idempotency-key');
     
     if (idempotencyKey) {
-      console.log('[place-order] Checking idempotency key:', idempotencyKey);
-      
       const { data: existing } = await supabaseClient
         .from('idempotency_keys')
         .select('*')
@@ -55,7 +64,7 @@ serve(async (req) => {
         .single();
       
       if (existing) {
-        console.log('[place-order] Returning cached response');
+        console.log('[place-order] Returning cached idempotent response');
         return new Response(
           JSON.stringify(existing.response_data),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -65,32 +74,94 @@ serve(async (req) => {
 
     const { symbol, side, type, quantity, price, trading_type } = await req.json();
 
-    console.log('[place-order] Order request:', { user_id: user.id, symbol, side, type, quantity, price });
+    // ================================================================
+    // BASIC INPUT VALIDATION
+    // ================================================================
+    if (!symbol) throw new Error('Please select a trading pair.');
+    if (!side || (side !== 'buy' && side !== 'sell')) throw new Error('Please select Buy or Sell.');
+    if (!type || (type !== 'market' && type !== 'limit')) throw new Error('Please select order type (Market or Limit).');
+    if (!quantity || isNaN(quantity) || quantity <= 0) throw new Error('Please enter a valid quantity greater than 0.');
+    if (type === 'limit' && (!price || isNaN(price) || price <= 0)) throw new Error('Limit orders require a price.');
 
-    // Validate inputs with user-friendly messages
-    if (!symbol) {
-      throw new Error('Please select a trading pair.');
-    }
-    if (!side || (side !== 'buy' && side !== 'sell')) {
-      throw new Error('Please select Buy or Sell.');
-    }
-    if (!type || (type !== 'market' && type !== 'limit')) {
-      throw new Error('Please select order type (Market or Limit).');
-    }
-    if (!quantity || isNaN(quantity) || quantity <= 0) {
-      throw new Error('Please enter a valid quantity greater than 0.');
-    }
-    if (type === 'limit' && (!price || isNaN(price) || price <= 0)) {
-      throw new Error('Limit orders require a price. Please enter a valid price.');
+    // ================================================================
+    // ENHANCEMENT 4: RATE LIMITING
+    // Fetch engine settings and pair settings in parallel
+    // ================================================================
+    const [engineSettingsResult, pairSettingsResult] = await Promise.all([
+      adminClient.from('trading_engine_settings').select('*').single(),
+      adminClient.from('trading_pair_settings').select('*').eq('symbol', symbol).maybeSingle(),
+    ]);
+
+    const engineSettings = engineSettingsResult.data;
+    const pairSettings = pairSettingsResult.data;
+
+    // Rate limit check using DB
+    const maxOrdersPerMinute = engineSettings?.max_orders_per_user_per_minute ?? 5;
+    const windowStart = new Date(Math.floor(Date.now() / 60000) * 60000).toISOString(); // floor to minute
+
+    const { data: rateRow, error: rateError } = await adminClient
+      .from('order_rate_limits')
+      .select('order_count')
+      .eq('user_id', user.id)
+      .eq('window_start', windowStart)
+      .maybeSingle();
+
+    const currentCount = rateRow?.order_count ?? 0;
+
+    if (currentCount >= maxOrdersPerMinute) {
+      console.warn(`[place-order] Rate limit exceeded for user ${user.id}: ${currentCount}/${maxOrdersPerMinute} orders/min`);
+      return new Response(
+        JSON.stringify({ 
+          error: `Rate limit exceeded: Maximum ${maxOrdersPerMinute} orders per minute. Please wait before placing more orders.`,
+          retry_after: 60 - (Math.floor(Date.now() / 1000) % 60)
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // SELF-TRADE PREVENTION: Reject if user has opposing orders at matching prices
+    // ================================================================
+    // ENHANCEMENT 2: MIN/MAX ORDER SIZE ENFORCEMENT
+    // ================================================================
+    if (pairSettings) {
+      const minSize = Number(pairSettings.min_order_size);
+      const maxSize = pairSettings.max_order_size ? Number(pairSettings.max_order_size) : null;
+
+      if (quantity < minSize) {
+        throw new Error(`Minimum order size for ${symbol} is ${minSize}. Your order (${quantity}) is too small.`);
+      }
+      if (maxSize && quantity > maxSize) {
+        throw new Error(`Maximum order size for ${symbol} is ${maxSize}. Your order (${quantity}) exceeds the limit.`);
+      }
+    }
+
+    // ================================================================
+    // ENHANCEMENT 3: PER-PAIR CIRCUIT BREAKER (5% / 5 min default)
+    // Only applies to limit orders where we know the price
+    // ================================================================
+    if (type === 'limit' && price && pairSettings) {
+      const { data: cbResult } = await adminClient.rpc('check_pair_circuit_breaker', {
+        p_symbol: symbol,
+        p_trade_price: price
+      });
+
+      if (cbResult && !cbResult.allowed) {
+        console.warn(`[place-order] Circuit breaker triggered for ${symbol}: ${cbResult.reason}`);
+        return new Response(
+          JSON.stringify({
+            error: cbResult.reason || `Circuit breaker active for ${symbol}. Trading halted due to excessive price movement.`,
+            circuit_breaker: true,
+            change_pct: cbResult.change_pct
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // ================================================================
+    // SELF-TRADE PREVENTION (existing logic)
+    // ================================================================
     if (type === 'limit' && price) {
       const oppositeSide = side === 'buy' ? 'sell' : 'buy';
-      // For a buy order, check if user has sell orders at or below the buy price
-      // For a sell order, check if user has buy orders at or above the sell price
-      const priceOp = side === 'buy' ? 'lte' : 'gte';
-      
       let conflictQuery = supabaseClient
         .from('orders')
         .select('id, price, remaining_amount', { count: 'exact', head: false })
@@ -112,12 +183,22 @@ serve(async (req) => {
       if (!conflictError && conflicting && conflicting.length > 0) {
         const conflictPrice = conflicting[0].price;
         throw new Error(
-          `Self-trade prevention: You already have a ${oppositeSide} order at ₮${conflictPrice} that would match this ${side} order at ₮${price}. Please cancel your existing ${oppositeSide} order first.`
+          `Self-trade prevention: You have a ${oppositeSide} order at ₮${conflictPrice} that would match this ${side} order at ₮${price}. Cancel your existing ${oppositeSide} order first.`
         );
       }
     }
 
-    // Use atomic RPC - single transaction guarantees no orphan locks
+    // ================================================================
+    // INCREMENT RATE LIMIT COUNTER (upsert)
+    // ================================================================
+    await adminClient.from('order_rate_limits').upsert(
+      { user_id: user.id, window_start: windowStart, order_count: currentCount + 1 },
+      { onConflict: 'user_id,window_start' }
+    );
+
+    // ================================================================
+    // ATOMIC ORDER PLACEMENT
+    // ================================================================
     const { data: result, error: rpcError } = await supabaseClient.rpc(
       'place_order_atomic',
       {
@@ -136,83 +217,40 @@ serve(async (req) => {
       throw new Error(`Order placement failed: ${rpcError.message}`);
     }
 
-    console.log('[place-order] Atomic RPC result:', result);
-
     if (!result?.success) {
       throw new Error(result?.error || 'Order placement failed');
     }
 
     // Fetch the created order details
-    const { data: order, error: fetchError } = await supabaseClient
+    const { data: order } = await supabaseClient
       .from('orders')
       .select('*')
       .eq('id', result.order_id)
       .single();
 
-    if (fetchError || !order) {
-      console.error('[place-order] Failed to fetch order:', fetchError);
-      // Order was created, return minimal response
-      const responseData = {
-        success: true,
-        order: {
-          id: result.order_id,
-          symbol,
-          side,
-          type,
-          quantity,
-          price: price || null,
-          status: 'pending',
-          locked_asset: result.locked_asset,
-          locked_amount: result.locked_amount,
-        },
-      };
-      
-      return new Response(
-        JSON.stringify(responseData),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('[place-order] Order created successfully:', order.id);
-
-    // Trigger matching engine
-    const matchingAdminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
+    // ================================================================
+    // TRIGGER MATCHING ENGINE
+    // ================================================================
     let matchResult = null;
     try {
-      const { data: settings } = await matchingAdminClient
-        .from('trading_engine_settings')
-        .select('auto_matching_enabled, circuit_breaker_active')
-        .single();
-      
-      console.log('[place-order] Engine settings:', settings);
-      
-      // Auto-reset circuit breaker if active — for low-liquidity markets the breaker 
-      // triggers too aggressively. The matching engine itself will re-trip it if deviation
-      // is truly excessive (90% threshold).
+      const settings = engineSettings;
+
+      // Auto-reset circuit breaker for low-liquidity markets
       if (settings?.circuit_breaker_active) {
-        console.log('[place-order] Auto-resetting circuit breaker for this matching cycle');
-        await matchingAdminClient
+        await adminClient
           .from('trading_engine_settings')
           .update({ circuit_breaker_active: false, updated_at: new Date().toISOString() })
           .eq('id', settings.id || '00000000-0000-0000-0000-000000000001');
       }
       
       if (settings?.auto_matching_enabled) {
-        console.log(`[place-order] Triggering matching engine for ${symbol}...`);
-        
-        const { data: mResult, error: matchError } = await matchingAdminClient.functions.invoke('match-orders', {
+        const { data: mResult, error: matchError } = await adminClient.functions.invoke('match-orders', {
           body: { symbol }
         });
         
         if (matchError) {
           console.error('[place-order] Matching engine error:', matchError);
         } else {
-          console.log('[place-order] Matching result:', mResult);
           matchResult = mResult;
         }
       }
@@ -220,7 +258,7 @@ serve(async (req) => {
       console.error('[place-order] Matching engine call failed:', matchErr);
     }
 
-    // Re-fetch order to get post-match status (may have been filled by matching engine)
+    // Re-fetch order to get post-match status
     const { data: updatedOrder } = await supabaseClient
       .from('orders')
       .select('*')
@@ -228,6 +266,17 @@ serve(async (req) => {
       .single();
 
     const finalOrder = updatedOrder || order;
+
+    if (!finalOrder) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          order: { id: result.order_id, symbol, side, type, quantity, price: price || null, status: 'pending' },
+          matched: 0,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const responseData = {
       success: true,
@@ -246,6 +295,11 @@ serve(async (req) => {
         locked_amount: result.locked_amount,
       },
       matched: matchResult?.matched || 0,
+      rate_limit: {
+        remaining: maxOrdersPerMinute - (currentCount + 1),
+        limit: maxOrdersPerMinute,
+        window: '1 minute'
+      }
     };
 
     // Store idempotency key
