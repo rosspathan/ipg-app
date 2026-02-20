@@ -105,7 +105,6 @@ const WithdrawScreen = () => {
   // Transform on-chain balances into the format needed for the UI
   const assets = onchainBalances
     .filter(asset => 
-      asset.symbol !== 'BSK' && 
       asset.balance >= MIN_WITHDRAWAL_BALANCE
     )
     .map(asset => ({
