@@ -21,7 +21,8 @@ import {
   RefreshCw,
   Ticket,
   CreditCard,
-  HandCoins
+  HandCoins,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -149,6 +150,14 @@ export function DockAdmin({ className }: DockAdminProps) {
       icon: DollarSign,
       onClick: () => {
         navigate("/admin/funding");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Fee Collections",
+      icon: Receipt,
+      onClick: () => {
+        navigate("/admin/fee-collections");
         setShowQuickAdd(false);
       },
     },

@@ -722,6 +722,7 @@ function AppContent() {
                 <Route path="migration-hot-wallet" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/MigrationHotWalletAdmin')))}</React.Suspense>} />
                 <Route path="fees" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminFeeDashboard')))}</React.Suspense>} />
                 <Route path="fees-simple" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminFeeDashboard')))}</React.Suspense>} />
+                <Route path="fee-collections" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminFeeCollections')))}</React.Suspense>} />
               </Route>
 
               {/* Legacy Admin Console removed */}
