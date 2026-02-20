@@ -39,21 +39,26 @@ const AdminLayoutUnified = () => {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Header - Always visible */}
             <AdminHeaderUnified onCommandOpen={() => setCommandOpen(true)} />
 
             {/* Page Content - Scrollable */}
-            <main className="flex-1 overflow-y-auto">
-              <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden">
+              <div
+                className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6"
+                style={{
+                  paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))",
+                }}
+              >
                 <Outlet />
               </div>
             </main>
+          </div>
 
-            {/* Mobile Bottom Dock - Hidden on desktop */}
-            <div className="md:hidden">
-              <AdminDockUnified onCommandOpen={() => setCommandOpen(true)} />
-            </div>
+          {/* Mobile Bottom Dock - Hidden on desktop, fixed position */}
+          <div className="md:hidden">
+            <AdminDockUnified onCommandOpen={() => setCommandOpen(true)} />
           </div>
 
           {/* Command Palette - Global keyboard shortcut */}

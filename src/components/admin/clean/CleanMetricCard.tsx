@@ -36,9 +36,9 @@ export function CleanMetricCard({
         )}
       </div>
       
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between gap-1">
         <h3 
-          className="text-2xl sm:text-3xl font-bold text-[hsl(0_0%_98%)] tracking-tight"
+          className="text-xl sm:text-2xl lg:text-3xl font-bold text-[hsl(0_0%_98%)] tracking-tight truncate"
           style={{ fontFeatureSettings: "'tnum'" }}
         >
           {value}
