@@ -41,6 +41,58 @@ interface Installment {
   status: string;
 }
 
+function InstallmentDetail({ loanLabel, installments, isLoading, fmt, installmentStatusBadge }: {
+  loanLabel: string;
+  installments: Installment[];
+  isLoading: boolean;
+  fmt: (n: number) => string;
+  installmentStatusBadge: (s: string) => string;
+}) {
+  if (isLoading) return <p className="text-xs text-[hsl(240_10%_50%)] py-2">Loading…</p>;
+  if (installments.length === 0) return <p className="text-xs text-[hsl(240_10%_50%)] py-2">No installment records found</p>;
+  return (
+    <div>
+      <p className="text-xs font-semibold text-[hsl(262_100%_72%)] mb-3 flex items-center gap-2">
+        <Clock className="h-3.5 w-3.5" />
+        Payment History – {loanLabel}
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border border-[hsl(235_20%_22%/0.20)] rounded-lg overflow-hidden">
+          <thead>
+            <tr className="bg-[hsl(235_28%_13%)] text-[hsl(240_10%_50%)]">
+              <th className="px-3 py-2 text-left">EMI #</th>
+              <th className="px-3 py-2 text-left">Due Date</th>
+              <th className="px-3 py-2 text-left">Due (BSK)</th>
+              <th className="px-3 py-2 text-left">Paid (BSK)</th>
+              <th className="px-3 py-2 text-left">Paid At</th>
+              <th className="px-3 py-2 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {installments.map((inst) => (
+              <tr key={inst.id} className="border-t border-[hsl(235_20%_22%/0.15)]">
+                <td className="px-3 py-2 text-[hsl(0_0%_80%)]">#{inst.installment_number}</td>
+                <td className="px-3 py-2 text-[hsl(240_10%_55%)]">{format(parseISO(inst.due_date), "dd MMM yyyy")}</td>
+                <td className="px-3 py-2 font-mono text-[hsl(0_0%_80%)]">{fmt(inst.total_due_bsk ?? 0)}</td>
+                <td className="px-3 py-2 font-mono text-[hsl(152_64%_55%)]">{fmt(inst.paid_bsk ?? 0)}</td>
+                <td className="px-3 py-2 text-[hsl(240_10%_55%)]">
+                  {inst.paid_at ? format(parseISO(inst.paid_at), "dd MMM yyyy HH:mm") : "—"}
+                </td>
+                <td className="px-3 py-2">
+                  <span className={`flex items-center gap-1 ${installmentStatusBadge(inst.status)}`}>
+                    {inst.status === "paid" ? <CheckCircle className="h-3 w-3" /> : inst.status === "overdue" ? <XCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                    {inst.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function BSKLoanReports() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -304,134 +356,151 @@ export default function BSKLoanReports() {
         </p>
       </div>
 
-      {/* Loans Table */}
-      <div className="bg-[hsl(235_28%_13%)] border border-[hsl(235_20%_22%/0.20)] rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[hsl(235_20%_22%/0.20)] bg-[hsl(235_28%_10%)]">
-                {["#", "Member", "Loan #", "Principal BSK", "Status", "EMI Paid", "Remaining", "Total Paid", "Outstanding", "Start Date", ""].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-[hsl(240_10%_50%)] uppercase tracking-wide whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={11} className="text-center py-12 text-[hsl(240_10%_50%)]">Loading loan data…</td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="text-center py-12 text-[hsl(240_10%_50%)]">No loan records found</td>
-                </tr>
-              ) : (
-                filtered.map((l, i) => (
-                  <>
-                    <tr
-                      key={l.id}
-                      className="border-b border-[hsl(235_20%_22%/0.10)] hover:bg-[hsl(235_28%_15%)] transition-colors"
-                    >
-                      <td className="px-4 py-3 text-[hsl(240_10%_50%)] text-xs">{i + 1}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-[hsl(0_0%_95%)] text-xs">{l.username}</p>
-                        <p className="text-[hsl(240_10%_50%)] text-[10px] truncate max-w-[130px]">{l.email}</p>
-                      </td>
-                      <td className="px-4 py-3 text-[hsl(240_10%_55%)] font-mono text-[10px]">{l.loan_number}</td>
-                      <td className="px-4 py-3 text-[hsl(0_0%_95%)] font-mono text-xs">{fmt(l.principal_bsk)}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className={`${statusBadge(l.status)} text-[10px]`}>
-                          {l.status.replace("_", " ")}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-[hsl(0_0%_95%)] text-xs">
-                        {l.installments_paid}/{l.installments_total}
-                      </td>
-                      <td className="px-4 py-3 text-[hsl(240_10%_55%)] text-xs">
-                        {Math.max(0, l.installments_total - l.installments_paid)}
-                      </td>
-                      <td className="px-4 py-3 text-[hsl(152_64%_55%)] font-mono text-xs">{fmt(l.paid_bsk)}</td>
-                      <td className="px-4 py-3 text-[hsl(0_70%_65%)] font-mono text-xs">{fmt(l.outstanding_bsk)}</td>
-                      <td className="px-4 py-3 text-[hsl(240_10%_55%)] text-xs whitespace-nowrap">
-                        {format(parseISO(l.applied_at), "dd MMM yy")}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => setExpandedLoan(expandedLoan === l.id ? null : l.id)}
-                          className="flex items-center gap-1 text-[hsl(262_100%_72%)] text-[10px] font-medium hover:text-[hsl(262_100%_85%)] transition-colors whitespace-nowrap"
-                        >
-                          {expandedLoan === l.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                          History
-                        </button>
-                      </td>
-                    </tr>
-
-                    {/* Expandable Payment History */}
-                    {expandedLoan === l.id && (
-                      <tr key={`${l.id}-expanded`} className="bg-[hsl(235_28%_10%)]">
-                        <td colSpan={11} className="px-4 py-4">
-                          <p className="text-xs font-semibold text-[hsl(262_100%_72%)] mb-3 flex items-center gap-2">
-                            <Clock className="h-3.5 w-3.5" />
-                            Payment History – {l.username} ({l.loan_number})
-                          </p>
-                          {installmentsLoading ? (
-                            <p className="text-xs text-[hsl(240_10%_50%)]">Loading…</p>
-                          ) : installments.length === 0 ? (
-                            <p className="text-xs text-[hsl(240_10%_50%)]">No installment records found</p>
-                          ) : (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-xs border border-[hsl(235_20%_22%/0.20)] rounded-lg overflow-hidden">
-                                <thead>
-                                  <tr className="bg-[hsl(235_28%_13%)] text-[hsl(240_10%_50%)]">
-                                    <th className="px-3 py-2 text-left">EMI #</th>
-                                    <th className="px-3 py-2 text-left">Due Date</th>
-                                    <th className="px-3 py-2 text-left">Due (BSK)</th>
-                                    <th className="px-3 py-2 text-left">Paid (BSK)</th>
-                                    <th className="px-3 py-2 text-left">Paid At</th>
-                                    <th className="px-3 py-2 text-left">Status</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {installments.map((inst) => (
-                                    <tr key={inst.id} className="border-t border-[hsl(235_20%_22%/0.15)]">
-                                      <td className="px-3 py-2 text-[hsl(0_0%_80%)]">#{inst.installment_number}</td>
-                                      <td className="px-3 py-2 text-[hsl(240_10%_55%)]">
-                                        {format(parseISO(inst.due_date), "dd MMM yyyy")}
-                                      </td>
-                                      <td className="px-3 py-2 font-mono text-[hsl(0_0%_80%)]">{fmt(inst.total_due_bsk ?? 0)}</td>
-                                      <td className="px-3 py-2 font-mono text-[hsl(152_64%_55%)]">{fmt(inst.paid_bsk ?? 0)}</td>
-                                      <td className="px-3 py-2 text-[hsl(240_10%_55%)]">
-                                        {inst.paid_at ? format(parseISO(inst.paid_at), "dd MMM yyyy HH:mm") : "—"}
-                                      </td>
-                                      <td className="px-3 py-2">
-                                        <span className={`flex items-center gap-1 ${installmentStatusBadge(inst.status)}`}>
-                                          {inst.status === "paid" ? (
-                                            <CheckCircle className="h-3 w-3" />
-                                          ) : inst.status === "overdue" ? (
-                                            <XCircle className="h-3 w-3" />
-                                          ) : (
-                                            <Clock className="h-3 w-3" />
-                                          )}
-                                          {inst.status}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
+      {/* Loans — Desktop Table / Mobile Cards */}
+      {isLoading ? (
+        <div className="text-center py-12 text-[hsl(240_10%_50%)]">Loading loan data…</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-[hsl(240_10%_50%)]">No loan records found</div>
+      ) : (
+        <>
+          {/* ── Desktop Table (hidden on mobile) ── */}
+          <div className="hidden md:block bg-[hsl(235_28%_13%)] border border-[hsl(235_20%_22%/0.20)] rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[hsl(235_20%_22%/0.20)] bg-[hsl(235_28%_10%)]">
+                    {["#", "Member", "Loan #", "Principal BSK", "Status", "EMI Paid", "Total Paid", "Outstanding", "Date", ""].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-[hsl(240_10%_50%)] uppercase tracking-wide whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((l, i) => (
+                    <>
+                      <tr key={l.id} className="border-b border-[hsl(235_20%_22%/0.10)] hover:bg-[hsl(235_28%_15%)] transition-colors">
+                        <td className="px-4 py-3 text-[hsl(240_10%_50%)] text-xs">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-[hsl(0_0%_95%)] text-xs">{l.username}</p>
+                          <p className="text-[hsl(240_10%_50%)] text-[10px] truncate max-w-[130px]">{l.email}</p>
+                        </td>
+                        <td className="px-4 py-3 text-[hsl(240_10%_55%)] font-mono text-[10px]">{l.loan_number}</td>
+                        <td className="px-4 py-3 text-[hsl(0_0%_95%)] font-mono text-xs">{fmt(l.principal_bsk)}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className={`${statusBadge(l.status)} text-[10px]`}>
+                            {l.status.replace("_", " ")}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-[hsl(0_0%_95%)] text-xs">
+                          {l.installments_paid}/{l.installments_total}
+                        </td>
+                        <td className="px-4 py-3 text-[hsl(152_64%_55%)] font-mono text-xs">{fmt(l.paid_bsk)}</td>
+                        <td className="px-4 py-3 text-[hsl(0_70%_65%)] font-mono text-xs">{fmt(l.outstanding_bsk)}</td>
+                        <td className="px-4 py-3 text-[hsl(240_10%_55%)] text-xs whitespace-nowrap">
+                          {format(parseISO(l.applied_at), "dd MMM yy")}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => setExpandedLoan(expandedLoan === l.id ? null : l.id)}
+                            className="flex items-center gap-1 text-[hsl(262_100%_72%)] text-[10px] font-medium hover:text-[hsl(262_100%_85%)] transition-colors whitespace-nowrap"
+                          >
+                            {expandedLoan === l.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                            History
+                          </button>
                         </td>
                       </tr>
+                      {expandedLoan === l.id && (
+                        <tr key={`${l.id}-exp`} className="bg-[hsl(235_28%_10%)]">
+                          <td colSpan={10} className="px-4 py-4">
+                            <InstallmentDetail
+                              loanLabel={`${l.username} (${l.loan_number})`}
+                              installments={installments}
+                              isLoading={installmentsLoading}
+                              fmt={fmt}
+                              installmentStatusBadge={installmentStatusBadge}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Mobile Cards (hidden on md+) ── */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((l, i) => (
+              <div
+                key={l.id}
+                className="bg-[hsl(235_28%_13%)] border border-[hsl(235_20%_22%/0.20)] rounded-xl overflow-hidden"
+              >
+                {/* Card Header */}
+                <div className="flex items-start justify-between px-4 pt-4 pb-3 border-b border-[hsl(235_20%_22%/0.15)]">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[hsl(0_0%_95%)] truncate">{l.username}</p>
+                    <p className="text-[10px] text-[hsl(240_10%_50%)] truncate mt-0.5">{l.loan_number}</p>
+                  </div>
+                  <Badge variant="outline" className={`${statusBadge(l.status)} text-[10px] shrink-0 ml-2`}>
+                    {l.status.replace("_", " ")}
+                  </Badge>
+                </div>
+
+                {/* Card Body */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 px-4 py-3">
+                  <div>
+                    <p className="text-[10px] text-[hsl(240_10%_45%)] uppercase tracking-wide">Principal</p>
+                    <p className="text-sm font-mono font-semibold text-[hsl(0_0%_95%)]">{fmt(l.principal_bsk)} BSK</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[hsl(240_10%_45%)] uppercase tracking-wide">EMI Progress</p>
+                    <p className="text-sm font-semibold text-[hsl(0_0%_95%)]">
+                      {l.installments_paid}
+                      <span className="text-[hsl(240_10%_50%)] text-xs font-normal"> / {l.installments_total}</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[hsl(240_10%_45%)] uppercase tracking-wide">Total Paid</p>
+                    <p className="text-sm font-mono font-semibold text-[hsl(152_64%_55%)]">{fmt(l.paid_bsk)} BSK</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[hsl(240_10%_45%)] uppercase tracking-wide">Outstanding</p>
+                    <p className="text-sm font-mono font-semibold text-[hsl(0_70%_65%)]">{fmt(l.outstanding_bsk)} BSK</p>
+                  </div>
+                </div>
+
+                {/* View History toggle */}
+                <div className="px-4 pb-3">
+                  <button
+                    onClick={() => setExpandedLoan(expandedLoan === l.id ? null : l.id)}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-[hsl(262_100%_65%/0.10)] border border-[hsl(262_100%_65%/0.20)] text-[hsl(262_100%_72%)] text-xs font-medium hover:bg-[hsl(262_100%_65%/0.18)] transition-colors"
+                  >
+                    {expandedLoan === l.id ? (
+                      <><ChevronUp className="h-3.5 w-3.5" /> Hide Payment History</>
+                    ) : (
+                      <><ChevronDown className="h-3.5 w-3.5" /> View Payment History</>
                     )}
-                  </>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  </button>
+
+                  {expandedLoan === l.id && (
+                    <div className="mt-3">
+                      <InstallmentDetail
+                        loanLabel={`${l.username} (${l.loan_number})`}
+                        installments={installments}
+                        isLoading={installmentsLoading}
+                        fmt={fmt}
+                        installmentStatusBadge={installmentStatusBadge}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

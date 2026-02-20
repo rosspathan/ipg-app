@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import { NavigationStateManager } from "@/components/navigation/NavigationGuards";
 import { AdminHeaderUnified } from "@/components/admin/unified/AdminHeaderUnified";
 import { AdminSidebarUnified } from "@/components/admin/unified/AdminSidebarUnified";
-import { AdminDockUnified } from "@/components/admin/unified/AdminDockUnified";
+
 import { MobileDrawerSidebar } from "@/components/admin/unified/MobileDrawerSidebar";
 import { CommandPalette } from "@/components/admin/unified/CommandPalette";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -67,10 +67,7 @@ const AdminLayoutUnified = () => {
             </main>
           </div>
 
-          {/* Mobile Bottom Dock - Hidden on desktop, fixed position */}
-          <div className="lg:hidden">
-            <AdminDockUnified onCommandOpen={() => setCommandOpen(true)} />
-          </div>
+          {/* Mobile Bottom Dock is intentionally removed from admin — sidebar-only navigation */}
 
           {/* Command Palette - Global keyboard shortcut */}
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
