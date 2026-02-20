@@ -246,15 +246,9 @@ export function WalletPage() {
             <div>
               <p
                 className={cn(
-                  "text-[36px] font-extrabold tabular-nums font-heading leading-none transition-all duration-300",
+                  "balance-gradient-text text-[36px] font-extrabold tabular-nums font-heading leading-none transition-all duration-300",
                   hideBalance && "blur-sm select-none"
                 )}
-                style={{
-                  background: 'linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(186 100% 75%) 60%, hsl(245 80% 80%) 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
               >
                 {portfolioLoading || onchainLoading ? '...' : hideBalance ? '••••••' : formatCurrency(portfolio?.total_usd || 0)}
               </p>
@@ -532,15 +526,7 @@ export function WalletPage() {
           </div>
           <div className="flex items-center gap-2">
             {tradingTotalUsd > 0 && (
-              <span
-                className="text-[12px] font-bold tabular-nums font-mono"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(0 0% 98%), hsl(186 100% 75%))',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
+              <span className="balance-gradient-text text-[12px] font-bold tabular-nums font-mono">
                 ${tradingTotalUsd.toFixed(2)}
               </span>
             )}
