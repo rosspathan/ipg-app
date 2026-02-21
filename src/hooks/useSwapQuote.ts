@@ -243,7 +243,7 @@ export function useSwapQuote(
       return {
         route,
         estimatedOutput: 0,
-        platformFeePercent: route?.type === '2hop' ? 0.15 : 0.1,
+        platformFeePercent: 0.5,
         platformFeeAmount: 0,
         minReceive: 0,
         priceImpact: 0,
@@ -254,7 +254,7 @@ export function useSwapQuote(
       };
     }
 
-    const feePercent = route.type === '2hop' ? 0.15 : 0.1;
+    const feePercent = 0.5;
     const grossOutput = amount * route.rate;
     const feeAmount = grossOutput * (feePercent / 100);
     const estimatedOutput = grossOutput - feeAmount;

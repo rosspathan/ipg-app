@@ -164,7 +164,7 @@ serve(async (req) => {
     }
 
     // 4. Calculate output with server-side fee deduction
-    const feePercent = routeType === '2hop' ? 0.0015 : 0.001 // 0.15% or 0.1%
+    const feePercent = 0.005 // 0.5% flat fee
     const grossOutput = amount * currentRate
     const feeAmount = grossOutput * feePercent
     const netOutput = grossOutput - feeAmount
