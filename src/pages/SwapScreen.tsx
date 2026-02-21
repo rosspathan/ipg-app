@@ -340,7 +340,7 @@ export default function SwapScreen() {
               {quote.route?.type === '2hop' && (
                 <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/50 text-xs text-muted-foreground">
                   <Info className="h-3 w-3 shrink-0" />
-                  2-hop route via {quote.route.path[1]} — slightly higher fee applies
+                  2-hop route via {quote.route.path[1]}
                 </div>
               )}
             </CardContent>
