@@ -1,216 +1,139 @@
 
-# Wallet Page UI — World-Class Web3 Enhancement Plan
+# Swap Module Overhaul: Connect to Real Market Prices and Atomic Execution
 
-## Route & File Confirmed
+## Current State (Problems)
 
-- **Current route**: `/app/wallet` → `src/pages/astra/HomePageRebuilt.tsx`
-- The user is referring to the **HomePageRebuilt** component — the BSK balance hub with Tradable/Locked cards, USDI Loan, Markets, Programs grid, and Activity feed.
+1. **Pricing is completely fake**: The swap uses `useFX.convert()` which has hardcoded static rates (BTC=$45,000, ETH=$2,500, IPG=$0.05). Meanwhile, your `market_prices` table has real live prices (IPG/USDT=$600, BSK/USDT=$0.045) updated by the trading engine and price fetcher. The swap module ignores all of this.
 
----
+2. **Execution is non-atomic**: The `execute-swap` edge function does sequential `UPDATE` calls to `wallet_balances`. If any step fails mid-way, balances become inconsistent with no rollback.
 
-## Full Audit of Current State
+3. **Fees are UI-only**: The 0.1%/0.15% fees are calculated in the frontend but the backend (`execute-swap`) never deducts them -- it just uses `estimated_rate * from_amount` directly.
 
-### 1. Hero Balance Section (lines 86–148)
-- **Good already**: Ambient orb glows exist (`radial-gradient` orbs), balance text uses `bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text`, hide/show toggle works.
-- **Gaps**:
-  - The balance gradient is `from-foreground via-foreground to-primary` — in light mode, `foreground` is navy and `primary` is blue, so the gradient is nearly flat and low-drama.
-  - No `.balance-gradient-text` utility class used here (unlike WalletPage) — theme switching is not handled properly.
-  - "Welcome back" label is plain `text-primary/80` with no letter-spacing or visual treatment.
-  - Today's earnings dot has a glow (`shadow-[0_0_6px_...]`) which is good — but the text itself is plain.
-  - Action buttons (`Add Funds`, `Send`, `Swap`) use `border-primary/15` which is very faint in light mode — almost invisible borders.
-  - No per-action color identity (all three share `text-primary` icon color).
+4. **MAX button is hardcoded to 1000** instead of fetching the user's actual balance.
 
-### 2. Tradable & Locked Cards (lines 151–197)
-- **Good**: `glass-card`, `rounded-3xl`, hover elevation (`hover:shadow-elevated hover:-translate-y-0.5`).
-- **Gaps**:
-  - Both cards use identical `border-primary/15` — no color differentiation (Tradable should be success-tinted, Locked should be primary/warning-tinted).
-  - Balance values `text-success` / `text-primary` are correct but font is `text-lg` — feels small for a balance display; should be `text-[22px]` or `text-[24px]`.
-  - No ambient inner glow per card — flat interiors.
-  - The `Withdraw` / `Transfer` buttons inside the Tradable card are small pill buttons (`h-8`) with minimal color distinction.
-  - The `Schedule` button in Locked card is `bg-primary/8` which is nearly invisible in light mode.
-  - No subtle gradient overlay inside the card to add depth.
-  - No top rim highlight specific to each card's color identity.
+5. **No balance validation on frontend**: Users can attempt swaps without knowing their balance.
 
-### 3. History Button (lines 199–209)
-- Plain `glass-card` button — functions well but looks like a filler element. Could be integrated better.
+6. **Broken rollback**: The error handler in `execute-swap` tries to call `req.json()` a second time (which fails since the body stream is already consumed).
 
-### 4. USDI Loan Card (lines 214–217)
-- Currently delegates to `<USDILoanCard />` component (`src/components/wallet/USDILoanCard.tsx`). 
-- The component uses `bg-gradient-to-br from-primary/15 via-card/90 to-accent/10` with `border-primary/30` — decent but could be elevated with a top rim light, a stronger glow system, and more structured tag chips.
-- The pulse animation on the lock icon container already exists (slow 3s).
-- In light mode, `from-primary/15` may be too subtle (light primary is `hsl(220 100% 50%)` = blue, so `/15` is very faint).
+7. **`swaps` table uses text columns** (`from_asset`, `to_asset`) instead of referencing asset IDs, disconnected from the `wallet_balances` system which uses `asset_id`.
 
-### 5. Markets Section (lines 219–273)
-- Uses `rounded-3xl glass-card border-border/40` — good structure.
-- **Gaps**:
-  - Section header `text-[14px] font-semibold text-foreground/75` — too dim, needs the section label treatment.
-  - No "Live" badge next to Markets header.
-  - Market row hover: `hover:bg-primary/[0.03]` — very subtle, almost imperceptible.
-  - Change badge: missing inner border (`border` class) — just `bg-success/10` with no border outline.
-  - Volume is not shown at all — missed data point.
-  - `View All` link: plain `text-accent` with no icon.
-  - No section-level ambient glow behind the card.
+## Answer to Your Question
 
-### 6. Quick Actions Strip (lines 275–297)
-- Glass pill buttons with `border-primary/15` — works but all look identical.
-- Icons are `text-primary` uniformly — no individual color identity.
-- No colored icon container background.
+> "Does the trading side traded pair on market price automatically execute here in swap?"
 
-### 7. Programs Grid (lines 299–336)
-- `glass-card` with `border-primary/15 rounded-3xl` — structure is good.
-- **Gaps**:
-  - Icon container: `bg-primary/8 shadow-sm` — very faint, no color per program category.
-  - "Tap to start" subtitle is too generic — could be smarter (e.g., "Earn rewards", "Play to win").
-  - No per-card ambient gradient or inner glow.
-  - Cards feel undifferentiated from each other.
+**No.** Currently the swap and trading engine are completely separate systems:
+- **Trading engine**: Uses `execute_trade` RPC, atomic matching, real `market_prices`, updates `wallet_balances` via `trading_balance_ledger`
+- **Swap module**: Uses hardcoded `useFX` rates, writes to a separate `swaps` table, updates `wallet_balances` directly with non-atomic queries
 
-### 8. Activity Feed (lines 338–376)
-- Green dot with shadow glow exists — good.
-- `text-[12px]` for title and `text-[10px]` for subtitle — slightly tight.
-- No icon per activity type — just a dot.
-- Amount is `text-success` always — should differentiate debit vs credit.
+They share the same `wallet_balances` table but use different price sources and different execution paths.
 
----
+## Proposed Architecture
 
-## Enhancement Strategy
+The swap should become a **thin convenience layer on top of your existing market infrastructure**, not a separate execution engine.
 
-### Section 1 — Hero Balance Card
-
-**Changes:**
-- Replace the inline gradient with `.balance-gradient-text` class to get proper theme-awareness (white→cyan in dark, navy→blue in light).
-- Upgrade "Welcome back" to a `SectionLabel`-style treatment: `text-[11px] font-bold uppercase tracking-widest text-primary/70`.
-- Wrap the balance figure in a `relative` container so we can add a subtle glow orb directly below the numbers.
-- Add a horizontal gradient divider below the balance (`from-transparent via-primary/20 to-transparent`).
-- Action buttons: apply per-action color identity:
-  - Add Funds → `text-success`, `bg-success/10`, `border-success/20`
-  - Send → `text-primary`, `bg-primary/10`, `border-primary/20`
-  - Swap → `text-warning`, `bg-warning/10`, `border-warning/20`
-- Increase action button height from `h-[46px]` to `h-[50px]` for more presence.
-- Add `active:scale-[0.97]` haptic feedback on all action buttons.
-- Today's earnings line: wrap the amount in a subtle `bg-success/8 px-2 py-0.5 rounded-full` pill.
-
-### Section 2 — Tradable & Locked Cards
-
-**Changes:**
-- Tradable card: Change border to `border-success/20`, add inner top rim `inset-0` gradient overlay `from-success/[0.04] to-transparent`, add glow: `shadow-[0_4px_24px_hsl(154_67%_52%/0.08)]`.
-- Locked card: Change border to `border-primary/20`, add inner top rim gradient `from-primary/[0.04] to-transparent`, add glow: `shadow-[0_4px_24px_hsl(186_100%_50%/0.08)]`.
-- Balance values: Increase from `text-lg` to `text-[24px] font-extrabold`.
-- Apply `.balance-gradient-text` to Tradable's value (success→green gradient variant).
-- Apply `.balance-gradient-text` to Locked's value (primary→indigo gradient variant).
-- Withdraw button: Strengthen to `bg-success/15 border-success/30 text-success`.
-- Transfer button: `bg-muted/60 border-border text-foreground/70`.
-- Schedule button: `bg-primary/12 border-primary/25 text-primary`.
-- Both cards get `overflow-hidden` and an absolute gradient overlay for depth.
-
-### Section 3 — History Button
-
-**Change:** Give it a left-side icon colored badge, change to `border-border/40` with more explicit hover state. Already functional — minor polish only.
-
-### Section 4 — USDI Loan Card
-
-The `USDILoanCard.tsx` component will be enhanced:
-- Top rim light gradient (cyan → indigo → transparent).
-- Lock icon container: add a glow ring `shadow-[0_0_16px_hsl(186_100%_50%/0.25)]`.
-- Tags ("200% Collateral", etc.): give each a distinct accent `bg-accent/10 border-accent/20 text-accent` for the financial badges.
-- The card gradient `from-primary/15` → enhance to `from-primary/20` in the component.
-- "Apply Now" text: increase to `font-bold`, add `ChevronRight` animation `group-hover:translate-x-1`.
-- Add a subtle bottom gradient fade for depth.
-
-### Section 5 — Markets Section
-
-**Changes:**
-- Header: Replace `text-[14px] font-semibold text-foreground/75` with `SectionLabel` + "Live" pulse badge (matching WalletPage style).
-- Container: Add `border-border/30` (stronger than current `border-border/40`).
-- Show volume under each pair symbol: `text-[10px] font-mono text-muted-foreground`.
-- Change badge: add `border border-success/25` or `border-danger/25` to the percent badge.
-- `View All` → `View All <ChevronRight>` with `text-primary` color.
-- Row hover: strengthen to `hover:bg-primary/[0.05]`.
-- Add section-level ambient glow behind the container:
-  ```tsx
-  <div className="absolute -inset-2 rounded-3xl pointer-events-none opacity-20 bg-[radial-gradient(ellipse_at_100%_100%,hsl(245_80%_68%/0.15),transparent_70%)]" />
-  ```
-
-### Section 6 — Quick Actions Strip
-
-**Changes:**
-- Assign per-action color identities:
-  - Team: `text-success bg-success/10`
-  - Staking: `text-warning bg-warning/10`  
-  - Trading: `text-primary bg-primary/10`
-- Each pill gets a small icon container (24×24) with the colored background behind the icon.
-- Add `active:scale-[0.96]` to all pills.
-
-### Section 7 — Programs Grid
-
-**Changes:**
-- Give each program card its own color based on program category using the program data.
-- Default icon container upgrade: from `bg-primary/8` to `bg-gradient-to-br from-primary/15 to-primary/5` with `border border-primary/15`.
-- The "Tap to start" subtitle can be more contextual — use the program description if available, otherwise keep short.
-- Add hover glow: `hover:shadow-[0_0_20px_hsl(var(--primary)/0.12)]`.
-- Per-card: add `overflow-hidden` and a corner accent:
-  ```tsx
-  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary/8 to-transparent rounded-bl-full" />
-  ```
-
-### Section 8 — Activity Feed
-
-**Changes:**
-- The dot glow is already there — expand to a small icon tile (24×24) with `bg-success/10 rounded-xl` containing the gift icon.
-- Amount: credit → `text-success`, debit → `text-danger`.
-- Add `text-[13px]` for title (up from `text-[12px]`) and keep `text-[10px]` for sub.
-- Add `border-success/15` for credit rows, `border-border/30` for neutral.
-
----
-
-## Cross-Cutting Improvements
-
-### New CSS Utilities to Add to `src/index.css`
-
-```css
-/* Per-card accent gradient overlays for Tradable/Locked */
-.card-glow-success {
-  box-shadow: 0 4px 24px hsl(154 67% 52% / 0.10), var(--shadow-card);
-}
-.card-glow-primary {
-  box-shadow: 0 4px 24px hsl(186 100% 50% / 0.10), var(--shadow-card);
-}
+```text
++------------------+       +-------------------+       +------------------+
+|   Swap UI        | --->  | execute-swap-v2   | --->  | market_prices    |
+|  (SwapScreen)    |       | (Edge Function)   |       | (real prices)    |
+|                  |       |                   |       +------------------+
+| - Real prices    |       | - Validate quote  |
+| - Real balances  |       | - Check slippage  |       +------------------+
+| - Fee preview    |       | - Atomic RPC call  | --->  | record_bsk_      |
+| - Quote expiry   |       | - Deduct fees     |       | transaction RPC  |
++------------------+       +-------------------+       +------------------+
 ```
 
-### Typography Hierarchy Corrections
+## Implementation Plan
 
-| Element | Current | After |
-|---|---|---|
-| "Welcome back" | `text-[13px] font-semibold text-primary/80 uppercase` | `text-[11px] font-bold uppercase tracking-widest text-primary/70` |
-| Balance value | `text-[36px] font-extrabold` inline gradient | `text-[36px] font-extrabold` + `.balance-gradient-text` class |
-| Tradable / Locked values | `text-lg font-extrabold` | `text-[24px] font-extrabold tabular-nums font-mono` |
-| Section titles (Markets, Programs) | `text-[14px] font-bold text-foreground/80` | `SectionLabel` component (`text-[11px] font-bold uppercase tracking-widest text-muted-foreground`) |
-| Activity title | `text-[12px] font-bold` | `text-[13px] font-bold` |
+### Phase 1: Real Pricing on Frontend
 
-### Micro-Interactions Added
+**File: `src/pages/SwapScreen.tsx`**
+- Replace `useFX().convert()` with prices from `market_prices` table
+- Create a new hook `useSwapQuote(fromAsset, toAsset, amount)` that:
+  - Queries `market_prices` for the pair (e.g., `IPGUSDT`, `BSKUSDT`)
+  - For non-direct pairs, calculates 2-hop rate via USDT (e.g., IPG -> USDT -> BTC)
+  - Returns: rate, estimated output, fees, price impact, quote timestamp
+  - Auto-refreshes every 10 seconds
+- Show real user balance for the selected `fromAsset` (replace hardcoded MAX=1000)
+- Add quote expiry indicator (15-second countdown)
 
-- All interactive cards: `active:scale-[0.97]` (up from `active:scale-[0.98]`)
-- Programs grid cards: `active:scale-[0.96]`
-- Quick action pills: `active:scale-[0.96]`
-- Balance hide/show: the main value already has `blur-sm` toggle — ensure transition is `transition-all duration-300`
-- Action buttons in hero: `hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]`
+### Phase 2: Atomic Backend Execution
 
----
+**File: `supabase/functions/execute-swap/index.ts`** (rewrite)
+- Accept: `from_asset`, `to_asset`, `from_amount`, `expected_rate`, `slippage_percent`, `min_receive`
+- Server-side price validation:
+  - Fetch current rate from `market_prices`
+  - Compare with `expected_rate`; reject if drift exceeds slippage tolerance
+- Use existing `record_bsk_transaction` RPC for atomic debit/credit (same pattern as `execute-atomic-trade`)
+- Deduct platform fee (0.1% direct, 0.15% 2-hop) server-side before crediting
+- Record fee in `trading_fees_collected` table (so it shows in your new Fee Collections admin page)
+- Update the `swaps` table with actual execution details
+- Fix the broken rollback (store `swap_id` before try/catch)
 
-## Files to Modify
+### Phase 3: Frontend Enhancements
 
-1. **`src/pages/astra/HomePageRebuilt.tsx`** — Primary file (all 8 sections)
-2. **`src/components/wallet/USDILoanCard.tsx`** — Loan card enhancement
-3. **`src/index.css`** — Add `card-glow-success` and `card-glow-primary` utilities
+**File: `src/pages/SwapScreen.tsx`** (UI upgrades)
+- Show user's actual balance next to "From" asset selector
+- Price impact indicator (warning at >1%, block at >5%)
+- "Minimum Received" clearly displayed
+- Fee breakdown: Platform fee + Network fee
+- Quote countdown timer (15s refresh)
+- Confirmation modal before execution (review step)
+- Route visualization: `IPG -> USDT -> BTC` shown as steps
+- Disable swap button if balance insufficient
 
----
+### Phase 4: New Hook - `useSwapQuote`
 
-## Implementation Sequence
+**New file: `src/hooks/useSwapQuote.ts`**
+- Fetches real prices from `market_prices` table
+- Calculates direct rate or 2-hop rate via USDT
+- Returns: `{ rate, estimatedOutput, platformFee, minReceive, priceImpact, quoteTimestamp, isExpired, route }`
+- 10-second refetch interval
+- Compares rate against catalog `pairsList` to determine route availability
 
-1. Hero section: balance gradient fix + action button color identities
-2. Tradable & Locked cards: size upgrade + color-differentiated borders + inner glows
-3. Markets section: section label + Live badge + volume data + stronger badges
-4. Programs grid: corner accents + icon container upgrade
-5. Quick Actions strip: per-action colors
-6. USDI Loan Card: rim light + glow ring + stronger tag styling
-7. Activity feed: icon tiles + credit/debit color differentiation
-8. CSS utilities: `card-glow-success`, `card-glow-primary`
+### Phase 5: Balance Integration
+
+- Fetch user's `wallet_balances` for the selected from-asset
+- Wire MAX button to actual available balance
+- Show balance warning if amount exceeds available
+
+## Technical Details
+
+### Price Resolution Logic (server-side)
+```text
+1. Check market_prices for direct pair (e.g., "IPG/USDT")
+2. If not found, check reverse pair and invert
+3. If neither exists, try 2-hop via USDT:
+   a. Get fromAsset/USDT price
+   b. Get toAsset/USDT price
+   c. Rate = (fromAsset/USDT) / (toAsset/USDT)
+4. If no route found, return "Route Unavailable"
+```
+
+### Fee Structure (enforced server-side)
+- Direct swap: 0.1% platform fee
+- 2-hop swap: 0.15% platform fee
+- Fees deducted from output amount
+- Recorded in `trading_fees_collected` for admin visibility
+
+### Safety Controls
+- Server-side slippage check (reject if price moved beyond tolerance)
+- Quote expiry: rate valid for 15 seconds
+- Idempotency key per swap to prevent double execution
+- Advisory lock per user (same pattern as `execute-atomic-trade`)
+
+## Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/hooks/useSwapQuote.ts` | Create - real-time price quote hook |
+| `src/pages/SwapScreen.tsx` | Rewrite - real prices, balances, confirmation flow |
+| `supabase/functions/execute-swap/index.ts` | Rewrite - atomic execution with server-side validation |
+
+## What This Achieves
+
+- Swap prices match what users see on the trading page (same `market_prices` source)
+- Execution is atomic -- no partial balance states
+- Fees are enforced server-side and visible in admin Fee Collections
+- Users see their real balance and get protected by slippage controls
+- The swap becomes a user-friendly wrapper around your existing market infrastructure
