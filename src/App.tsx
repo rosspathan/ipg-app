@@ -152,40 +152,40 @@ import ResetPasswordScreen from "./pages/auth/ResetPasswordScreen";
 import VerifyResetCodeScreen from "./pages/auth/VerifyResetCodeScreen";
 import AccountCreatedCelebration from "./pages/onboarding/AccountCreatedCelebration";
 
-// User App Pages
+// User App Pages - lazy loaded for performance
 import AppHomeScreen from "./pages/AppHomeScreen";
-import ProgramsListPage from "./pages/ProgramsListPage";
-import ProgramDetailPage from "./pages/ProgramDetailPage";
+const ProgramsListPage = React.lazy(() => import("./pages/ProgramsListPage"));
+const ProgramDetailPage = React.lazy(() => import("./pages/ProgramDetailPage"));
 import WalletHomeScreen from "./pages/WalletHomeScreen";
-import DepositScreen from "./pages/DepositScreen";
-import WithdrawScreen from "./pages/WithdrawScreen";
-import SendScreen from "./pages/SendScreen";
-import TransferScreen from "./pages/TransferScreen";
-import MarketsScreen from "./pages/MarketsScreen";
-import MarketDetailScreen from "./pages/MarketDetailScreen";
-import TradingScreenRebuilt from "./pages/TradingScreenRebuilt";
-import TradeReceiptScreen from "./pages/TradeReceiptScreen";
-import OrderConfirmationScreen from "./pages/OrderConfirmationScreen";
-import SwapScreen from "./pages/SwapScreen";
-import ProgramsScreen from "./pages/ProgramsScreen";
-import SubscriptionsScreen from "./pages/SubscriptionsScreen";
-import BadgeSubscriptionScreen from "./pages/BadgeSubscriptionScreen";
-import StakingScreen from "./pages/StakingScreen";
-import StakingDetailScreen from "./pages/StakingDetailScreen";
-import StakingSubmissionScreen from "./pages/StakingSubmissionScreen";
+const DepositScreen = React.lazy(() => import("./pages/DepositScreen"));
+const WithdrawScreen = React.lazy(() => import("./pages/WithdrawScreen"));
+const SendScreen = React.lazy(() => import("./pages/SendScreen"));
+const TransferScreen = React.lazy(() => import("./pages/TransferScreen"));
+const MarketsScreen = React.lazy(() => import("./pages/MarketsScreen"));
+const MarketDetailScreen = React.lazy(() => import("./pages/MarketDetailScreen"));
+const TradingScreenRebuilt = React.lazy(() => import("./pages/TradingScreenRebuilt"));
+const TradeReceiptScreen = React.lazy(() => import("./pages/TradeReceiptScreen"));
+const OrderConfirmationScreen = React.lazy(() => import("./pages/OrderConfirmationScreen"));
+const SwapScreen = React.lazy(() => import("./pages/SwapScreen"));
+const ProgramsScreen = React.lazy(() => import("./pages/ProgramsScreen"));
+const SubscriptionsScreen = React.lazy(() => import("./pages/SubscriptionsScreen"));
+const BadgeSubscriptionScreen = React.lazy(() => import("./pages/BadgeSubscriptionScreen"));
+const StakingScreen = React.lazy(() => import("./pages/StakingScreen"));
+const StakingDetailScreen = React.lazy(() => import("./pages/StakingDetailScreen"));
+const StakingSubmissionScreen = React.lazy(() => import("./pages/StakingSubmissionScreen"));
 
-import BSKWithdrawScreen from "@/pages/BSKWithdrawScreen";
-import AdminBSKWithdrawalsScreen from "@/pages/AdminBSKWithdrawalsScreen";
-import AdminCryptoWithdrawalsScreen from "@/pages/AdminCryptoWithdrawalsScreen";
-import CryptoConversionScreen from "./pages/CryptoConversionScreen";
+const BSKWithdrawScreen = React.lazy(() => import("@/pages/BSKWithdrawScreen"));
+const AdminBSKWithdrawalsScreen = React.lazy(() => import("@/pages/AdminBSKWithdrawalsScreen"));
+const AdminCryptoWithdrawalsScreen = React.lazy(() => import("@/pages/AdminCryptoWithdrawalsScreen"));
+const CryptoConversionScreen = React.lazy(() => import("./pages/CryptoConversionScreen"));
 
-import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
-import BSKPromotionScreen from "./pages/BSKPromotionScreen";
+const AdvertisingMiningScreen = React.lazy(() => import("./pages/AdvertisingMiningScreen"));
+const BSKPromotionScreen = React.lazy(() => import("./pages/BSKPromotionScreen"));
 import { AdminAdsScreen } from "./pages/AdminAdsScreen";
-import BSKLoansScreen from "./pages/BSKLoansScreen";
+const BSKLoansScreen = React.lazy(() => import("./pages/BSKLoansScreen"));
 
-import HistoryScreen from "./pages/HistoryScreen";
-import GamificationScreen from "./pages/GamificationScreen";
+const HistoryScreen = React.lazy(() => import("./pages/HistoryScreen"));
+const GamificationScreen = React.lazy(() => import("./pages/GamificationScreen"));
 import ProfileScreen from "./pages/ProfileScreen";
 
 // New Program Pages (All wrapped with ProgramAccessGate)

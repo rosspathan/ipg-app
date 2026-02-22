@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, XCircle, ExternalLink, Download, TrendingDown, Wallet } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, ExternalLink, Download, TrendingDown, Wallet, AlertTriangle, Shield, ShieldAlert } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCustodialWithdrawals, useProcessCustodialWithdrawal } from "@/hooks/useCustodialWithdrawals";
 import { useHotWalletStatus } from "@/hooks/useHotWalletStatus";
@@ -245,6 +245,52 @@ export default function UnifiedWithdrawalManagement() {
 
   const isLoading = loadingFiat || loadingCrypto || loadingBSK || loadingCustodial;
 
+  // Risk scoring function
+  const getRiskScore = (withdrawal: Withdrawal): { level: 'low' | 'medium' | 'high' | 'critical'; score: number; reasons: string[] } => {
+    const reasons: string[] = [];
+    let score = 0;
+
+    // High amount
+    if (withdrawal.amount > 10000) { score += 30; reasons.push('High amount'); }
+    else if (withdrawal.amount > 5000) { score += 15; reasons.push('Medium amount'); }
+
+    // New user (created recently)
+    const createdAt = new Date(withdrawal.created_at);
+    const ageHours = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+    if (ageHours < 1) { score += 25; reasons.push('Very recent request'); }
+    else if (ageHours < 24) { score += 10; reasons.push('Same-day request'); }
+
+    // No profile info
+    if (!withdrawal.profiles?.full_name) { score += 20; reasons.push('No profile name'); }
+
+    // Crypto withdrawal without address
+    if (withdrawal.asset !== 'INR' && !withdrawal.to_address) { score += 15; reasons.push('No destination address'); }
+
+    const level = score >= 50 ? 'critical' : score >= 30 ? 'high' : score >= 15 ? 'medium' : 'low';
+    return { level, score, reasons };
+  };
+
+  const getRiskBadge = (risk: { level: string; score: number; reasons: string[] }) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      low: "outline",
+      medium: "secondary",
+      high: "default",
+      critical: "destructive"
+    };
+    const icons: Record<string, React.ReactNode> = {
+      low: <Shield className="w-3 h-3" />,
+      medium: <AlertTriangle className="w-3 h-3" />,
+      high: <ShieldAlert className="w-3 h-3" />,
+      critical: <ShieldAlert className="w-3 h-3" />,
+    };
+    return (
+      <Badge variant={variants[risk.level] || "outline"} className="gap-1" title={risk.reasons.join(', ')}>
+        {icons[risk.level]}
+        {risk.level.toUpperCase()}
+      </Badge>
+    );
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "secondary",
@@ -405,6 +451,7 @@ export default function UnifiedWithdrawalManagement() {
                       <TableHead>User</TableHead>
                       <TableHead>Asset</TableHead>
                       <TableHead>Amount</TableHead>
+                      <TableHead>Risk</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -412,12 +459,14 @@ export default function UnifiedWithdrawalManagement() {
                   <TableBody>
                     {allWithdrawals.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                           No {activeTab} withdrawals found
                         </TableCell>
                       </TableRow>
                     ) : (
-                      allWithdrawals.map((withdrawal) => (
+                      allWithdrawals.map((withdrawal) => {
+                        const risk = getRiskScore(withdrawal);
+                        return (
                         <TableRow key={`${withdrawal.asset}-${withdrawal.id}`}>
                           <TableCell className="text-sm">
                             {formatDistanceToNow(new Date(withdrawal.created_at), { addSuffix: true })}
@@ -435,6 +484,9 @@ export default function UnifiedWithdrawalManagement() {
                           </TableCell>
                           <TableCell className="font-mono">
                             {Number(withdrawal.amount).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            {getRiskBadge(risk)}
                           </TableCell>
                           <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
                           <TableCell>
@@ -539,7 +591,8 @@ export default function UnifiedWithdrawalManagement() {
                             )}
                           </TableCell>
                         </TableRow>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

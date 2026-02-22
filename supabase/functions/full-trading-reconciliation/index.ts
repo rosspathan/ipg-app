@@ -12,49 +12,52 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Verify admin
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const { data: adminCheck } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    if (!adminCheck) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
     const body = await req.json().catch(() => ({}));
     const action = body.action || 'check';
+    const isScheduledRun = body.scheduled_run === true;
 
-    console.log(`[full-trading-reconciliation] Action: ${action}, Admin: ${user.id}`);
+    // For non-scheduled runs, verify admin auth
+    if (!isScheduledRun) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      if (userError || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { data: adminCheck } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (!adminCheck) {
+        return new Response(JSON.stringify({ error: 'Admin access required' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    console.log(`[full-trading-reconciliation] Action: ${action}, Scheduled: ${isScheduledRun}`);
 
     // Get all wallet balances (excluding platform account)
     const { data: walletBalances, error: wbError } = await supabaseAdmin
@@ -97,8 +100,6 @@ serve(async (req) => {
       const walletLocked = Number(wb.locked || 0);
       const walletTotal = walletAvailable + walletLocked;
       
-      // Ledger net = sum of all delta_available + sum of all delta_locked
-      // This should approximate the total balance
       const ledgerNetAvailable = ledger.available;
       const ledgerNetLocked = ledger.locked;
       const ledgerTotal = ledgerNetAvailable + ledgerNetLocked;
@@ -132,24 +133,74 @@ serve(async (req) => {
       summary: {
         total_positive_drift: discrepancies.filter(d => d.drift > 0).reduce((s, d) => s + d.drift, 0),
         total_negative_drift: discrepancies.filter(d => d.drift < 0).reduce((s, d) => s + d.drift, 0),
-      }
+      },
+      auto_freeze_triggered: false,
     };
 
-    // If action is 'alert' and there are critical discrepancies, log to security audit
-    if (action === 'alert' && discrepancies.length > 0) {
+    // AUTO-FREEZE: If critical discrepancies found during scheduled run, freeze withdrawals
+    const CRITICAL_DRIFT_THRESHOLD = 100; // >100 token drift = critical
+    const criticalDiscrepancies = discrepancies.filter(d => Math.abs(d.drift) > CRITICAL_DRIFT_THRESHOLD);
+
+    if ((action === 'alert' || isScheduledRun) && criticalDiscrepancies.length > 0) {
+      console.warn(`[full-trading-reconciliation] CRITICAL: ${criticalDiscrepancies.length} critical discrepancies found!`);
+      
+      // Log to security audit
+      await supabaseAdmin
+        .from('security_audit_log')
+        .insert({
+          event_type: 'TRADING_RECONCILIATION_CRITICAL_MISMATCH',
+          actor_id: '00000000-0000-0000-0000-000000000001',
+          details: {
+            total_discrepancies: discrepancies.length,
+            critical_discrepancies: criticalDiscrepancies.length,
+            top_discrepancies: criticalDiscrepancies.slice(0, 10),
+            auto_freeze: true,
+            scheduled_run: isScheduledRun,
+          }
+        });
+
+      // Auto-freeze withdrawals by updating system settings
+      const { error: freezeError } = await supabaseAdmin
+        .from('system_settings')
+        .update({ 
+          value: 'false', 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('key', 'withdrawals_enabled');
+
+      if (!freezeError) {
+        result.auto_freeze_triggered = true;
+        console.warn('[full-trading-reconciliation] AUTO-FREEZE: Withdrawals disabled due to critical drift');
+        
+        // Log the freeze action
+        await supabaseAdmin
+          .from('security_audit_log')
+          .insert({
+            event_type: 'WITHDRAWAL_AUTO_FREEZE',
+            actor_id: '00000000-0000-0000-0000-000000000001',
+            details: {
+              reason: 'Critical balance drift detected by auto-reconciliation',
+              critical_count: criticalDiscrepancies.length,
+              max_drift: Math.max(...criticalDiscrepancies.map(d => Math.abs(d.drift))),
+            }
+          });
+      }
+    } else if ((action === 'alert' || isScheduledRun) && discrepancies.length > 0) {
+      // Non-critical discrepancies - just log warning
       await supabaseAdmin
         .from('security_audit_log')
         .insert({
           event_type: 'TRADING_RECONCILIATION_MISMATCH',
-          actor_id: user.id,
+          actor_id: '00000000-0000-0000-0000-000000000001',
           details: {
             total_discrepancies: discrepancies.length,
             top_discrepancies: discrepancies.slice(0, 10),
+            scheduled_run: isScheduledRun,
           }
         });
     }
 
-    console.log(`[full-trading-reconciliation] Checked: ${totalChecked}, Discrepancies: ${discrepancies.length}`);
+    console.log(`[full-trading-reconciliation] Checked: ${totalChecked}, Discrepancies: ${discrepancies.length}, Auto-freeze: ${result.auto_freeze_triggered}`);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
