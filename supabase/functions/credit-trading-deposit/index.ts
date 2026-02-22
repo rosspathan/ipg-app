@@ -297,8 +297,7 @@ Deno.serve(async (req) => {
     // Use the actual verified amount (may be slightly different due to decimals)
     const creditAmount = verification.actualAmount || amount;
 
-    // Start a transaction-like operation
-    // 1. Upsert the custodial_deposits record
+    // 1. Upsert the custodial_deposits record as 'pending' (idempotent via tx_hash unique constraint)
     const { data: deposit, error: depositError } = await supabase
       .from("custodial_deposits")
       .upsert({
@@ -307,86 +306,87 @@ Deno.serve(async (req) => {
         asset_id,
         amount: creditAmount,
         from_address: from_address.toLowerCase(),
-        status: "credited",
-        credited_at: new Date().toISOString(),
+        status: "pending",
       }, {
         onConflict: "tx_hash",
+        ignoreDuplicates: true,
       })
       .select()
       .single();
 
     if (depositError) {
-      console.error(`[CreditDeposit] Failed to upsert deposit:`, depositError);
-      return new Response(
-        JSON.stringify({ error: "Failed to record deposit", details: depositError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      // If upsert was ignored (already exists), fetch the existing record
+      const { data: existing } = await supabase
+        .from("custodial_deposits")
+        .select("id, status")
+        .eq("tx_hash", tx_hash)
+        .single();
+
+      if (existing?.status === "credited") {
+        return new Response(
+          JSON.stringify({ success: true, message: "Already credited", deposit_id: existing.id }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!existing) {
+        console.error(`[CreditDeposit] Failed to upsert deposit:`, depositError);
+        return new Response(
+          JSON.stringify({ error: "Failed to record deposit", details: depositError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Existing pending deposit — proceed to credit via RPC
+      const { data: rpcResult, error: rpcError } = await supabase.rpc(
+        "credit_custodial_deposit",
+        { p_deposit_id: existing.id }
       );
-    }
 
-    console.log(`[CreditDeposit] Deposit record created/updated:`, deposit.id);
+      if (rpcError) {
+        console.error(`[CreditDeposit] Atomic credit RPC failed:`, rpcError);
+        return new Response(
+          JSON.stringify({ error: "Balance credit failed", details: rpcError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    // 2. Credit the wallet balance
-    const { data: existingBalance } = await supabase
-      .from("wallet_balances")
-      .select("available, locked")
-      .eq("user_id", user.id)
-      .eq("asset_id", asset_id)
-      .maybeSingle();
-
-    const currentAvailable = existingBalance?.available || 0;
-    const currentLocked = existingBalance?.locked || 0;
-    const newAvailable = currentAvailable + creditAmount;
-
-    const { error: balanceError } = await supabase
-      .from("wallet_balances")
-      .upsert({
-        user_id: user.id,
-        asset_id,
-        available: newAvailable,
-        locked: currentLocked,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: "user_id,asset_id",
-      });
-
-    if (balanceError) {
-      console.error(`[CreditDeposit] Failed to credit balance:`, balanceError);
-      // Even if balance update fails, we have the deposit recorded
+      console.log(`[CreditDeposit] ✓ Atomic credit result:`, rpcResult);
       return new Response(
-        JSON.stringify({ 
-          error: "Deposit recorded but balance credit failed",
-          deposit_id: deposit.id,
-          details: balanceError.message 
+        JSON.stringify({
+          success: true,
+          message: "Deposit credited successfully (atomic)",
+          deposit_id: existing.id,
+          result: rpcResult,
         }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 2. Credit atomically via the credit_custodial_deposit RPC (FOR UPDATE locking + idempotent ledger)
+    console.log(`[CreditDeposit] Calling atomic credit_custodial_deposit for deposit ${deposit.id}`);
+
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      "credit_custodial_deposit",
+      { p_deposit_id: deposit.id }
+    );
+
+    if (rpcError) {
+      console.error(`[CreditDeposit] Atomic credit RPC failed:`, rpcError);
+      return new Response(
+        JSON.stringify({ error: "Balance credit failed", details: rpcError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[CreditDeposit] Balance credited: ${currentAvailable} -> ${newAvailable} ${asset.symbol}`);
-
-    // 3. Create a ledger entry for audit trail
-    await supabase
-      .from("trading_balance_ledger")
-      .insert({
-        user_id: user.id,
-        asset_id,
-        amount: creditAmount,
-        balance_before: currentAvailable,
-        balance_after: newAvailable,
-        transaction_type: "deposit",
-        reference_type: "custodial_deposit",
-        reference_id: deposit.id,
-        notes: `On-chain deposit credited (verified): ${tx_hash.substring(0, 16)}...`,
-      });
+    console.log(`[CreditDeposit] ✓ Atomic credit result:`, rpcResult);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Deposit credited successfully",
+        message: "Deposit credited successfully (atomic)",
         deposit_id: deposit.id,
-        new_balance: newAvailable,
-        asset_symbol: asset.symbol,
-        verified_amount: creditAmount,
+        result: rpcResult,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
