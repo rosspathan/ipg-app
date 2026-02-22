@@ -122,16 +122,20 @@ Deno.serve(async (req) => {
       } catch (error: any) {
         console.error(`[process-pending-withdrawals] Error processing withdrawal ${withdrawal.id}:`, error);
         
-        // Mark as failed so it doesn't retry indefinitely
-        await supabase
-          .from('withdrawals')
-          .update({
-            status: 'failed',
-            rejected_reason: error.message || 'On-chain transfer failed'
-          })
-          .eq('id', withdrawal.id);
+        // Atomically refund the balance and mark as failed via RPC
+        const reason = error.message || 'On-chain transfer failed';
+        const { data: refundResult, error: refundError } = await supabase.rpc(
+          'refund_failed_withdrawal',
+          { p_withdrawal_id: withdrawal.id, p_reason: reason }
+        );
 
-        results.push({ id: withdrawal.id, status: 'error', error: error.message });
+        if (refundError) {
+          console.error(`[process-pending-withdrawals] CRITICAL: Atomic refund failed for ${withdrawal.id}:`, refundError);
+        } else {
+          console.log(`[process-pending-withdrawals] Refund result for ${withdrawal.id}:`, refundResult);
+        }
+
+        results.push({ id: withdrawal.id, status: 'error', error: error.message, refunded: !refundError });
       }
     }
 

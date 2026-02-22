@@ -14308,19 +14308,24 @@ export type Database = {
           refund_user_id: string
         }[]
       }
-      refund_failed_withdrawal: {
-        Args: {
-          p_amount: number
-          p_asset_id: string
-          p_asset_symbol: string
-          p_fee?: number
-          p_notes?: string
-          p_reference_id?: string
-          p_reference_type?: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
+      refund_failed_withdrawal:
+        | {
+            Args: {
+              p_amount: number
+              p_asset_id: string
+              p_asset_symbol: string
+              p_fee?: number
+              p_notes?: string
+              p_reference_id?: string
+              p_reference_type?: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: { p_reason?: string; p_withdrawal_id: string }
+            Returns: Json
+          }
       request_sensitive_admin_operation: {
         Args: {
           _delay_hours?: number
