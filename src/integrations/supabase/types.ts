@@ -14290,6 +14290,19 @@ export type Database = {
           refund_user_id: string
         }[]
       }
+      refund_failed_withdrawal: {
+        Args: {
+          p_amount: number
+          p_asset_id: string
+          p_asset_symbol: string
+          p_fee?: number
+          p_notes?: string
+          p_reference_id?: string
+          p_reference_type?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       request_sensitive_admin_operation: {
         Args: {
           _delay_hours?: number
@@ -14388,6 +14401,19 @@ export type Database = {
       upsert_referral_tree: {
         Args: { p_tree_records: Json; p_user_id: string }
         Returns: undefined
+      }
+      validate_and_record_withdrawal: {
+        Args: {
+          p_amount: number
+          p_asset_id: string
+          p_asset_symbol: string
+          p_fee?: number
+          p_notes?: string
+          p_reference_id?: string
+          p_reference_type?: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       validate_referral_code: { Args: { code: string }; Returns: boolean }
       validate_withdrawal_request:

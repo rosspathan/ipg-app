@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get user's internal balance
+    // Get user's internal balance (read-only check for UX feedback)
     const { data: balance, error: balanceError } = await supabase
       .from('wallet_balances')
       .select('available, locked')
@@ -149,9 +149,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    originalAvailable = balance.available;
-    originalLocked = balance.locked || 0;
 
     const availableBN = new BigNumber(String(balance.available));
 
@@ -249,6 +246,33 @@ Deno.serve(async (req) => {
       );
     }
 
+    // CRITICAL FIX: Atomically validate ledger + deduct balance + record in ledger
+    const { data: ledgerCheck, error: ledgerError } = await supabase.rpc('validate_and_record_withdrawal', {
+      p_user_id: user.id,
+      p_asset_symbol: asset_symbol,
+      p_asset_id: asset.id,
+      p_amount: amountBN.toNumber(),
+      p_fee: withdrawFee.toNumber(),
+      p_reference_type: 'crypto_withdrawal',
+      p_notes: `Crypto withdrawal to ${destination_address}`
+    });
+
+    if (ledgerError) {
+      console.error('[Withdrawal] Ledger validation error:', ledgerError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Balance verification failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!ledgerCheck?.allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: ledgerCheck?.reason || 'Withdrawal not allowed' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[Withdrawal] Ledger validated: debited=${ledgerCheck.debited}, new_available=${ledgerCheck.new_available}`);
+
     // Step 1: Create pending withdrawal record
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('crypto_withdrawal_requests')
@@ -267,6 +291,16 @@ Deno.serve(async (req) => {
 
     if (withdrawalError) {
       console.error('[Withdrawal] Failed to create request:', withdrawalError);
+      // Refund via ledger
+      await supabase.rpc('refund_failed_withdrawal', {
+        p_user_id: user.id,
+        p_asset_symbol: asset_symbol,
+        p_asset_id: asset.id,
+        p_amount: amountBN.toNumber(),
+        p_fee: withdrawFee.toNumber(),
+        p_reference_type: 'withdrawal_record_failed',
+        p_notes: 'Failed to create withdrawal request record'
+      });
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to create withdrawal request' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -302,7 +336,7 @@ Deno.serve(async (req) => {
 
     console.log(`[Withdrawal] Locked ${totalRequired.toFixed(8)} ${asset_symbol}`);
 
-    // Step 3: Execute on-chain transfer
+    // Step 2: Execute on-chain transfer
     let txHash: string | null = null;
     try {
       const provider = new ethers.JsonRpcProvider(BSC_RPC);
@@ -329,16 +363,6 @@ Deno.serve(async (req) => {
 
       console.log(`[Withdrawal] ✓ On-chain transfer complete: ${txHash}`);
 
-      // Step 4: Success - remove from locked balance (already transferred)
-      await supabase
-        .from('wallet_balances')
-        .update({
-          locked: Math.max(0, newLocked.minus(totalRequired).toNumber()),
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .eq('asset_id', asset.id);
-
       // Update withdrawal to completed
       await supabase
         .from('crypto_withdrawal_requests')
@@ -364,15 +388,17 @@ Deno.serve(async (req) => {
     } catch (txError) {
       console.error('[Withdrawal] On-chain transfer failed:', txError);
 
-      // Step 5: Failure - return funds to available
-      await supabase
-        .from('wallet_balances')
-        .update({
-          available: originalAvailable,
-          locked: originalLocked
-        })
-        .eq('user_id', user.id)
-        .eq('asset_id', asset.id);
+      // Refund via ledger
+      await supabase.rpc('refund_failed_withdrawal', {
+        p_user_id: user.id,
+        p_asset_symbol: asset_symbol,
+        p_asset_id: asset.id,
+        p_amount: amountBN.toNumber(),
+        p_fee: withdrawFee.toNumber(),
+        p_reference_type: 'blockchain_failure',
+        p_reference_id: withdrawal.id,
+        p_notes: `On-chain transfer failed: ${txError instanceof Error ? txError.message : 'Unknown'}`
+      });
 
       // Mark withdrawal as failed
       await supabase
@@ -396,25 +422,34 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('[Withdrawal] Fatal error:', error);
 
-    // Attempt to rollback if we have context
+    // Attempt to rollback via ledger if we have context
     if (userId && assetId && lockedAmount) {
       try {
-        await supabase
-          .from('wallet_balances')
-          .update({
-            available: originalAvailable,
-            locked: originalLocked
-          })
-          .eq('user_id', userId)
-          .eq('asset_id', assetId);
-        console.log('[Withdrawal] Rolled back balance after error');
+        const supabaseAdmin = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+        await supabaseAdmin.rpc('refund_failed_withdrawal', {
+          p_user_id: userId,
+          p_asset_symbol: '', // Will be resolved from asset_id
+          p_asset_id: assetId,
+          p_amount: lockedAmount.toNumber(),
+          p_fee: 0,
+          p_reference_type: 'fatal_error_refund',
+          p_notes: `Fatal error rollback: ${error instanceof Error ? error.message : 'Unknown'}`
+        });
+        console.log('[Withdrawal] Rolled back balance via ledger after error');
       } catch (rollbackError) {
         console.error('[Withdrawal] Rollback failed:', rollbackError);
       }
     }
 
     if (withdrawalId) {
-      await supabase
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      await supabaseAdmin
         .from('crypto_withdrawal_requests')
         .update({
           status: 'failed',

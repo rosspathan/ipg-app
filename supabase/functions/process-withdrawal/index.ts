@@ -132,17 +132,6 @@ serve(async (req) => {
     if (assetError || !asset) throw new Error('Asset not found');
     if (!asset.withdraw_enabled) throw new Error('Withdrawals are disabled for this asset');
 
-    // Check balance
-    const { data: balance, error: balanceError } = await supabase
-      .from('wallet_balances')
-      .select('available')
-      .eq('user_id', user.id)
-      .eq('asset_id', asset.id)
-      .single();
-
-    if (balanceError || !balance) throw new Error('Balance not found');
-    if (balance.available < amountNum) throw new Error('Insufficient balance');
-
     // Validate amount limits
     if (amountNum < parseFloat(asset.min_withdraw_amount)) {
       throw new Error(`Minimum withdrawal is ${asset.min_withdraw_amount} ${asset_symbol}`);
@@ -159,14 +148,29 @@ serve(async (req) => {
       throw new Error('Admin wallet not configured');
     }
 
-    // Lock the withdrawal amount first
-    const { error: lockError } = await supabase.rpc('lock_balance_for_order', {
+    // Calculate fees
+    const withdrawFee = parseFloat(asset.withdraw_fee) || 0;
+
+    // CRITICAL FIX: Atomically validate ledger + deduct balance + record in ledger
+    const { data: ledgerCheck, error: ledgerError } = await supabase.rpc('validate_and_record_withdrawal', {
       p_user_id: user.id,
       p_asset_symbol: asset_symbol,
-      p_amount: amountNum
+      p_asset_id: asset.id,
+      p_amount: amountNum,
+      p_fee: withdrawFee,
+      p_reference_type: 'trading_withdrawal',
+      p_notes: `Withdrawal to ${trimmedAddress}`
     });
 
-    if (lockError) throw new Error('Failed to lock balance: ' + lockError.message);
+    if (ledgerError) {
+      console.error('[process-withdrawal] Ledger validation error:', ledgerError);
+      throw new Error('Balance verification failed');
+    }
+    if (!ledgerCheck?.allowed) {
+      throw new Error(ledgerCheck?.reason || 'Withdrawal not allowed');
+    }
+
+    console.log(`[process-withdrawal] Ledger validated: debited=${ledgerCheck.debited}, new_available=${ledgerCheck.new_available}`);
 
     console.log(`[process-withdrawal] Processing ${network} withdrawal: ${amountNum} ${asset_symbol} to ${trimmedAddress}`);
 
@@ -257,8 +261,7 @@ serve(async (req) => {
         console.log(`[process-withdrawal] ${asset_symbol} transaction sent: ${tx_hash}`);
       }
 
-      // Calculate actual fees (for now, use configured fee)
-      const withdrawFee = parseFloat(asset.withdraw_fee) || 0;
+      // Fee already accounted for in ledger debit
       const netAmount = amountNum - withdrawFee;
 
       if (netAmount <= 0) throw new Error('Amount too small to cover fees');
@@ -282,11 +285,15 @@ serve(async (req) => {
 
       if (withdrawalError) {
         console.error('[process-withdrawal] Failed to create withdrawal record:', withdrawalError);
-        // Rollback: unlock balance
-        await supabase.rpc('unlock_balance_for_order', {
+        // Rollback: refund via ledger
+        await supabase.rpc('refund_failed_withdrawal', {
           p_user_id: user.id,
           p_asset_symbol: asset_symbol,
-          p_amount: amountNum
+          p_asset_id: asset.id,
+          p_amount: amountNum,
+          p_fee: withdrawFee,
+          p_reference_type: 'withdrawal_record_failed',
+          p_notes: 'Failed to create withdrawal record'
         });
         throw withdrawalError;
       }
@@ -316,11 +323,15 @@ serve(async (req) => {
     } catch (blockchainError: any) {
       console.error('[process-withdrawal] Blockchain error:', blockchainError);
       
-      // Rollback: unlock balance
-      await supabase.rpc('unlock_balance_for_order', {
+      // Rollback: refund via ledger
+      await supabase.rpc('refund_failed_withdrawal', {
         p_user_id: user.id,
         p_asset_symbol: asset_symbol,
-        p_amount: amountNum
+        p_asset_id: asset.id,
+        p_amount: amountNum,
+        p_fee: withdrawFee,
+        p_reference_type: 'blockchain_failure',
+        p_notes: `Blockchain tx failed: ${blockchainError.message}`
       });
 
       throw new Error(`Blockchain transaction failed: ${blockchainError.message}`);
