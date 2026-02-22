@@ -10,8 +10,12 @@ const corsHeaders = {
 const ERC20_ABI = ['function transfer(address to, uint256 amount) returns (bool)'];
 
 // Gas monitoring thresholds (in BNB)
-const LOW_GAS_WARN_THRESHOLD = 0.05;  // Log warning
-const LOW_GAS_ABORT_THRESHOLD = 0.005; // Abort processing entirely
+const LOW_GAS_WARN_THRESHOLD = 0.05;
+const LOW_GAS_ABORT_THRESHOLD = 0.005;
+
+// ── Phase 3: Per-run outflow cap (USDT-equivalent) ────────────────────
+// If cumulative outflow in a single invocation exceeds this, halt further processing.
+const PER_RUN_OUTFLOW_CAP_USDT = 10_000;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -63,20 +67,18 @@ Deno.serve(async (req) => {
     console.log(`[process-pending-withdrawals] BNB gas balance: ${bnbBalanceEth}`);
 
     if (bnbBalanceEth < LOW_GAS_ABORT_THRESHOLD) {
-      console.error(`[process-pending-withdrawals] CRITICAL: BNB balance ${bnbBalanceEth} below abort threshold ${LOW_GAS_ABORT_THRESHOLD}. Halting.`);
-      // Log critical alert to security_audit_log
+      console.error(`[process-pending-withdrawals] CRITICAL: BNB balance ${bnbBalanceEth} below abort threshold. Halting.`);
       await supabase.from('security_audit_log').insert({
         event_type: 'LOW_GAS_CRITICAL',
         severity: 'critical',
         source: 'process-pending-withdrawals',
         details: { bnb_balance: bnbBalanceEth, threshold: LOW_GAS_ABORT_THRESHOLD, pending_count: pendingWithdrawals.length },
       });
-      // Also create an admin notification
       await supabase.from('admin_notifications').insert({
         type: 'hot_wallet_gas',
         priority: 'critical',
         title: 'Hot Wallet Gas CRITICAL — Withdrawals Halted',
-        message: `BNB balance is ${bnbBalanceEth.toFixed(6)} BNB (below ${LOW_GAS_ABORT_THRESHOLD}). All withdrawal processing has been halted. Refuel the hot wallet immediately.`,
+        message: `BNB balance is ${bnbBalanceEth.toFixed(6)} BNB (below ${LOW_GAS_ABORT_THRESHOLD}). All withdrawal processing has been halted. Refuel immediately.`,
       });
       return new Response(
         JSON.stringify({ error: 'Insufficient gas — withdrawals halted', bnb_balance: bnbBalanceEth }),
@@ -85,7 +87,7 @@ Deno.serve(async (req) => {
     }
 
     if (bnbBalanceEth < LOW_GAS_WARN_THRESHOLD) {
-      console.warn(`[process-pending-withdrawals] LOW_GAS_ALERT: BNB balance ${bnbBalanceEth} below warning threshold ${LOW_GAS_WARN_THRESHOLD}`);
+      console.warn(`[process-pending-withdrawals] LOW_GAS_ALERT: BNB balance ${bnbBalanceEth}`);
       await supabase.from('security_audit_log').insert({
         event_type: 'LOW_GAS_WARNING',
         severity: 'high',
@@ -96,20 +98,32 @@ Deno.serve(async (req) => {
         type: 'hot_wallet_gas',
         priority: 'high',
         title: 'Hot Wallet Gas Low — Refuel Soon',
-        message: `BNB balance is ${bnbBalanceEth.toFixed(6)} BNB (below ${LOW_GAS_WARN_THRESHOLD}). Please refuel to avoid withdrawal disruptions.`,
+        message: `BNB balance is ${bnbBalanceEth.toFixed(6)} BNB. Please refuel to avoid disruptions.`,
       });
     }
 
     // ── Phase 2b: Manual Nonce Management ─────────────────────────────
-    // Fetch the confirmed nonce once; increment manually per TX to prevent
-    // nonce collisions when processing multiple withdrawals sequentially.
     let currentNonce = await provider.getTransactionCount(wallet.address, 'pending');
     console.log(`[process-pending-withdrawals] Starting nonce: ${currentNonce}`);
+
+    // ── Phase 3: Outflow tracking ─────────────────────────────────────
+    // Estimate USDT value: stablecoins = 1:1, others use net_amount as conservative proxy.
+    // For a production price oracle, replace this with a real feed.
+    const STABLECOIN_SYMBOLS = ['USDT', 'USDI', 'BUSD', 'USDC', 'DAI'];
+    let cumulativeOutflowUsdt = 0;
+    let outflowCapReached = false;
 
     let processed = 0;
     const results: any[] = [];
 
     for (const withdrawal of pendingWithdrawals) {
+      // ── Phase 3: Check outflow cap before each withdrawal ───────────
+      if (outflowCapReached) {
+        console.warn(`[process-pending-withdrawals] Outflow cap reached ($${cumulativeOutflowUsdt.toFixed(2)}). Skipping remaining withdrawals.`);
+        results.push({ id: withdrawal.id, status: 'skipped', reason: 'per_run_outflow_cap_reached' });
+        continue;
+      }
+
       try {
         const asset = withdrawal.assets;
         if (!asset) {
@@ -118,9 +132,73 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // ── Phase 3a: Circuit Breaker — Re-validate before broadcast ──
+        // Even though the request was validated at submission time, re-check
+        // against current circuit breaker state (global freeze, daily caps, etc.)
+        const { data: validation, error: valError } = await supabase.rpc(
+          'validate_withdrawal_request',
+          {
+            p_user_id: withdrawal.user_id,
+            p_asset_id: withdrawal.asset_id,
+            p_amount: withdrawal.amount,
+            p_to_address: withdrawal.to_address,
+          }
+        );
+
+        if (valError) {
+          console.error(`[process-pending-withdrawals] Circuit breaker RPC error for ${withdrawal.id}:`, valError);
+          results.push({ id: withdrawal.id, status: 'error', error: `Validation RPC failed: ${valError.message}` });
+          continue;
+        }
+
+        // The RPC returns { valid: bool, reason?: string }
+        if (validation && !validation.valid) {
+          console.warn(`[process-pending-withdrawals] Circuit breaker BLOCKED withdrawal ${withdrawal.id}: ${validation.reason}`);
+          // Mark as failed and refund atomically
+          const { error: refundError } = await supabase.rpc(
+            'refund_failed_withdrawal',
+            { p_withdrawal_id: withdrawal.id, p_reason: `Circuit breaker: ${validation.reason}` }
+          );
+          if (refundError) {
+            console.error(`[process-pending-withdrawals] CRITICAL: Refund failed after circuit breaker block for ${withdrawal.id}:`, refundError);
+          }
+          await supabase.from('security_audit_log').insert({
+            event_type: 'WITHDRAWAL_CIRCUIT_BREAKER',
+            severity: 'high',
+            source: 'process-pending-withdrawals',
+            details: { withdrawal_id: withdrawal.id, user_id: withdrawal.user_id, reason: validation.reason, amount: withdrawal.amount },
+          });
+          results.push({ id: withdrawal.id, status: 'blocked', reason: validation.reason, refunded: !refundError });
+          continue;
+        }
+
+        // ── Phase 3b: Estimate outflow & check cap ────────────────────
+        const netAmount = withdrawal.net_amount;
+        const estimatedUsdt = STABLECOIN_SYMBOLS.includes(asset.symbol?.toUpperCase())
+          ? netAmount  // 1:1 for stablecoins
+          : netAmount; // Conservative: treat token amount as USDT-equivalent (safe upper-bound for low-value tokens)
+
+        if (cumulativeOutflowUsdt + estimatedUsdt > PER_RUN_OUTFLOW_CAP_USDT) {
+          console.warn(`[process-pending-withdrawals] Outflow cap would be exceeded: current=$${cumulativeOutflowUsdt.toFixed(2)}, this=$${estimatedUsdt.toFixed(2)}, cap=$${PER_RUN_OUTFLOW_CAP_USDT}`);
+          await supabase.from('security_audit_log').insert({
+            event_type: 'OUTFLOW_CAP_REACHED',
+            severity: 'high',
+            source: 'process-pending-withdrawals',
+            details: { cumulative_usdt: cumulativeOutflowUsdt, this_amount: estimatedUsdt, cap: PER_RUN_OUTFLOW_CAP_USDT, remaining_count: pendingWithdrawals.length - results.length },
+          });
+          await supabase.from('admin_notifications').insert({
+            type: 'outflow_cap',
+            priority: 'high',
+            title: 'Per-Run Outflow Cap Reached',
+            message: `Cumulative outflow hit $${cumulativeOutflowUsdt.toFixed(2)} (cap: $${PER_RUN_OUTFLOW_CAP_USDT}). Remaining withdrawals deferred to next run.`,
+          });
+          outflowCapReached = true;
+          results.push({ id: withdrawal.id, status: 'skipped', reason: 'per_run_outflow_cap_reached' });
+          continue;
+        }
+
         const contractAddress = asset.contract_address;
         const decimals = asset.decimals || 18;
-        const netAmount = withdrawal.net_amount;
         const toAddress = withdrawal.to_address;
 
         console.log(`[process-pending-withdrawals] Sending ${netAmount} ${asset.symbol} to ${toAddress} (nonce: ${currentNonce})`);
@@ -128,7 +206,6 @@ Deno.serve(async (req) => {
         let txHash: string;
 
         if (contractAddress) {
-          // ERC20/BEP20 token transfer with explicit nonce
           const contract = new ethers.Contract(contractAddress, ERC20_ABI, wallet);
           const amountInUnits = ethers.parseUnits(netAmount.toString(), decimals);
           const tx = await contract.transfer(toAddress, amountInUnits, { nonce: currentNonce });
@@ -140,7 +217,6 @@ Deno.serve(async (req) => {
           }
           txHash = tx.hash;
         } else {
-          // Native BNB transfer with explicit nonce
           const tx = await wallet.sendTransaction({
             to: toAddress,
             value: ethers.parseEther(netAmount.toString()),
@@ -155,10 +231,10 @@ Deno.serve(async (req) => {
           txHash = tx.hash;
         }
 
-        // Increment nonce after successful broadcast
+        // Successful broadcast — increment nonce & outflow tracker
         currentNonce++;
+        cumulativeOutflowUsdt += estimatedUsdt;
 
-        // Update withdrawal with real tx_hash and completed status
         const { error: updateError } = await supabase
           .from('withdrawals')
           .update({
@@ -179,7 +255,6 @@ Deno.serve(async (req) => {
       } catch (error: any) {
         console.error(`[process-pending-withdrawals] Error processing withdrawal ${withdrawal.id}:`, error);
 
-        // Atomically refund the balance and mark as failed via RPC
         const reason = error.message || 'On-chain transfer failed';
         const { data: refundResult, error: refundError } = await supabase.rpc(
           'refund_failed_withdrawal',
@@ -194,8 +269,6 @@ Deno.serve(async (req) => {
 
         results.push({ id: withdrawal.id, status: 'error', error: error.message, refunded: !refundError });
 
-        // Do NOT increment nonce on failure — the TX was never broadcast
-        // If it was a nonce-related error, re-fetch to recover
         if (error.message?.includes('nonce') || error.message?.includes('replacement')) {
           console.warn(`[process-pending-withdrawals] Nonce conflict detected, re-fetching...`);
           currentNonce = await provider.getTransactionCount(wallet.address, 'pending');
@@ -211,6 +284,7 @@ Deno.serve(async (req) => {
         total: pendingWithdrawals.length,
         results,
         gas_balance_bnb: bnbBalanceEth,
+        cumulative_outflow_usdt: cumulativeOutflowUsdt,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
