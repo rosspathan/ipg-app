@@ -20,6 +20,7 @@ import { CandleToggle, Timeframe } from "@/components/trading/CandleToggle";
 import EnhancedOrderBook from "@/components/trading/EnhancedOrderBook";
 import TradingOrderForm from "@/components/trading/TradingOrderForm";
 import RecentTrades from "@/components/RecentTrades";
+import { OrderBookDepthBar } from "@/components/trading/OrderBookDepthBar";
 import MarketDiagnostics from "@/components/trading/MarketDiagnostics";
 // PendingSettlements removed - Hybrid model uses internal ledger settlement
 
@@ -330,6 +331,13 @@ const TradingScreen = () => {
 
       {/* Order Book & Recent Trades */}
       <div className="p-4 space-y-4">
+        {/* Depth Visualization */}
+        <OrderBookDepthBar
+          bids={orderBook?.bids || []}
+          asks={orderBook?.asks || []}
+          currentPrice={currentPrice}
+        />
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <EnhancedOrderBook
             orderBook={currentOrderBook}
