@@ -215,6 +215,22 @@ Deno.serve(async (req) => {
             })
             .eq('id', withdrawal.id);
 
+          // Record in trading_balance_ledger for audit trail
+          await supabase
+            .from('trading_balance_ledger')
+            .insert({
+              user_id: withdrawal.user_id,
+              asset_symbol: asset.symbol,
+              delta_available: -Number(withdrawal.amount),
+              delta_locked: 0,
+              balance_available_after: 0, // Already deducted when custodial_withdrawal was created
+              balance_locked_after: 0,
+              entry_type: 'WITHDRAWAL',
+              reference_type: 'auto_custodial_withdrawal',
+              reference_id: withdrawal.id,
+              notes: `Auto-processed withdrawal: ${withdrawal.amount} ${asset.symbol} to ${withdrawal.to_address} | TX: ${txHash}`
+            });
+
           console.log(`[auto-process-withdrawals] ✓ Completed: ${withdrawal.id} | ${withdrawal.amount} ${asset.symbol} | TX: ${txHash}`);
 
           results.push({
@@ -242,23 +258,17 @@ Deno.serve(async (req) => {
           })
           .eq('id', withdrawal.id);
 
-        // Refund trading balance
-        const { data: existingBalance } = await supabase
-          .from('wallet_balances')
-          .select('available')
-          .eq('user_id', withdrawal.user_id)
-          .eq('asset_id', withdrawal.asset_id)
-          .single();
-
-        const refundAmount = Number(withdrawal.amount) + Number(withdrawal.fee_amount || 0);
-
-        if (existingBalance) {
-          await supabase
-            .from('wallet_balances')
-            .update({ available: Number(existingBalance.available) + refundAmount, updated_at: new Date().toISOString() })
-            .eq('user_id', withdrawal.user_id)
-            .eq('asset_id', withdrawal.asset_id);
-        }
+        // Refund trading balance via ledger
+        await supabase.rpc('refund_failed_withdrawal', {
+          p_user_id: withdrawal.user_id,
+          p_asset_symbol: asset.symbol,
+          p_asset_id: withdrawal.asset_id,
+          p_amount: Number(withdrawal.amount),
+          p_fee: Number(withdrawal.fee_amount || 0),
+          p_reference_type: 'auto_withdrawal_failed',
+          p_reference_id: withdrawal.id,
+          p_notes: `Auto-process failed: ${err.message}`
+        });
 
         results.push({
           withdrawal_id: withdrawal.id,
