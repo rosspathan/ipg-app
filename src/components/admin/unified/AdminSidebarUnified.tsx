@@ -52,6 +52,7 @@ const mainNav: NavItem[] = [
   { title: "Markets", url: "/admin/markets", icon: TrendingUp },
   { title: "Trading Engine", url: "/admin/trading-engine", icon: Activity },
   { title: "Trading Orders", url: "/admin/trading-orders", icon: ClipboardList },
+  { title: "Trading Recon", url: "/admin/trading-reconciliation", icon: Shield },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];
 

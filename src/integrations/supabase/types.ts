@@ -13844,23 +13844,41 @@ export type Database = {
             }
             Returns: Json
           }
-      execute_trade: {
-        Args: {
-          p_base_amount: number
-          p_base_asset: string
-          p_buy_order_id: string
-          p_buyer_fee: number
-          p_buyer_id: string
-          p_quote_amount: number
-          p_quote_asset: string
-          p_sell_order_id: string
-          p_seller_fee: number
-          p_seller_id: string
-          p_symbol: string
-          p_trading_type?: string
-        }
-        Returns: string
-      }
+      execute_trade:
+        | {
+            Args: {
+              p_base_amount: number
+              p_base_asset: string
+              p_buy_order_id: string
+              p_buyer_fee: number
+              p_buyer_id: string
+              p_quote_amount: number
+              p_quote_asset: string
+              p_sell_order_id: string
+              p_seller_fee: number
+              p_seller_id: string
+              p_symbol: string
+              p_trading_type?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_base_amount: number
+              p_base_asset: string
+              p_buy_order_id: string
+              p_buyer_fee: number
+              p_buyer_id: string
+              p_quote_amount: number
+              p_quote_asset: string
+              p_sell_order_id: string
+              p_seller_fee: number
+              p_seller_id: string
+              p_symbol: string
+              p_trading_type?: string
+            }
+            Returns: string
+          }
       execute_withdrawal_request: {
         Args: {
           p_amount: number
