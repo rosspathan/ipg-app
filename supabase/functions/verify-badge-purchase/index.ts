@@ -36,6 +36,30 @@ serve(async (req) => {
   }
 
   try {
+    // === AUTH: Validate JWT and derive user_id from token ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', purchased: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !authUser) {
+      console.error(`❌ [${requestId}] Auth failed:`, authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', purchased: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -44,7 +68,10 @@ serve(async (req) => {
     const rawBody = await req.text();
     console.log(`📥 [${requestId}] Raw request body:`, rawBody);
     
-    const { user_id, badge_name, cost }: BadgePurchaseRequest = JSON.parse(rawBody);
+    const { badge_name, cost }: BadgePurchaseRequest = JSON.parse(rawBody);
+    
+    // SECURITY: Always use authenticated user's ID, never trust client-supplied user_id
+    const user_id = authUser.id;
 
     console.log(`🎖️ [${requestId}] Parsed request:`, { user_id, badge_name, cost_from_client: cost });
     console.log(`🎖️ [${requestId}] Request received at: ${Date.now() - startTime}ms`);
