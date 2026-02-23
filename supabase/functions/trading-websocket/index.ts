@@ -114,7 +114,7 @@ async function getTicker(symbol: string) {
   // Read from market_prices table instead of broken RPC
   const { data, error } = await supabase
     .from('market_prices')
-    .select('symbol, current_price, price_change_24h, price_change_percent_24h, high_24h, low_24h, volume_24h')
+    .select('symbol, current_price, price_change_24h, price_change_percentage_24h, high_24h, low_24h, volume_24h')
     .eq('symbol', symbol)
     .maybeSingle();
 
@@ -126,7 +126,7 @@ async function getTicker(symbol: string) {
     symbol,
     lastPrice: parseFloat(data?.current_price || 0),
     priceChange24h: parseFloat(data?.price_change_24h || 0),
-    priceChangePercent24h: parseFloat(data?.price_change_percent_24h || 0),
+    priceChangePercent24h: parseFloat(data?.price_change_percentage_24h || 0),
     high24h: parseFloat(data?.high_24h || 0),
     low24h: parseFloat(data?.low_24h || 0),
     volume24h: parseFloat(data?.volume_24h || 0),
