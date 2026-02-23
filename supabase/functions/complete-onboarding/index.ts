@@ -115,8 +115,15 @@ serve(async (req) => {
 
     console.log('[complete-onboarding] Request:', { email, hasImportedWallet: !!importedWallet, version: FUNCTION_VERSION });
 
-    // Verify the code matches
-    if (verificationCode !== storedCode) {
+    // Verify the code matches using constant-time comparison to prevent timing attacks
+    const codeA = new TextEncoder().encode(verificationCode.padEnd(10, '\0'));
+    const codeB = new TextEncoder().encode(storedCode.padEnd(10, '\0'));
+    let mismatch = codeA.length !== codeB.length ? 1 : 0;
+    const len = Math.min(codeA.length, codeB.length);
+    for (let i = 0; i < len; i++) {
+      mismatch |= codeA[i] ^ codeB[i];
+    }
+    if (mismatch !== 0) {
       return new Response(
         JSON.stringify({ success: false, reason: "invalid_code", error: "Invalid verification code" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -511,7 +518,8 @@ serve(async (req) => {
       version: FUNCTION_VERSION
     });
 
-    // Return success with MNEMONIC and session tokens
+    // Return success WITHOUT mnemonic - it's stored encrypted in DB
+    // Mnemonic was already shown to user during client-side generation
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -519,9 +527,7 @@ serve(async (req) => {
         username,
         referralCode,
         walletAddress: walletData.address,
-        mnemonic: mnemonic, // CRITICAL: User must save this!
-        session: sessionData?.properties, // Session tokens for BSK features
-        warning: "Save your mnemonic phrase! This is the ONLY time it will be shown.",
+        // SECURITY: mnemonic removed from API response to prevent logging/interception
       }),
       { 
         status: 200, 
