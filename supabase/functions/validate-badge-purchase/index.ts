@@ -29,11 +29,37 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // === AUTH: Validate JWT and derive userId from token ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ valid: false, errors: ['Unauthorized'], warnings: [], userBalance: 0, requiredAmount: 0, shortfall: 0, alreadyOwned: false, kycCompleted: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ valid: false, errors: ['Unauthorized'], warnings: [], userBalance: 0, requiredAmount: 0, shortfall: 0, alreadyOwned: false, kycCompleted: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { userId, badgeName, requiredAmount }: ValidationRequest = await req.json();
+    const { badgeName, requiredAmount }: ValidationRequest = await req.json();
+    
+    // SECURITY: Always use authenticated user's ID
+    const userId = authUser.id;
 
     console.log('Validating badge purchase:', { userId, badgeName, requiredAmount });
 

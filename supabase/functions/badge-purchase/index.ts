@@ -43,12 +43,38 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // === AUTH: Validate JWT and derive user_id from token ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { user_id, badge_name, previous_badge, bsk_amount, is_upgrade }: PurchaseRequest = await req.json();
+    const { badge_name, previous_badge, bsk_amount, is_upgrade }: PurchaseRequest = await req.json();
+    
+    // SECURITY: Always use authenticated user's ID
+    const user_id = authUser.id;
     
     // Normalize badge name for consistent processing
     const normalizedBadge = normalizeBadgeName(badge_name);
