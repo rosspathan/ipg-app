@@ -12,27 +12,51 @@ serve(async (req) => {
   }
 
   try {
+    // === AUTH: Require authentication ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ linked: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Verify the caller's identity
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ linked: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if caller is admin
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: authUser.id, _role: 'admin' });
+
     const { email, username, wallet } = await req.json();
     
     console.log('[BSK Balance By Identifier] Request received:', { 
       hasEmail: !!email, 
       hasUsername: !!username, 
-      hasWallet: !!wallet 
+      hasWallet: !!wallet,
+      callerId: authUser.id,
+      isAdmin: !!isAdmin
     });
 
     if (!email && !username && !wallet) {
       return new Response(
-        JSON.stringify({ 
-          linked: false, 
-          error: 'At least one identifier (email, username, or wallet) required' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify({ linked: false, error: 'At least one identifier required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     let userId: string | null = null;
     let source: string = '';
@@ -40,93 +64,60 @@ serve(async (req) => {
     // Priority 1: Email
     if (email) {
       const normalizedEmail = email.toLowerCase().trim();
-      console.log('[BSK Balance By Identifier] Searching by email:', normalizedEmail);
-      
-      const { data: profileByEmail, error: emailError } = await supabase
+      const { data: profileByEmail } = await supabase
         .from('profiles')
         .select('user_id')
         .eq('email', normalizedEmail)
         .maybeSingle();
-
-      if (emailError) {
-        console.error('[BSK Balance By Identifier] Email lookup error:', emailError);
-      } else if (profileByEmail) {
-        userId = profileByEmail.user_id;
-        source = 'email';
-        console.log('[BSK Balance By Identifier] Found user by email:', userId);
-      }
+      if (profileByEmail) { userId = profileByEmail.user_id; source = 'email'; }
     }
 
     // Priority 2: Username
     if (!userId && username) {
       const normalizedUsername = username.toLowerCase().trim();
-      console.log('[BSK Balance By Identifier] Searching by username:', normalizedUsername);
-      
-      const { data: profileByUsername, error: usernameError } = await supabase
+      const { data: profileByUsername } = await supabase
         .from('profiles')
         .select('user_id')
         .eq('username', normalizedUsername)
         .maybeSingle();
-
-      if (usernameError) {
-        console.error('[BSK Balance By Identifier] Username lookup error:', usernameError);
-      } else if (profileByUsername) {
-        userId = profileByUsername.user_id;
-        source = 'username';
-        console.log('[BSK Balance By Identifier] Found user by username:', userId);
-      }
+      if (profileByUsername) { userId = profileByUsername.user_id; source = 'username'; }
     }
 
     // Priority 3: Wallet
     if (!userId && wallet) {
       const normalizedWallet = wallet.toLowerCase().trim();
-      console.log('[BSK Balance By Identifier] Searching by wallet:', normalizedWallet);
-      
-      const { data: profileByWallet, error: walletError } = await supabase
+      const { data: profileByWallet } = await supabase
         .from('profiles')
         .select('user_id')
         .eq('wallet_address', normalizedWallet)
         .maybeSingle();
-
-      if (walletError) {
-        console.error('[BSK Balance By Identifier] Wallet lookup error:', walletError);
-      } else if (profileByWallet) {
-        userId = profileByWallet.user_id;
-        source = 'wallet';
-        console.log('[BSK Balance By Identifier] Found user by wallet:', userId);
-      }
+      if (profileByWallet) { userId = profileByWallet.user_id; source = 'wallet'; }
     }
 
-    // If no user found, return unlinked
     if (!userId) {
-      console.log('[BSK Balance By Identifier] No user found for provided identifiers');
       return new Response(
-        JSON.stringify({
-          linked: false,
-          withdrawable_balance: 0,
-          holding_balance: 0,
-          lifetime_withdrawable_earned: 0,
-          lifetime_holding_earned: 0,
-          today_earned: 0,
-          week_earned: 0,
-        }),
+        JSON.stringify({ linked: false, withdrawable_balance: 0, holding_balance: 0, lifetime_withdrawable_earned: 0, lifetime_holding_earned: 0, today_earned: 0, week_earned: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fetch BSK balances for the user
+    // SECURITY: Non-admin users can only query their own balance
+    if (!isAdmin && userId !== authUser.id) {
+      return new Response(
+        JSON.stringify({ linked: false, error: 'You can only query your own balance' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fetch BSK balances
     const { data: balanceData, error: balanceError } = await supabase
       .from('user_bsk_balances')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (balanceError) {
-      console.error('[BSK Balance By Identifier] Balance fetch error:', balanceError);
-      throw balanceError;
-    }
+    if (balanceError) throw balanceError;
 
-    // Calculate today's and week's earnings
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const weekAgo = new Date(today);
@@ -144,14 +135,8 @@ serve(async (req) => {
       .eq('user_id', userId)
       .gte('created_at', weekAgo.toISOString());
 
-    const todayEarned = todayLedger?.reduce((sum, entry) => sum + Number(entry.bsk_amount || 0), 0) || 0;
-    const weekEarned = weekLedger?.reduce((sum, entry) => sum + Number(entry.bsk_amount || 0), 0) || 0;
-
-    console.log('[BSK Balance By Identifier] Balance found via', source, ':', {
-      userId,
-      withdrawable: balanceData?.withdrawable_balance || 0,
-      holding: balanceData?.holding_balance || 0,
-    });
+    const todayEarned = todayLedger?.reduce((sum, e) => sum + Number(e.bsk_amount || 0), 0) || 0;
+    const weekEarned = weekLedger?.reduce((sum, e) => sum + Number(e.bsk_amount || 0), 0) || 0;
 
     return new Response(
       JSON.stringify({
@@ -167,20 +152,10 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
-    console.error('[BSK Balance By Identifier] Unexpected error:', error);
+    console.error('[BSK Balance By Identifier] Error:', error);
     return new Response(
-      JSON.stringify({ 
-        linked: false, 
-        error: error.message,
-        withdrawable_balance: 0,
-        holding_balance: 0,
-        lifetime_withdrawable_earned: 0,
-        lifetime_holding_earned: 0,
-        today_earned: 0,
-        week_earned: 0,
-      }),
+      JSON.stringify({ linked: false, error: error.message, withdrawable_balance: 0, holding_balance: 0, lifetime_withdrawable_earned: 0, lifetime_holding_earned: 0, today_earned: 0, week_earned: 0 }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
