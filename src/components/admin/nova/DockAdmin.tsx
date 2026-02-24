@@ -162,6 +162,14 @@ export function DockAdmin({ className }: DockAdminProps) {
       },
     },
     {
+      label: "Trading Report",
+      icon: BarChart3,
+      onClick: () => {
+        navigate("/admin/trading-full-report");
+        setShowQuickAdd(false);
+      },
+    },
+    {
       label: "Ads",
       icon: Megaphone,
       onClick: () => {
