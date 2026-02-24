@@ -62,9 +62,10 @@ serve(async (req) => {
 
     const requestData: CreateUserRequest = await req.json();
 
-    // Validate email
-    if (!requestData.email || !requestData.email.includes("@")) {
-      throw new Error("Invalid email address");
+    // Validate email with proper regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!requestData.email || !emailRegex.test(requestData.email.trim())) {
+      throw new Error("Invalid email address format");
     }
 
     // Generate password if not provided
