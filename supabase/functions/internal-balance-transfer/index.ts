@@ -93,6 +93,37 @@ Deno.serve(async (req) => {
 
     console.log(`[internal-balance-transfer] ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}`);
 
+    // SECURITY: For "to_wallet" direction, verify the user has a registered wallet address
+    // This ensures funds can only flow back to the user's own on-chain wallet
+    if (direction === "to_wallet") {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("bsc_wallet_address, wallet_address")
+        .eq("user_id", user.id)
+        .single();
+
+      const userWalletAddress = profile?.bsc_wallet_address || profile?.wallet_address;
+
+      if (!userWalletAddress) {
+        // Also check wallets_user table
+        const { data: userWallet } = await admin
+          .from("wallets_user")
+          .select("address")
+          .eq("user_id", user.id)
+          .eq("is_primary", true)
+          .maybeSingle();
+
+        if (!userWallet?.address) {
+          return new Response(
+            JSON.stringify({ error: "No registered wallet address found. Cannot transfer to wallet without a verified on-chain address." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      console.log(`[internal-balance-transfer] ✓ User ${user.id} has registered wallet — to_wallet transfer authorized`);
+    }
+
     // Map direction for the RPC
     const rpcDirection = direction === "to_trading" ? "to_trading" : "from_trading";
 

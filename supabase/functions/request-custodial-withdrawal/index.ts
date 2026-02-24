@@ -16,7 +16,8 @@ const corsHeaders = {
 interface WithdrawalRequest {
   asset_symbol: string;
   amount: number;
-  to_address?: string;
+  // SECURITY: to_address is intentionally NOT accepted from the request body.
+  // Destination is ALWAYS derived server-side from the user's registered wallet.
 }
 
 Deno.serve(async (req) => {
@@ -52,7 +53,8 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: WithdrawalRequest = await req.json();
-    const { asset_symbol, amount, to_address } = body;
+    const { asset_symbol, amount } = body;
+    // SECURITY: Ignore any to_address from the request body — always derive server-side
 
     console.log(`[request-custodial-withdrawal] User ${user.id} requesting ${amount} ${asset_symbol}`);
 
@@ -100,28 +102,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get destination address
-    let destinationAddress = to_address;
+    // SECURITY: Always derive destination from the user's registered wallet — never from request body
+    let destinationAddress: string | null = null;
+
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('bsc_wallet_address, wallet_address')
+      .eq('user_id', user.id)
+      .single();
+
+    destinationAddress = profile?.bsc_wallet_address || profile?.wallet_address || null;
 
     if (!destinationAddress) {
-      const { data: profile } = await adminClient
-        .from('profiles')
-        .select('bsc_wallet_address, wallet_address')
+      const { data: userWallet } = await adminClient
+        .from('wallets_user')
+        .select('address')
         .eq('user_id', user.id)
+        .eq('is_primary', true)
         .single();
 
-      destinationAddress = profile?.bsc_wallet_address || profile?.wallet_address;
-
-      if (!destinationAddress) {
-        const { data: userWallet } = await adminClient
-          .from('wallets_user')
-          .select('address')
-          .eq('user_id', user.id)
-          .eq('is_primary', true)
-          .single();
-
-        destinationAddress = userWallet?.address;
-      }
+      destinationAddress = userWallet?.address || null;
     }
 
     if (!destinationAddress) {

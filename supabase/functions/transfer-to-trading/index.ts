@@ -248,24 +248,25 @@ Deno.serve(async (req) => {
         .update({ status: "processing" })
         .eq("id", transfer_id);
 
-      // Deduct from wallet_balances (the actual source of truth)
-      const { error: deductError } = await adminClient
-        .from("wallet_balances")
-        .update({
-          available: Number(walletBalance.available) - Number(transfer.amount),
-          updated_at: new Date().toISOString()
-        })
-        .eq("user_id", user.id)
-        .eq("asset_id", transfer.asset_id);
+      // SECURITY FIX: Use atomic RPC with FOR UPDATE locking instead of raw UPDATE
+      const { data: deductResult, error: deductError } = await adminClient.rpc(
+        "execute_internal_balance_transfer",
+        {
+          p_user_id: user.id,
+          p_asset_id: transfer.asset_id,
+          p_amount: Number(transfer.amount),
+          p_direction: "from_trading",
+        }
+      );
 
-      if (deductError) {
-        console.error("Deduct error:", deductError);
+      if (deductError || !deductResult?.success) {
+        console.error("Atomic deduct error:", deductError || deductResult?.error);
         await adminClient
           .from("trading_balance_transfers")
-          .update({ status: "failed", error_message: "Failed to deduct balance" })
+          .update({ status: "failed", error_message: deductResult?.error || "Failed to deduct balance" })
           .eq("id", transfer_id);
         return new Response(
-          JSON.stringify({ error: "Failed to deduct from trading balance" }),
+          JSON.stringify({ error: deductResult?.error || "Failed to deduct from trading balance" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -285,15 +286,19 @@ Deno.serve(async (req) => {
 
       if (withdrawalError) {
         console.error("Withdrawal create error:", withdrawalError);
-        // Refund wallet balance
-        await adminClient
-          .from("wallet_balances")
-          .update({
-            available: Number(walletBalance.available),
-            updated_at: new Date().toISOString()
-          })
-          .eq("user_id", user.id)
-          .eq("asset_id", transfer.asset_id);
+        // Refund via reverse atomic RPC (credit back to trading)
+        const { error: refundError } = await adminClient.rpc(
+          "execute_internal_balance_transfer",
+          {
+            p_user_id: user.id,
+            p_asset_id: transfer.asset_id,
+            p_amount: Number(transfer.amount),
+            p_direction: "to_trading",
+          }
+        );
+        if (refundError) {
+          console.error("[transfer-to-trading] CRITICAL: Refund failed after withdrawal create failure:", refundError);
+        }
 
         await adminClient
           .from("trading_balance_transfers")

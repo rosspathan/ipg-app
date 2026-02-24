@@ -418,86 +418,47 @@ const TransferScreen = () => {
         await executeTransfer(privateKey);
 
       } else {
-        // === WITHDRAWAL REQUEST — hot wallet sends tokens back ===
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not authenticated");
+        // === WITHDRAWAL REQUEST — routed through secure edge function ===
+        // SECURITY: All validation, address derivation, balance deduction, and withdrawal
+        // creation happen server-side in request-custodial-withdrawal (atomic RPC).
+        // The frontend does NOT specify to_address — the server derives it from the user's profile.
 
-        // Get user's wallet address — try local storage first, then DB profile
-        let userAddress = getStoredWallet()?.address;
-        if (!userAddress) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('wallet_address, bsc_wallet_address')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          userAddress = profile?.bsc_wallet_address || profile?.wallet_address || null;
-        }
-        if (!userAddress) throw new Error("No wallet address found. Please re-import your wallet in Settings.");
-
-        // Get asset details for withdrawal fee
-        const { data: assetData } = await supabase
-          .from('assets')
-          .select('withdraw_fee, network')
-          .eq('id', currentTradingAsset.assetId)
-          .single();
-
-        const fee = assetData?.withdraw_fee || 0;
-        const netAmount = amountNum - fee;
-
-        if (netAmount <= 0) {
-          throw new Error(`Amount too small. Minimum withdrawal must cover ${fee} ${selectedAsset} fee.`);
-        }
-
-        // Debit trading balance first via the existing RPC
-        const { data: debitResult, error: debitError } = await supabase.functions.invoke('internal-balance-transfer', {
-          body: {
-            asset_id: currentTradingAsset.assetId,
-            amount: amountNum,
-            direction: "to_wallet",
+        const { data: withdrawResult, error: withdrawError } = await supabase.functions.invoke(
+          'request-custodial-withdrawal',
+          {
+            body: {
+              asset_symbol: selectedAsset,
+              amount: amountNum,
+              // NOTE: to_address intentionally omitted — server derives from user's registered wallet
+            },
           }
-        });
+        );
 
-        if (debitError || !debitResult?.success) {
-          throw new Error(debitResult?.error || debitError?.message || "Failed to debit trading balance");
+        if (withdrawError || !withdrawResult?.success) {
+          throw new Error(withdrawResult?.error || withdrawError?.message || "Withdrawal request failed");
         }
 
-        // Create withdrawal request for the hot wallet to process
-        const { error: withdrawalError } = await supabase
-          .from('withdrawals')
-          .insert({
+        // Record in internal_balance_transfers for history
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const refId = `IBT-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+          await supabase.from('internal_balance_transfers').insert({
             user_id: user.id,
             asset_id: currentTradingAsset.assetId,
+            asset_symbol: selectedAsset,
+            direction: 'to_wallet',
             amount: amountNum,
-            fee: fee,
-            net_amount: netAmount,
-            to_address: userAddress,
-            network: assetData?.network || 'BEP20',
-            status: 'processing',
+            fee: withdrawResult.fee || 0,
+            net_amount: amountNum - (withdrawResult.fee || 0),
+            status: 'success',
+            reference_id: refId,
           });
-
-        if (withdrawalError) {
-          throw new Error("Failed to create withdrawal request: " + withdrawalError.message);
         }
-
-        // Record in internal_balance_transfers
-        const refId = `IBT-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-        await supabase.from('internal_balance_transfers').insert({
-          user_id: user.id,
-          asset_id: currentTradingAsset.assetId,
-          asset_symbol: selectedAsset,
-          direction: 'to_wallet',
-          amount: amountNum,
-          fee: fee,
-          net_amount: netAmount,
-          status: 'success',
-          reference_id: refId,
-          balance_after: debitResult?.new_balance ?? null,
-        });
         queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
 
         toast({
           title: "Withdrawal Submitted",
-          description: `${netAmount.toFixed(6)} ${selectedAsset} will be sent to your wallet shortly.`,
+          description: withdrawResult.message || `${selectedAsset} will be sent to your wallet shortly.`,
         });
 
         setShowSuccess(true);
