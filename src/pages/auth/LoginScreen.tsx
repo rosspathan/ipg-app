@@ -126,7 +126,7 @@ const LoginScreen: React.FC = () => {
           email: email.trim(),
           password
         }),
-        15000,
+        30000,
         'Sign-in is taking too long (server timeout). Please try again.'
       );
 
