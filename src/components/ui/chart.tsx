@@ -70,32 +70,41 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     ([_, config]) => config.theme || config.color
   )
 
+  const styleRef = React.useRef<HTMLStyleElement>(null)
+
+  React.useEffect(() => {
+    if (!styleRef.current || !colorConfig.length) return
+
+    // Sanitize id to prevent CSS injection
+    const safeId = id.replace(/[^a-zA-Z0-9-_]/g, "")
+
+    const cssText = Object.entries(THEMES)
+      .map(([theme, prefix]) => {
+        const vars = colorConfig
+          .map(([key, itemConfig]) => {
+            const color =
+              itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+              itemConfig.color
+            if (!color) return null
+            // Sanitize key and color values
+            const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, "")
+            const safeColor = color.replace(/[^a-zA-Z0-9#(),.\s%\/]/g, "")
+            return `  --color-${safeKey}: ${safeColor};`
+          })
+          .filter(Boolean)
+          .join("\n")
+        return `${prefix} [data-chart=${safeId}] {\n${vars}\n}`
+      })
+      .join("\n")
+
+    styleRef.current.textContent = cssText
+  }, [id, colorConfig])
+
   if (!colorConfig.length) {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
-      }}
-    />
-  )
+  return <style ref={styleRef} />
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip
