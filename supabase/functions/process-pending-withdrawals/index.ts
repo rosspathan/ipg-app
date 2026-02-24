@@ -248,7 +248,30 @@ Deno.serve(async (req) => {
           console.error(`[process-pending-withdrawals] Failed to update withdrawal ${withdrawal.id}:`, updateError);
           results.push({ id: withdrawal.id, status: 'failed', error: updateError.message });
         } else {
-          console.log(`[process-pending-withdrawals] ✓ Completed ${asset.symbol} withdrawal ${withdrawal.id}: ${txHash}`);
+          // Record WITHDRAWAL ledger entry for audit trail
+          const { data: walletBal } = await supabase
+            .from('wallet_balances')
+            .select('available, locked')
+            .eq('user_id', withdrawal.user_id)
+            .eq('asset_id', withdrawal.asset_id)
+            .maybeSingle();
+
+          await supabase
+            .from('trading_balance_ledger')
+            .insert({
+              user_id: withdrawal.user_id,
+              asset_symbol: asset.symbol,
+              delta_available: -Number(withdrawal.net_amount),
+              delta_locked: 0,
+              balance_available_after: Number(walletBal?.available ?? 0),
+              balance_locked_after: Number(walletBal?.locked ?? 0),
+              entry_type: 'WITHDRAWAL',
+              reference_type: 'withdrawal_completed',
+              reference_id: withdrawal.id,
+              notes: `Withdrawal completed: ${withdrawal.net_amount} ${asset.symbol} to ${withdrawal.to_address} | TX: ${txHash}`
+            });
+
+          console.log(`[process-pending-withdrawals] ✓ Completed ${asset.symbol} withdrawal ${withdrawal.id}: ${txHash} (ledger recorded)`);
           processed++;
           results.push({ id: withdrawal.id, status: 'completed', tx_hash: txHash, symbol: asset.symbol });
         }
