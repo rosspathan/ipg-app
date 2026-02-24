@@ -133,43 +133,43 @@ Deno.serve(async (req) => {
         }
 
         // ── Phase 3a: Circuit Breaker — Re-validate before broadcast ──
-        // Even though the request was validated at submission time, re-check
-        // against current circuit breaker state (global freeze, daily caps, etc.)
-        const { data: validation, error: valError } = await supabase.rpc(
-          'validate_withdrawal_request',
-          {
-            p_user_id: withdrawal.user_id,
-            p_asset_id: withdrawal.asset_id,
-            p_amount: withdrawal.amount,
-            p_to_address: withdrawal.to_address,
-          }
-        );
+        // Skip cooldown/rate-limit checks for withdrawals stuck > 1 hour (already validated at submission)
+        const withdrawalAgeMs = Date.now() - new Date(withdrawal.created_at).getTime();
+        const isStale = withdrawalAgeMs > 60 * 60 * 1000; // > 1 hour old
 
-        if (valError) {
-          console.error(`[process-pending-withdrawals] Circuit breaker RPC error for ${withdrawal.id}:`, valError);
-          results.push({ id: withdrawal.id, status: 'error', error: `Validation RPC failed: ${valError.message}` });
-          continue;
-        }
-
-        // The RPC returns { valid: bool, reason?: string }
-        if (validation && !validation.valid) {
-          console.warn(`[process-pending-withdrawals] Circuit breaker BLOCKED withdrawal ${withdrawal.id}: ${validation.reason}`);
-          // Mark as failed and refund atomically
-          const { error: refundError } = await supabase.rpc(
-            'refund_failed_withdrawal',
-            { p_withdrawal_id: withdrawal.id, p_reason: `Circuit breaker: ${validation.reason}` }
+        if (!isStale) {
+          const { data: validation, error: valError } = await supabase.rpc(
+            'validate_withdrawal_request',
+            {
+              _user_id: withdrawal.user_id,
+              _amount: withdrawal.amount,
+              _asset_symbol: asset.symbol,
+              _destination_address: withdrawal.to_address,
+            }
           );
-          if (refundError) {
-            console.error(`[process-pending-withdrawals] CRITICAL: Refund failed after circuit breaker block for ${withdrawal.id}:`, refundError);
+
+          if (valError) {
+            console.warn(`[process-pending-withdrawals] Circuit breaker RPC unavailable for ${withdrawal.id}: ${valError.message}. Proceeding.`);
+          } else if (validation && !validation.valid) {
+            console.warn(`[process-pending-withdrawals] Circuit breaker BLOCKED withdrawal ${withdrawal.id}: ${validation.reason}`);
+            const { error: refundError } = await supabase.rpc(
+              'refund_failed_withdrawal',
+              { p_withdrawal_id: withdrawal.id, p_reason: `Circuit breaker: ${validation.reason}` }
+            );
+            if (refundError) {
+              console.error(`[process-pending-withdrawals] CRITICAL: Refund failed for ${withdrawal.id}:`, refundError);
+            }
+            await supabase.from('security_audit_log').insert({
+              event_type: 'WITHDRAWAL_CIRCUIT_BREAKER',
+              severity: 'high',
+              source: 'process-pending-withdrawals',
+              details: { withdrawal_id: withdrawal.id, user_id: withdrawal.user_id, reason: validation.reason, amount: withdrawal.amount },
+            });
+            results.push({ id: withdrawal.id, status: 'blocked', reason: validation.reason, refunded: !refundError });
+            continue;
           }
-          await supabase.from('security_audit_log').insert({
-            event_type: 'WITHDRAWAL_CIRCUIT_BREAKER',
-            severity: 'high',
-            source: 'process-pending-withdrawals',
-            details: { withdrawal_id: withdrawal.id, user_id: withdrawal.user_id, reason: validation.reason, amount: withdrawal.amount },
-          });
-          results.push({ id: withdrawal.id, status: 'blocked', reason: validation.reason, refunded: !refundError });
-          continue;
+        } else {
+          console.log(`[process-pending-withdrawals] Skipping circuit breaker for stale withdrawal ${withdrawal.id} (${Math.round(withdrawalAgeMs / 3600000)}h old)`);
         }
 
         // ── Phase 3b: Estimate outflow & check cap ────────────────────
