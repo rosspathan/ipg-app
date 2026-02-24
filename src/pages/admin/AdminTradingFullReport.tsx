@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { RefreshCw, Download, ChevronDown, Shield, Database, TrendingUp, Activity, Wallet, ArrowUpDown, AlertTriangle, CheckCircle2, Search } from 'lucide-react';
+import { RefreshCw, Download, ChevronDown, Shield, Database, TrendingUp, Activity, Wallet, ArrowUpDown, AlertTriangle, CheckCircle2, Search, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { generateTradingFullReportPDF } from '@/lib/generateTradingFullReportPDF';
 
 function useFullTradingReport() {
   return useQuery({
@@ -128,6 +129,10 @@ export default function AdminTradingFullReport() {
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}
             className="border-[hsl(235_20%_22%)] text-[hsl(240_10%_70%)]">
             <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+          <Button size="sm" onClick={() => { generateTradingFullReportPDF(report); toast.success('PDF downloaded'); }}
+            className="bg-[hsl(262_100%_65%)] hover:bg-[hsl(262_100%_55%)] text-white">
+            <FileText className="h-4 w-4 mr-1" /> Export PDF
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportReconciliation}
             className="border-[hsl(235_20%_22%)] text-[hsl(240_10%_70%)]">
