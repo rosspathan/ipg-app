@@ -84,6 +84,31 @@ SELECT cron.schedule(
 );
 
 -- =====================================================
+-- JOB 3: Process Pending Withdrawals (every 3 minutes)
+-- =====================================================
+-- Processes withdrawals in the 'withdrawals' table
+-- These are Trading → On-Chain transfer requests
+
+DO $$
+BEGIN
+    PERFORM cron.unschedule('process-pending-withdrawals');
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+SELECT cron.schedule(
+    'process-pending-withdrawals',
+    '*/3 * * * *',  -- Run every 3 minutes
+    $$
+    SELECT net.http_post(
+        url:='https://ocblgldglqhlrmtnynmu.supabase.co/functions/v1/process-pending-withdrawals',
+        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jYmxnbGRnbHFobHJtdG55bm11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3MjYwNTYsImV4cCI6MjA3MTMwMjA1Nn0.aW57QcWFW0aInebAK1m1RsvSkvtayUWPT7uv40OpQ8A"}'::jsonb,
+        body:='{"scheduled_run": true}'::jsonb
+    ) as request_id;
+    $$
+);
+
+-- =====================================================
 -- VERIFY JOBS WERE CREATED
 -- =====================================================
 
@@ -93,7 +118,7 @@ SELECT
     schedule,
     active
 FROM cron.job
-WHERE jobname IN ('monitor-custodial-deposits', 'process-custodial-withdrawals')
+WHERE jobname IN ('monitor-custodial-deposits', 'process-custodial-withdrawals', 'process-pending-withdrawals')
 ORDER BY jobname;
 
 -- =====================================================
