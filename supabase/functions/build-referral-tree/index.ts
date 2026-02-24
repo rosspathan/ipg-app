@@ -16,9 +16,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verify caller is using service role key (internal/cron only)
+    const authHeader = req.headers.get('authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    if (!token || token !== serviceRoleKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized: service role required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      serviceRoleKey
     );
 
     const { user_id, include_unlocked = false } = await req.json() as BuildTreeRequest;
