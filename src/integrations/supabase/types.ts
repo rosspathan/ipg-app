@@ -281,6 +281,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_auth_nonces: {
+        Row: {
+          created_at: string
+          expires_at: string
+          nonce: string
+          used_at: string | null
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          nonce: string
+          used_at?: string | null
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          nonce?: string
+          used_at?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       admin_balance_adjustments: {
         Row: {
           admin_user_id: string
