@@ -56,20 +56,30 @@ export interface HotWalletFlow {
   net_balance: number;
 }
 
-// Batched profile fetcher to avoid URL length limits
-async function fetchProfilesBatched(userIds: string[]): Promise<Record<string, { email: string; username: string }>> {
-  const map: Record<string, { email: string; username: string }> = {};
-  const batchSize = 80;
+// Batched query helper to avoid URL length limits with large IN clauses
+async function fetchBatched<T>(
+  queryFn: (batch: string[]) => PromiseLike<{ data: T[] | null; error: any }>,
+  userIds: string[],
+  batchSize = 50
+): Promise<T[]> {
+  const results: T[] = [];
   for (let i = 0; i < userIds.length; i += batchSize) {
     const batch = userIds.slice(i, i + batchSize);
-    const { data } = await supabase
-      .from('profiles')
-      .select('user_id, email, username')
-      .in('user_id', batch);
-    (data || []).forEach(p => {
-      map[p.user_id] = { email: p.email || 'N/A', username: p.username || p.user_id.substring(0, 8) };
-    });
+    const { data } = await queryFn(batch);
+    if (data) results.push(...data);
   }
+  return results;
+}
+
+async function fetchProfilesBatched(userIds: string[]): Promise<Record<string, { email: string; username: string }>> {
+  const map: Record<string, { email: string; username: string }> = {};
+  const profiles = await fetchBatched(
+    (batch) => supabase.from('profiles').select('user_id, email, username').in('user_id', batch),
+    userIds
+  );
+  profiles.forEach((p: any) => {
+    map[p.user_id] = { email: p.email || 'N/A', username: p.username || p.user_id.substring(0, 8) };
+  });
   return map;
 }
 
@@ -131,13 +141,29 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
       const userIds = [...new Set(balances.map(b => b.user_id))];
 
       // Parallel fetch: profiles, ledger entries, deposits, withdrawals, internal transfers, active orders
+      // Use batching to avoid URL length limits with large user lists
       const [profileMap, ledgerData, depositsData, withdrawalsData, internalsData, ordersData] = await Promise.all([
         fetchProfilesBatched(userIds),
-        supabase.from('trading_balance_ledger').select('user_id, asset_symbol, entry_type, delta_available, delta_locked').in('user_id', userIds.slice(0, 500)),
-        supabase.from('custodial_deposits').select('user_id, amount, asset_id, assets!inner(symbol)').eq('status', 'credited').in('user_id', userIds.slice(0, 500)),
-        supabase.from('withdrawals').select('user_id, amount, fee, asset_id, assets!inner(symbol)').in('status', ['completed', 'processing']).in('user_id', userIds.slice(0, 500)),
-        supabase.from('internal_balance_transfers').select('user_id, amount, fee, asset_symbol, direction, status').eq('status', 'completed').in('user_id', userIds.slice(0, 500)),
-        supabase.from('orders').select('user_id, locked_amount, locked_asset_symbol, status').in('status', ['pending', 'open', 'partially_filled']).in('user_id', userIds.slice(0, 500)),
+        fetchBatched<any>(
+          (batch) => supabase.from('trading_balance_ledger').select('user_id, asset_symbol, entry_type, delta_available, delta_locked').in('user_id', batch),
+          userIds
+        ),
+        fetchBatched<any>(
+          (batch) => supabase.from('custodial_deposits').select('user_id, amount, asset_id, assets!inner(symbol)').eq('status', 'credited').in('user_id', batch),
+          userIds
+        ),
+        fetchBatched<any>(
+          (batch) => supabase.from('withdrawals').select('user_id, amount, fee, asset_id, assets!inner(symbol)').in('status', ['completed', 'processing']).in('user_id', batch),
+          userIds
+        ),
+        fetchBatched<any>(
+          (batch) => supabase.from('internal_balance_transfers').select('user_id, amount, fee, asset_symbol, direction, status').eq('status', 'completed').in('user_id', batch),
+          userIds
+        ),
+        fetchBatched<any>(
+          (batch) => supabase.from('orders').select('user_id, locked_amount, locked_asset_symbol, status').in('status', ['pending', 'open', 'partially_filled']).in('user_id', batch),
+          userIds
+        ),
       ]);
 
       // Build per-user-asset aggregates
@@ -150,20 +176,20 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
       };
 
       // Ledger entries
-      (ledgerData.data || []).forEach(l => {
+      (ledgerData || []).forEach((l: any) => {
         const a = getAgg(l.user_id, l.asset_symbol);
         a.ledger_entries++;
         a.ledger_net += Number(l.delta_available || 0) + Number(l.delta_locked || 0);
         if (l.entry_type === 'DEPOSIT' || l.entry_type === 'CREDIT') a.deposits += Number(l.delta_available || 0);
         else if (l.entry_type === 'WITHDRAWAL') a.withdrawals += Math.abs(Number(l.delta_available || 0));
-        else if (l.entry_type === 'BUY_FILL' || l.entry_type === 'BUY_RECEIVE') a.trade_buys += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));
-        else if (l.entry_type === 'SELL_FILL' || l.entry_type === 'SELL_DEBIT') a.trade_sells += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));
-        else if (l.entry_type === 'FEE') a.fees_paid += Math.abs(Number(l.delta_available || 0));
+        else if (l.entry_type === 'BUY_FILL' || l.entry_type === 'BUY_RECEIVE' || l.entry_type === 'FILL_CREDIT') a.trade_buys += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));
+        else if (l.entry_type === 'SELL_FILL' || l.entry_type === 'SELL_DEBIT' || l.entry_type === 'FILL_DEBIT') a.trade_sells += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));
+        else if (l.entry_type === 'FEE' || l.entry_type === 'FEE_CREDIT') a.fees_paid += Math.abs(Number(l.delta_available || 0));
       });
 
       // Deposits (fallback if ledger missing)
-      (depositsData.data || []).forEach(d => {
-        const sym = (d.assets as any)?.symbol;
+      (depositsData || []).forEach((d: any) => {
+        const sym = d.assets?.symbol;
         if (sym) {
           const a = getAgg(d.user_id, sym);
           if (a.deposits === 0) a.deposits = Number(d.amount || 0);
@@ -171,8 +197,8 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
       });
 
       // Withdrawals (fallback)
-      (withdrawalsData.data || []).forEach(w => {
-        const sym = (w.assets as any)?.symbol;
+      (withdrawalsData || []).forEach((w: any) => {
+        const sym = w.assets?.symbol;
         if (sym) {
           const a = getAgg(w.user_id, sym);
           if (a.withdrawals === 0) a.withdrawals = Number(w.amount || 0);
@@ -181,7 +207,7 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
       });
 
       // Internal transfers
-      (internalsData.data || []).forEach(t => {
+      (internalsData || []).forEach((t: any) => {
         if (!t.asset_symbol) return;
         const a = getAgg(t.user_id, t.asset_symbol);
         if (t.direction === 'to_trading') a.internal_in += Number(t.amount || 0);
@@ -189,7 +215,7 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
       });
 
       // Active orders
-      (ordersData.data || []).forEach(o => {
+      (ordersData || []).forEach((o: any) => {
         if (!o.locked_asset_symbol) return;
         const a = getAgg(o.user_id, o.locked_asset_symbol);
         a.active_orders++;
