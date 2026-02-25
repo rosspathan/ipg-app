@@ -58,15 +58,21 @@ export interface HotWalletFlow {
 
 // Batched query helper to avoid URL length limits with large IN clauses
 async function fetchBatched<T>(
-  queryFn: (batch: string[]) => PromiseLike<{ data: T[] | null; error: any }>,
+  queryFn: (batch: string[], from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>,
   userIds: string[],
-  batchSize = 50
+  batchSize = 50,
+  pageSize = 1000
 ): Promise<T[]> {
   const results: T[] = [];
   for (let i = 0; i < userIds.length; i += batchSize) {
     const batch = userIds.slice(i, i + batchSize);
-    const { data } = await queryFn(batch);
-    if (data) results.push(...data);
+    let offset = 0;
+    while (true) {
+      const { data } = await queryFn(batch, offset, offset + pageSize - 1);
+      if (data) results.push(...data);
+      if (!data || data.length < pageSize) break;
+      offset += pageSize;
+    }
   }
   return results;
 }
@@ -74,7 +80,7 @@ async function fetchBatched<T>(
 async function fetchProfilesBatched(userIds: string[]): Promise<Record<string, { email: string; username: string }>> {
   const map: Record<string, { email: string; username: string }> = {};
   const profiles = await fetchBatched(
-    (batch) => supabase.from('profiles').select('user_id, email, username').in('user_id', batch),
+    (batch, from, to) => supabase.from('profiles').select('user_id, email, username').in('user_id', batch).range(from, to),
     userIds
   );
   profiles.forEach((p: any) => {
@@ -145,23 +151,23 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
       const [profileMap, ledgerData, depositsData, withdrawalsData, internalsData, ordersData] = await Promise.all([
         fetchProfilesBatched(userIds),
         fetchBatched<any>(
-          (batch) => supabase.from('trading_balance_ledger').select('user_id, asset_symbol, entry_type, delta_available, delta_locked').in('user_id', batch),
+          (batch, from, to) => supabase.from('trading_balance_ledger').select('user_id, asset_symbol, entry_type, delta_available, delta_locked').in('user_id', batch).range(from, to),
           userIds
         ),
         fetchBatched<any>(
-          (batch) => supabase.from('custodial_deposits').select('user_id, amount, asset_id, assets!inner(symbol)').eq('status', 'credited').in('user_id', batch),
+          (batch, from, to) => supabase.from('custodial_deposits').select('user_id, amount, asset_id, assets!inner(symbol)').eq('status', 'credited').in('user_id', batch).range(from, to),
           userIds
         ),
         fetchBatched<any>(
-          (batch) => supabase.from('withdrawals').select('user_id, amount, fee, asset_id, assets!inner(symbol)').in('status', ['completed', 'processing']).in('user_id', batch),
+          (batch, from, to) => supabase.from('withdrawals').select('user_id, amount, fee, asset_id, assets!inner(symbol)').in('status', ['completed', 'processing']).in('user_id', batch).range(from, to),
           userIds
         ),
         fetchBatched<any>(
-          (batch) => supabase.from('internal_balance_transfers').select('user_id, amount, fee, asset_symbol, direction, status').eq('status', 'completed').in('user_id', batch),
+          (batch, from, to) => supabase.from('internal_balance_transfers').select('user_id, amount, fee, asset_symbol, direction, status').eq('status', 'completed').in('user_id', batch).range(from, to),
           userIds
         ),
         fetchBatched<any>(
-          (batch) => supabase.from('orders').select('user_id, locked_amount, locked_asset_symbol, status').in('status', ['pending', 'open', 'partially_filled']).in('user_id', batch),
+          (batch, from, to) => supabase.from('orders').select('user_id, locked_amount, locked_asset_symbol, status').in('status', ['pending', 'open', 'partially_filled']).in('user_id', batch).range(from, to),
           userIds
         ),
       ]);
