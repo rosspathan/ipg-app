@@ -162,6 +162,14 @@ export function DockAdmin({ className }: DockAdminProps) {
       },
     },
     {
+      label: "Trading Recon",
+      icon: Shield,
+      onClick: () => {
+        navigate("/admin/trading-reconciliation");
+        setShowQuickAdd(false);
+      },
+    },
+    {
       label: "Trading Report",
       icon: BarChart3,
       onClick: () => {
