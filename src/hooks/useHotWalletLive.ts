@@ -16,23 +16,38 @@ const BSC_RPC_ENDPOINTS = [
   'https://bsc-dataseed1.binance.org',
   'https://bsc-dataseed2.binance.org',
   'https://bsc-dataseed3.binance.org',
+  'https://bsc-dataseed4.binance.org',
+  'https://1rpc.io/bnb',
 ];
+
+/** Per-wallet on-chain balance breakdown */
+export interface WalletBalance {
+  address: string;
+  label: string;
+  balances: Record<string, number>; // symbol → balance
+}
 
 export interface TokenFlow {
   symbol: string;
-  onchainBalance: number;
+  // Aggregated across ALL system wallets
+  totalOnchainBalance: number;
+  // Per-wallet breakdown
+  perWalletBalances: { address: string; label: string; balance: number }[];
   totalDeposits: number;
   totalWithdrawals: number;
-  totalInternalIn: number;   // to_trading
-  totalInternalOut: number;  // to_wallet
+  totalInternalIn: number;
+  totalInternalOut: number;
   totalFees: number;
   netFlow: number;
   expectedBalance: number;
   delta: number;
+  // User liabilities
+  userWithdrawable: number;
+  isSolvent: boolean; // totalOnchainBalance >= userWithdrawable
 }
 
 export interface HotWalletLiveData {
-  walletAddress: string;
+  wallets: { address: string; label: string; isActive: boolean }[];
   tokenFlows: TokenFlow[];
   lastSyncAt: Date;
   recentTransactions: RecentTx[];
@@ -59,7 +74,7 @@ async function rpcCall(method: string, params: unknown[]): Promise<any> {
         body: JSON.stringify({ jsonrpc: '2.0', method, params, id: 1 }),
       });
       const json = await res.json();
-      if (json.result) return json.result;
+      if (json.result !== undefined && json.result !== null) return json.result;
     } catch { /* try next */ }
   }
   return null;
@@ -72,10 +87,30 @@ async function getNativeBalance(address: string): Promise<number> {
 }
 
 async function getERC20Balance(contract: string, wallet: string, decimals: number): Promise<number> {
-  const data = `0x70a08231000000000000000000000000${wallet.replace('0x', '')}`;
+  const paddedAddr = wallet.replace('0x', '').toLowerCase().padStart(64, '0');
+  const data = `0x70a08231${paddedAddr}`;
   const hex = await rpcCall('eth_call', [{ to: contract, data }, 'latest']);
   if (!hex || hex === '0x') return 0;
   return Number(BigInt(hex)) / (10 ** decimals);
+}
+
+/** Fetch on-chain balances for a single wallet address across all tracked tokens */
+async function fetchWalletBalances(address: string): Promise<Record<string, number>> {
+  const balances: Record<string, number> = {};
+  await Promise.all(
+    Object.entries(TRACKED_TOKENS).map(async ([symbol, token]) => {
+      try {
+        if (token.address === 'native') {
+          balances[symbol] = await getNativeBalance(address);
+        } else {
+          balances[symbol] = await getERC20Balance(token.address, address, token.decimals);
+        }
+      } catch {
+        balances[symbol] = 0;
+      }
+    })
+  );
+  return balances;
 }
 
 // --- Main hook ---
@@ -107,16 +142,16 @@ export function useHotWalletLive(refreshInterval = 20000) {
   return useQuery({
     queryKey: ['hot-wallet-live'],
     queryFn: async (): Promise<HotWalletLiveData> => {
-      // 1. Get hot wallet address
-      const { data: wallet } = await supabase
+      // 1. Get ALL system-controlled wallet addresses (not just trading)
+      const { data: allWallets } = await supabase
         .from('platform_hot_wallet')
-        .select('address')
-        .eq('is_active', true)
-        .eq('chain', 'BSC')
-        .eq('label', 'Trading Hot Wallet')
-        .maybeSingle();
+        .select('address, label, is_active, chain')
+        .eq('chain', 'BSC');
 
-      const walletAddress = wallet?.address || '';
+      const systemWallets = (allWallets || []).filter(w => w.is_active);
+      // Also include known addresses that might not be in DB
+      const knownAddresses = new Map<string, string>();
+      systemWallets.forEach(w => knownAddresses.set(w.address.toLowerCase(), w.label || 'Unknown'));
 
       // 2. Get asset ID map
       const { data: assets } = await supabase
@@ -130,88 +165,60 @@ export function useHotWalletLive(refreshInterval = 20000) {
         idBySymbol[a.symbol] = a.id;
       });
 
-      // 3. Fetch live on-chain balances (frontend RPC)
-      const onchainBalances: Record<string, number> = {};
-      const balancePromises = Object.entries(TRACKED_TOKENS).map(async ([symbol, token]) => {
-        try {
-          if (token.address === 'native') {
-            onchainBalances[symbol] = walletAddress ? await getNativeBalance(walletAddress) : 0;
-          } else if (walletAddress) {
-            onchainBalances[symbol] = await getERC20Balance(token.address, walletAddress, token.decimals);
-          }
-        } catch {
-          onchainBalances[symbol] = 0;
-        }
-      });
+      // 3. Fetch live on-chain balances for ALL wallets in parallel
+      const walletBalanceResults: WalletBalance[] = [];
+      await Promise.all(
+        systemWallets.map(async (w) => {
+          const balances = await fetchWalletBalances(w.address);
+          walletBalanceResults.push({
+            address: w.address,
+            label: w.label || 'Unknown',
+            balances,
+          });
+        })
+      );
 
-      // 4. Also call edge function for validation
-      const edgeFnPromise = supabase.functions.invoke('get-admin-wallet-info').catch(() => null);
+      // Also call edge function for Trading Hot Wallet validation
+      const edgeResult = await supabase.functions.invoke('get-admin-wallet-info').catch(() => null);
 
-      // 5. Fetch DB aggregates in parallel
-      const depositsPromise = supabase
-        .from('custodial_deposits')
-        .select('asset_id, amount, status')
-        .eq('status', 'credited');
-
-      const withdrawalsPromise = supabase
-        .from('custodial_withdrawals')
-        .select('asset_id, amount, fee_amount, status')
-        .eq('status', 'completed');
-
-      const internalPromise = supabase
-        .from('internal_balance_transfers')
-        .select('asset_symbol, amount, fee, direction, status')
-        .eq('status', 'success');
-
-      // 6. Recent transactions for audit trail
-      const recentDepositsP = supabase
-        .from('custodial_deposits')
-        .select('id, asset_id, amount, tx_hash, status, created_at, user_id')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      const recentWithdrawalsP = supabase
-        .from('custodial_withdrawals')
-        .select('id, asset_id, amount, tx_hash, status, created_at, user_id, fee_amount')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      const recentInternalP = supabase
-        .from('internal_balance_transfers')
-        .select('id, asset_symbol, amount, tx_hash, status, created_at, user_id, direction')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      // Execute all in parallel
-      const [
-        _balances,
-        edgeResult,
-        depositsResult,
-        withdrawalsResult,
-        internalResult,
-        recentDeps,
-        recentWds,
-        recentInts,
-      ] = await Promise.all([
-        Promise.all(balancePromises),
-        edgeFnPromise,
-        depositsPromise,
-        withdrawalsPromise,
-        internalPromise,
-        recentDepositsP,
-        recentWithdrawalsP,
-        recentInternalP,
+      // 4. Fetch DB aggregates in parallel
+      const [depositsResult, withdrawalsResult, internalResult, userBalancesResult] = await Promise.all([
+        supabase
+          .from('custodial_deposits')
+          .select('asset_id, amount, status')
+          .eq('status', 'credited'),
+        supabase
+          .from('custodial_withdrawals')
+          .select('asset_id, amount, fee_amount, status')
+          .eq('status', 'completed'),
+        supabase
+          .from('internal_balance_transfers')
+          .select('asset_symbol, amount, fee, direction, status')
+          .eq('status', 'success'),
+        // User liabilities: total withdrawable balances per asset
+        supabase
+          .from('wallet_balances')
+          .select('asset_id, available, locked, total'),
       ]);
 
-      // Merge edge function balances as validation
-      if (edgeResult?.data?.balances) {
-        const efBalances = edgeResult.data.balances as Record<string, string>;
-        for (const [sym, bal] of Object.entries(efBalances)) {
-          if (!onchainBalances[sym] || onchainBalances[sym] === 0) {
-            onchainBalances[sym] = parseFloat(bal) || 0;
-          }
-        }
-      }
+      // 5. Recent transactions for audit trail
+      const [recentDeps, recentWds, recentInts] = await Promise.all([
+        supabase
+          .from('custodial_deposits')
+          .select('id, asset_id, amount, tx_hash, status, created_at, user_id')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('custodial_withdrawals')
+          .select('id, asset_id, amount, tx_hash, status, created_at, user_id, fee_amount')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('internal_balance_transfers')
+          .select('id, asset_symbol, amount, tx_hash, status, created_at, user_id, direction')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]);
 
       // Aggregate deposits by symbol
       const depositSums: Record<string, number> = {};
@@ -240,7 +247,14 @@ export function useHotWalletLive(refreshInterval = 20000) {
         }
       });
 
-      // Build token flows
+      // Aggregate user liabilities (total balances per token)
+      const userLiabilities: Record<string, number> = {};
+      (userBalancesResult.data || []).forEach(b => {
+        const sym = symbolById[b.asset_id] || 'UNKNOWN';
+        userLiabilities[sym] = (userLiabilities[sym] || 0) + (b.total || 0);
+      });
+
+      // Build token flows with aggregated multi-wallet balances
       const trackedSymbols = Object.keys(TRACKED_TOKENS);
       const tokenFlows: TokenFlow[] = trackedSymbols.map(symbol => {
         const deposits = depositSums[symbol] || 0;
@@ -248,13 +262,31 @@ export function useHotWalletLive(refreshInterval = 20000) {
         const intIn = internalIn[symbol] || 0;
         const intOut = internalOut[symbol] || 0;
         const fees = feeSums[symbol] || 0;
-        const balance = onchainBalances[symbol] || 0;
         const netFlow = deposits - withdrawals + intIn - intOut;
-        const expected = netFlow; // simplified: net of all known flows
+        const expected = netFlow;
+
+        // Aggregate on-chain balance across ALL wallets
+        const perWalletBalances = walletBalanceResults.map(wb => ({
+          address: wb.address,
+          label: wb.label,
+          balance: wb.balances[symbol] || 0,
+        }));
+        const totalOnchain = perWalletBalances.reduce((sum, wb) => sum + wb.balance, 0);
+
+        // If edge function returned data for trading wallet, use as validation
+        if (edgeResult?.data?.balances?.[symbol]) {
+          const tradingWallet = perWalletBalances.find(w => w.label === 'Trading Hot Wallet');
+          if (tradingWallet && tradingWallet.balance === 0) {
+            tradingWallet.balance = parseFloat(edgeResult.data.balances[symbol]) || 0;
+          }
+        }
+
+        const userWithdrawable = userLiabilities[symbol] || 0;
 
         return {
           symbol,
-          onchainBalance: balance,
+          totalOnchainBalance: totalOnchain,
+          perWalletBalances,
           totalDeposits: deposits,
           totalWithdrawals: withdrawals,
           totalInternalIn: intIn,
@@ -262,7 +294,9 @@ export function useHotWalletLive(refreshInterval = 20000) {
           totalFees: fees,
           netFlow,
           expectedBalance: expected,
-          delta: balance - expected,
+          delta: totalOnchain - expected,
+          userWithdrawable,
+          isSolvent: totalOnchain >= userWithdrawable - 0.01, // small tolerance
         };
       });
 
@@ -305,11 +339,10 @@ export function useHotWalletLive(refreshInterval = 20000) {
         });
       });
 
-      // Sort by date desc
       recentTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       return {
-        walletAddress,
+        wallets: systemWallets.map(w => ({ address: w.address, label: w.label || 'Unknown', isActive: w.is_active })),
         tokenFlows,
         lastSyncAt: new Date(),
         recentTransactions: recentTransactions.slice(0, 100),
