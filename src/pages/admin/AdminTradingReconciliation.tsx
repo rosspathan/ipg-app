@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { RefreshCw, AlertTriangle, CheckCircle2, Search, Shield, Database, TrendingUp, Activity, ChevronDown, Download, Wallet, ArrowUpDown, FileText } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle2, Search, Shield, Database, TrendingUp, Activity, ChevronDown, ChevronRight, Download, Wallet, ArrowUpDown, FileText, Wrench, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -41,6 +41,9 @@ export default function AdminTradingReconciliation() {
   const [searchUser, setSearchUser] = useState('');
   const [searchTransfer, setSearchTransfer] = useState('');
   const [isRunningRecon, setIsRunningRecon] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [fixingUser, setFixingUser] = useState<string | null>(null);
+  const [showOnlyDrift, setShowOnlyDrift] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     stats: true, global: true, users: true, transfers: true, hotwallet: true,
   });
@@ -66,12 +69,47 @@ export default function AdminTradingReconciliation() {
 
   const hasAnyMismatch = (globalData || []).some(a => Math.abs(a.discrepancy) > 0.01);
 
-  const filteredUsers = (userData || []).filter(u =>
-    !searchUser ||
-    u.username.toLowerCase().includes(searchUser.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchUser.toLowerCase()) ||
-    u.user_id.toLowerCase().includes(searchUser.toLowerCase())
-  );
+  const toggleUserExpand = (key: string) => {
+    setExpandedUsers(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const handleFixUser = async (userId: string) => {
+    setFixingUser(userId);
+    try {
+      const { data, error } = await supabase.rpc('force_reconcile_all_balances', { p_user_id: userId });
+      if (error) throw error;
+      toast.success(`Reconciliation applied for ${userId.substring(0, 8)}`);
+      refetchUsers();
+    } catch (err: any) {
+      toast.error(`Fix failed: ${err.message}`);
+    } finally {
+      setFixingUser(null);
+    }
+  };
+
+  const handleFixGhostLocks = async () => {
+    try {
+      const { data, error } = await supabase.rpc('fix_ghost_locks');
+      if (error) throw error;
+      const fixed = (data as any[]) || [];
+      toast.success(`Fixed ${fixed.length} ghost locks`);
+      refetchUsers();
+    } catch (err: any) {
+      toast.error(`Ghost lock fix failed: ${err.message}`);
+    }
+  };
+
+  const filteredUsers = (userData || []).filter(u => {
+    if (showOnlyDrift && Math.abs(u.drift) < 0.00001) return false;
+    return !searchUser ||
+      u.username.toLowerCase().includes(searchUser.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchUser.toLowerCase()) ||
+      u.user_id.toLowerCase().includes(searchUser.toLowerCase());
+  });
 
   const filteredTransfers = (transferData || []).filter(t =>
     !searchTransfer ||
@@ -91,8 +129,19 @@ export default function AdminTradingReconciliation() {
       available: u.available.toFixed(4),
       locked: u.locked.toFixed(4),
       total: u.total.toFixed(4),
+      deposits: u.deposits.toFixed(4),
+      withdrawals: u.withdrawals.toFixed(4),
+      trade_buys: u.trade_buys.toFixed(4),
+      trade_sells: u.trade_sells.toFixed(4),
+      fees_paid: u.fees_paid.toFixed(4),
+      internal_in: u.internal_in.toFixed(4),
+      internal_out: u.internal_out.toFixed(4),
+      ledger_entries: u.ledger_entries,
       ledger_net: u.ledger_net.toFixed(4),
       drift: u.drift.toFixed(4),
+      active_orders: u.active_orders,
+      active_order_locked: u.active_order_locked.toFixed(4),
+      ghost_lock: u.locked > 0 && u.active_orders === 0 ? 'YES' : 'NO',
     })), 'user-audit-report');
   };
 
@@ -321,7 +370,7 @@ export default function AdminTradingReconciliation() {
           <CollapsibleContent>
             <CardContent>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto flex-wrap">
                   <div className="relative flex-1 sm:w-56">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-[hsl(240_10%_50%)]" />
                     <Input
@@ -342,12 +391,34 @@ export default function AdminTradingReconciliation() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button variant={showOnlyDrift ? "default" : "outline"} size="sm"
+                    onClick={() => setShowOnlyDrift(!showOnlyDrift)}
+                    className={showOnlyDrift
+                      ? "bg-[hsl(0_70%_50%)] hover:bg-[hsl(0_70%_40%)] text-white h-9"
+                      : "border-[hsl(235_20%_22%)] text-[hsl(240_10%_70%)] h-9"}>
+                    <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Drift Only
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleExportUsers}
-                  className="border-[hsl(235_20%_22%)] text-[hsl(240_10%_70%)]">
-                  <Download className="h-4 w-4 mr-1" /> CSV
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleFixGhostLocks}
+                    className="border-[hsl(235_20%_22%)] text-[hsl(45_100%_60%)]">
+                    <Wrench className="h-4 w-4 mr-1" /> Fix Ghost Locks
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExportUsers}
+                    className="border-[hsl(235_20%_22%)] text-[hsl(240_10%_70%)]">
+                    <Download className="h-4 w-4 mr-1" /> CSV
+                  </Button>
+                </div>
               </div>
+
+              {/* Drift summary */}
+              {userData && (
+                <div className="flex gap-3 mb-3 text-xs">
+                  <span className="text-[hsl(240_10%_70%)]">Total users: <span className="text-[hsl(0_0%_98%)] font-bold">{userData.length}</span></span>
+                  <span className="text-[hsl(240_10%_70%)]">With drift: <span className="text-[hsl(0_70%_68%)] font-bold">{userData.filter(u => Math.abs(u.drift) > 0.00001).length}</span></span>
+                  <span className="text-[hsl(240_10%_70%)]">With ghost locks: <span className="text-[hsl(45_100%_60%)] font-bold">{userData.filter(u => u.locked > 0 && u.active_orders === 0).length}</span></span>
+                </div>
+              )}
 
               {usersLoading ? (
                 <p className="text-[hsl(240_10%_70%)]">Loading...</p>
@@ -356,6 +427,7 @@ export default function AdminTradingReconciliation() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-[hsl(235_20%_22%)]">
+                        <th className="w-6"></th>
                         <th className="text-left py-2 text-[hsl(240_10%_70%)] font-medium">User</th>
                         <th className="text-left py-2 text-[hsl(240_10%_70%)] font-medium">Email</th>
                         <th className="text-left py-2 text-[hsl(240_10%_70%)] font-medium">Asset</th>
@@ -364,27 +436,146 @@ export default function AdminTradingReconciliation() {
                         <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Total</th>
                         <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Ledger</th>
                         <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Drift</th>
+                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredUsers.slice(0, 200).map((u, i) => (
-                        <tr key={`${u.user_id}-${u.asset_symbol}-${i}`} className="border-b border-[hsl(235_20%_22%/0.5)] hover:bg-[hsl(235_28%_18%)]">
-                          <td className="py-2 text-[hsl(0_0%_98%)] font-mono text-xs">{u.username}</td>
-                          <td className="py-2 text-[hsl(240_10%_70%)] text-xs max-w-[160px] truncate">{u.email}</td>
-                          <td className="py-2 text-[hsl(262_100%_65%)]">{u.asset_symbol}</td>
-                          <td className="text-right py-2 text-[hsl(0_0%_98%)]">{fmt(u.available)}</td>
-                          <td className="text-right py-2 text-[hsl(45_100%_60%)]">{fmt(u.locked)}</td>
-                          <td className="text-right py-2 text-[hsl(0_0%_98%)] font-semibold">{fmt(u.total)}</td>
-                          <td className="text-right py-2 text-[hsl(240_10%_70%)]">{fmt(u.ledger_net)}</td>
-                          <td className="text-right py-2">
-                            {Math.abs(u.drift) > 0.00001 ? (
-                              <span className="text-[hsl(0_70%_68%)] font-bold">{u.drift.toFixed(4)}</span>
-                            ) : (
-                              <span className="text-[hsl(145_70%_60%)]">0</span>
+                      {filteredUsers.slice(0, 200).map((u, i) => {
+                        const rowKey = `${u.user_id}-${u.asset_symbol}`;
+                        const isExpanded = expandedUsers.has(rowKey);
+                        const hasDrift = Math.abs(u.drift) > 0.00001;
+                        const hasGhostLock = u.locked > 0 && u.active_orders === 0;
+                        return (
+                          <React.Fragment key={`${rowKey}-${i}`}>
+                            <tr
+                              className={`border-b border-[hsl(235_20%_22%/0.5)] hover:bg-[hsl(235_28%_18%)] cursor-pointer ${hasDrift ? 'bg-[hsl(0_70%_20%/0.08)]' : ''}`}
+                              onClick={() => toggleUserExpand(rowKey)}
+                            >
+                              <td className="py-2 pl-2">
+                                {isExpanded
+                                  ? <ChevronDown className="h-3.5 w-3.5 text-[hsl(240_10%_50%)]" />
+                                  : <ChevronRight className="h-3.5 w-3.5 text-[hsl(240_10%_50%)]" />}
+                              </td>
+                              <td className="py-2 text-[hsl(0_0%_98%)] font-mono text-xs">{u.username}</td>
+                              <td className="py-2 text-[hsl(240_10%_70%)] text-xs max-w-[140px] truncate">{u.email}</td>
+                              <td className="py-2 text-[hsl(262_100%_65%)]">{u.asset_symbol}</td>
+                              <td className="text-right py-2 text-[hsl(0_0%_98%)]">{fmt(u.available)}</td>
+                              <td className="text-right py-2">
+                                <span className={hasGhostLock ? 'text-[hsl(0_70%_68%)] font-bold' : 'text-[hsl(45_100%_60%)]'}>
+                                  {fmt(u.locked)}
+                                </span>
+                                {hasGhostLock && <span className="text-[hsl(0_70%_68%)] ml-1" title="Ghost lock: locked balance with no active orders">👻</span>}
+                              </td>
+                              <td className="text-right py-2 text-[hsl(0_0%_98%)] font-semibold">{fmt(u.total)}</td>
+                              <td className="text-right py-2 text-[hsl(240_10%_70%)]">{fmt(u.ledger_net)}</td>
+                              <td className="text-right py-2">
+                                {hasDrift ? (
+                                  <span className="text-[hsl(0_70%_68%)] font-bold">{u.drift.toFixed(4)}</span>
+                                ) : (
+                                  <span className="text-[hsl(145_70%_60%)]">✓</span>
+                                )}
+                              </td>
+                              <td className="text-right py-2" onClick={e => e.stopPropagation()}>
+                                {(hasDrift || hasGhostLock) && (
+                                  <Button size="sm" variant="outline"
+                                    disabled={fixingUser === u.user_id}
+                                    onClick={() => handleFixUser(u.user_id)}
+                                    className="h-6 px-2 text-[10px] border-[hsl(45_100%_50%/0.5)] text-[hsl(45_100%_60%)] hover:bg-[hsl(45_100%_50%/0.1)]">
+                                    <Wrench className="h-3 w-3 mr-0.5" />
+                                    {fixingUser === u.user_id ? '...' : 'Fix'}
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                            {/* Expanded detail row */}
+                            {isExpanded && (
+                              <tr className="bg-[hsl(235_28%_12%)]">
+                                <td colSpan={10} className="p-3">
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 text-xs">
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Deposits</p>
+                                      <p className="text-[hsl(145_70%_60%)] font-mono font-bold">{fmt(u.deposits)}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Withdrawals</p>
+                                      <p className="text-[hsl(0_70%_68%)] font-mono font-bold">{fmt(u.withdrawals)}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Trade Buys</p>
+                                      <p className="text-[hsl(145_70%_60%)] font-mono font-bold">{fmt(u.trade_buys)}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Trade Sells</p>
+                                      <p className="text-[hsl(0_70%_68%)] font-mono font-bold">{fmt(u.trade_sells)}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Fees Paid</p>
+                                      <p className="text-[hsl(45_100%_60%)] font-mono font-bold">{fmt(u.fees_paid)}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Internal In</p>
+                                      <p className="text-[hsl(145_70%_60%)] font-mono font-bold">{fmt(u.internal_in)}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Internal Out</p>
+                                      <p className="text-[hsl(0_70%_68%)] font-mono font-bold">{fmt(u.internal_out)}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Ledger Entries</p>
+                                      <p className="text-[hsl(0_0%_98%)] font-mono font-bold">{u.ledger_entries}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Active Orders</p>
+                                      <p className="text-[hsl(262_100%_65%)] font-mono font-bold">{u.active_orders}</p>
+                                    </div>
+                                    <div className="bg-[hsl(235_28%_15%)] rounded-lg p-2.5 border border-[hsl(235_20%_22%)]">
+                                      <p className="text-[hsl(240_10%_50%)] text-[10px] mb-0.5">Order Locked</p>
+                                      <p className="text-[hsl(45_100%_60%)] font-mono font-bold">{fmt(u.active_order_locked)}</p>
+                                    </div>
+                                  </div>
+                                  {/* Reconciliation proof for this user */}
+                                  <div className="mt-3 bg-[hsl(235_28%_15%)] rounded-lg p-3 border border-[hsl(235_20%_22%)] text-xs font-mono space-y-1">
+                                    <p className="text-[hsl(262_100%_65%)] font-semibold text-[11px] mb-1.5">Balance Proof</p>
+                                    <p className="text-[hsl(240_10%_70%)]">
+                                      Deposits: <span className="text-[hsl(145_70%_60%)]">+{fmt(u.deposits)}</span>
+                                      {' '} + Internal In: <span className="text-[hsl(145_70%_60%)]">+{fmt(u.internal_in)}</span>
+                                      {' '} + Buys: <span className="text-[hsl(145_70%_60%)]">+{fmt(u.trade_buys)}</span>
+                                    </p>
+                                    <p className="text-[hsl(240_10%_70%)]">
+                                      Withdrawals: <span className="text-[hsl(0_70%_68%)]">-{fmt(u.withdrawals)}</span>
+                                      {' '} + Internal Out: <span className="text-[hsl(0_70%_68%)]">-{fmt(u.internal_out)}</span>
+                                      {' '} + Sells: <span className="text-[hsl(0_70%_68%)]">-{fmt(u.trade_sells)}</span>
+                                      {' '} + Fees: <span className="text-[hsl(45_100%_60%)]">-{fmt(u.fees_paid)}</span>
+                                    </p>
+                                    <div className="border-t border-[hsl(235_20%_22%)] my-1" />
+                                    <p className="text-[hsl(240_10%_70%)]">
+                                      Expected: <span className="text-[hsl(0_0%_98%)] font-bold">
+                                        {fmt((u.deposits + u.internal_in + u.trade_buys) - (u.withdrawals + u.internal_out + u.trade_sells + u.fees_paid))}
+                                      </span>
+                                      {' '} | Actual: <span className="text-[hsl(0_0%_98%)] font-bold">{fmt(u.total)}</span>
+                                      {' '} | Ledger: <span className="text-[hsl(0_0%_98%)] font-bold">{fmt(u.ledger_net)}</span>
+                                    </p>
+                                    {hasGhostLock && (
+                                      <p className="text-[hsl(0_70%_68%)] mt-1">
+                                        👻 Ghost Lock Detected: {fmt(u.locked)} locked with {u.active_orders} active orders (expected locked from orders: {fmt(u.active_order_locked)})
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="mt-2 flex justify-end">
+                                    <Button size="sm" variant="outline"
+                                      disabled={fixingUser === u.user_id}
+                                      onClick={() => handleFixUser(u.user_id)}
+                                      className="h-7 px-3 text-xs border-[hsl(45_100%_50%/0.5)] text-[hsl(45_100%_60%)] hover:bg-[hsl(45_100%_50%/0.1)]">
+                                      <Wrench className="h-3.5 w-3.5 mr-1" />
+                                      {fixingUser === u.user_id ? 'Fixing...' : 'Force Reconcile'}
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                          </td>
-                        </tr>
-                      ))}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                   {filteredUsers.length > 200 && (
