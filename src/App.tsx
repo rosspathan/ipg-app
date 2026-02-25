@@ -619,6 +619,7 @@ function AppContent() {
                 <Route path="trading-engine" element={<React.Suspense fallback={<LoadingFallback />}><AdminTradingEngine /></React.Suspense>} />
                 <Route path="trading-reconciliation" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminTradingReconciliation')))}</React.Suspense>} />
                 <Route path="trading-full-report" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminTradingFullReport')))}</React.Suspense>} />
+                <Route path="hot-wallet-live" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminHotWalletLive')))}</React.Suspense>} />
                 
                 {/* BSK Management */}
                 <Route path="bsk-management" element={<AdminBSKManagementNova />} />
