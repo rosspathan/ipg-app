@@ -29,6 +29,17 @@ export interface UserAuditRow {
   total: number;
   ledger_net: number;
   drift: number;
+  // Detailed breakdown
+  deposits: number;
+  withdrawals: number;
+  trade_buys: number;
+  trade_sells: number;
+  fees_paid: number;
+  internal_in: number;
+  internal_out: number;
+  ledger_entries: number;
+  active_orders: number;
+  active_order_locked: number;
 }
 
 export interface HotWalletFlow {
@@ -117,24 +128,80 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
       const { data: balances } = await balanceQuery;
       if (!balances?.length) return [];
 
-      // Get ledger sums
-      const { data: ledgerSums } = await supabase.rpc('get_user_ledger_summary' as any);
-
       const userIds = [...new Set(balances.map(b => b.user_id))];
-      const profileMap = await fetchProfilesBatched(userIds);
 
-      const ledgerMap: Record<string, any> = {};
-      (ledgerSums as any[] || []).forEach((l: any) => {
-        ledgerMap[`${l.user_id}:${l.asset_symbol}`] = l;
+      // Parallel fetch: profiles, ledger entries, deposits, withdrawals, internal transfers, active orders
+      const [profileMap, ledgerData, depositsData, withdrawalsData, internalsData, ordersData] = await Promise.all([
+        fetchProfilesBatched(userIds),
+        supabase.from('trading_balance_ledger').select('user_id, asset_symbol, entry_type, delta_available, delta_locked').in('user_id', userIds.slice(0, 500)),
+        supabase.from('custodial_deposits').select('user_id, amount, asset_id, assets!inner(symbol)').eq('status', 'credited').in('user_id', userIds.slice(0, 500)),
+        supabase.from('withdrawals').select('user_id, amount, fee, asset_id, assets!inner(symbol)').in('status', ['completed', 'processing']).in('user_id', userIds.slice(0, 500)),
+        supabase.from('internal_balance_transfers').select('user_id, amount, fee, asset_symbol, direction, status').eq('status', 'completed').in('user_id', userIds.slice(0, 500)),
+        supabase.from('orders').select('user_id, locked_amount, locked_asset_symbol, status').in('status', ['pending', 'open', 'partially_filled']).in('user_id', userIds.slice(0, 500)),
+      ]);
+
+      // Build per-user-asset aggregates
+      type Agg = { deposits: number; withdrawals: number; trade_buys: number; trade_sells: number; fees_paid: number; internal_in: number; internal_out: number; ledger_entries: number; ledger_net: number; active_orders: number; active_order_locked: number };
+      const aggMap: Record<string, Agg> = {};
+      const getAgg = (uid: string, sym: string): Agg => {
+        const key = `${uid}:${sym}`;
+        if (!aggMap[key]) aggMap[key] = { deposits: 0, withdrawals: 0, trade_buys: 0, trade_sells: 0, fees_paid: 0, internal_in: 0, internal_out: 0, ledger_entries: 0, ledger_net: 0, active_orders: 0, active_order_locked: 0 };
+        return aggMap[key];
+      };
+
+      // Ledger entries
+      (ledgerData.data || []).forEach(l => {
+        const a = getAgg(l.user_id, l.asset_symbol);
+        a.ledger_entries++;
+        a.ledger_net += Number(l.delta_available || 0) + Number(l.delta_locked || 0);
+        if (l.entry_type === 'DEPOSIT' || l.entry_type === 'CREDIT') a.deposits += Number(l.delta_available || 0);
+        else if (l.entry_type === 'WITHDRAWAL') a.withdrawals += Math.abs(Number(l.delta_available || 0));
+        else if (l.entry_type === 'BUY_FILL' || l.entry_type === 'BUY_RECEIVE') a.trade_buys += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));
+        else if (l.entry_type === 'SELL_FILL' || l.entry_type === 'SELL_DEBIT') a.trade_sells += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));
+        else if (l.entry_type === 'FEE') a.fees_paid += Math.abs(Number(l.delta_available || 0));
+      });
+
+      // Deposits (fallback if ledger missing)
+      (depositsData.data || []).forEach(d => {
+        const sym = (d.assets as any)?.symbol;
+        if (sym) {
+          const a = getAgg(d.user_id, sym);
+          if (a.deposits === 0) a.deposits = Number(d.amount || 0);
+        }
+      });
+
+      // Withdrawals (fallback)
+      (withdrawalsData.data || []).forEach(w => {
+        const sym = (w.assets as any)?.symbol;
+        if (sym) {
+          const a = getAgg(w.user_id, sym);
+          if (a.withdrawals === 0) a.withdrawals = Number(w.amount || 0);
+          a.fees_paid += Number(w.fee || 0);
+        }
+      });
+
+      // Internal transfers
+      (internalsData.data || []).forEach(t => {
+        if (!t.asset_symbol) return;
+        const a = getAgg(t.user_id, t.asset_symbol);
+        if (t.direction === 'to_trading') a.internal_in += Number(t.amount || 0);
+        else a.internal_out += Number(t.amount || 0);
+      });
+
+      // Active orders
+      (ordersData.data || []).forEach(o => {
+        if (!o.locked_asset_symbol) return;
+        const a = getAgg(o.user_id, o.locked_asset_symbol);
+        a.active_orders++;
+        a.active_order_locked += Number(o.locked_amount || 0);
       });
 
       return balances.map(b => {
         const sym = (b.assets as any)?.symbol || '';
-        const ledger = ledgerMap[`${b.user_id}:${sym}`] || {};
+        const agg = getAgg(b.user_id, sym);
         const available = Number(b.available || 0);
         const locked = Number(b.locked || 0);
         const total = available + locked;
-        const ledgerNet = Number(ledger.net_delta || 0);
 
         return {
           user_id: b.user_id,
@@ -144,8 +211,18 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
           available,
           locked,
           total,
-          ledger_net: ledgerNet,
-          drift: Math.abs(total - ledgerNet) > 0.00001 ? total - ledgerNet : 0,
+          ledger_net: agg.ledger_net,
+          drift: Math.abs(total - agg.ledger_net) > 0.00001 ? total - agg.ledger_net : 0,
+          deposits: agg.deposits,
+          withdrawals: agg.withdrawals,
+          trade_buys: agg.trade_buys,
+          trade_sells: agg.trade_sells,
+          fees_paid: agg.fees_paid,
+          internal_in: agg.internal_in,
+          internal_out: agg.internal_out,
+          ledger_entries: agg.ledger_entries,
+          active_orders: agg.active_orders,
+          active_order_locked: agg.active_order_locked,
         };
       }).filter(u => u.total > 0.00001 || Math.abs(u.drift) > 0.00001)
         .sort((a, b) => Math.abs(b.drift) - Math.abs(a.drift));
