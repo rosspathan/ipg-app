@@ -120,17 +120,40 @@ const LoginScreen: React.FC = () => {
       localStorage.removeItem('biometric_enabled');
       localStorage.removeItem('biometric_cred_id');
 
-      // Sign in
-      const signInResult = await withTimeout(
-        supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password
-        }),
-        30000,
-        'Sign-in is taking too long (server timeout). Please try again.'
-      );
+      // Sign in with retry on timeout/network errors
+      let signInResult: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
+      let lastError: any = null;
+      
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          signInResult = await withTimeout(
+            supabase.auth.signInWithPassword({
+              email: email.trim(),
+              password
+            }),
+            45000,
+            'Sign-in is taking too long (server timeout). Please try again.'
+          );
+          lastError = null;
+          break;
+        } catch (e: any) {
+          lastError = e;
+          const isRetryable = e?.name === 'TimeoutError' || 
+            String(e?.message ?? '').toLowerCase().includes('fetch') ||
+            String(e?.message ?? '').toLowerCase().includes('network');
+          
+          if (attempt < 2 && isRetryable) {
+            console.log(`[LOGIN] Attempt ${attempt} failed (${e?.name}), retrying...`);
+            await new Promise(r => setTimeout(r, 1500));
+            continue;
+          }
+          throw e;
+        }
+      }
+      
+      if (lastError) throw lastError;
 
-      const { data, error } = signInResult;
+      const { data, error } = signInResult!;
 
       if (error) {
         let userMessage = "Invalid email or password";
