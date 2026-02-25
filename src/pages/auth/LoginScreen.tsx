@@ -32,6 +32,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
   });
 }
 
+const MAX_LOGIN_ATTEMPTS = 3;
+const LOGIN_TIMEOUT_MS = 30000; // 30s per attempt (3 attempts = 90s total budget)
+const RETRY_DELAY_MS = 1000;
+
 // Role check with timeout to prevent hangs - increased timeout for better reliability
 async function checkAdminWithTimeout(userId: string, ms = 3000): Promise<boolean> {
   const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), ms));
@@ -120,31 +124,39 @@ const LoginScreen: React.FC = () => {
       localStorage.removeItem('biometric_enabled');
       localStorage.removeItem('biometric_cred_id');
 
-      // Sign in with retry on timeout/network errors
+      // Sign in with automatic retry on timeout/network errors (up to 3 attempts)
       let signInResult: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
       let lastError: any = null;
       
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      for (let attempt = 1; attempt <= MAX_LOGIN_ATTEMPTS; attempt++) {
         try {
+          if (attempt > 1) {
+            setInlineError(`Retrying... (attempt ${attempt}/${MAX_LOGIN_ATTEMPTS})`);
+          }
+          
           signInResult = await withTimeout(
             supabase.auth.signInWithPassword({
               email: email.trim(),
               password
             }),
-            45000,
-            'Sign-in is taking too long (server timeout). Please try again.'
+            LOGIN_TIMEOUT_MS,
+            `Sign-in timed out (attempt ${attempt}/${MAX_LOGIN_ATTEMPTS})`
           );
           lastError = null;
+          setInlineError('');
           break;
         } catch (e: any) {
           lastError = e;
+          const msg = String(e?.message ?? '').toLowerCase();
           const isRetryable = e?.name === 'TimeoutError' || 
-            String(e?.message ?? '').toLowerCase().includes('fetch') ||
-            String(e?.message ?? '').toLowerCase().includes('network');
+            msg.includes('fetch') ||
+            msg.includes('network') ||
+            msg.includes('failed') ||
+            msg.includes('aborted');
           
-          if (attempt < 2 && isRetryable) {
-            console.log(`[LOGIN] Attempt ${attempt} failed (${e?.name}), retrying...`);
-            await new Promise(r => setTimeout(r, 1500));
+          if (attempt < MAX_LOGIN_ATTEMPTS && isRetryable) {
+            console.log(`[LOGIN] Attempt ${attempt}/${MAX_LOGIN_ATTEMPTS} failed (${e?.name}: ${e?.message}), retrying in ${RETRY_DELAY_MS}ms...`);
+            await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
             continue;
           }
           throw e;
@@ -269,11 +281,11 @@ const LoginScreen: React.FC = () => {
       
       if (mountedRef.current) {
         if (error?.name === 'TimeoutError') {
-          const msg = "Auth service is not responding right now. Please retry in a moment.";
+          const msg = "Login server didn't respond after multiple tries. This is usually a slow network issue — please switch to a stronger connection (Wi-Fi) and try again.";
           setInlineError(msg);
           toast({
-            title: 'Service Unavailable',
-            description: msg,
+            title: 'Connection Too Slow',
+            description: 'Please switch to Wi-Fi or a stronger network and try again.',
             variant: 'destructive'
           });
           return;
@@ -281,10 +293,10 @@ const LoginScreen: React.FC = () => {
 
         const msgLower = String(error?.message ?? '').toLowerCase();
         if (msgLower.includes('failed to fetch') || msgLower.includes('network') || msgLower.includes('fetch')) {
-          const msg = "Connection failed while contacting the sign-in server. Please check your internet and retry.";
+          const msg = "Could not reach the login server. Please check your internet connection and try again.";
           setInlineError(msg);
           toast({
-            title: 'Connection Error',
+            title: 'No Connection',
             description: msg,
             variant: 'destructive'
           });
@@ -411,8 +423,25 @@ const LoginScreen: React.FC = () => {
             )}
           </Button>
           
-          {inlineError && (
-            <p className="text-sm text-destructive bg-destructive/10 px-4 py-2 rounded-lg text-center -mt-2">
+          {inlineError && !loading && (
+            <div className="space-y-2 -mt-2">
+              <p className="text-sm text-destructive bg-destructive/10 px-4 py-2 rounded-lg text-center">
+                {inlineError}
+              </p>
+              {(inlineError.includes('server') || inlineError.includes('network') || inlineError.includes('connection') || inlineError.includes('slow') || inlineError.includes('Connection') || inlineError.includes('respond')) && (
+                <Button
+                  onClick={handleLogin}
+                  variant="outline"
+                  className="w-full border-white/30 text-white hover:bg-white/10"
+                  size="sm"
+                >
+                  Tap to Retry
+                </Button>
+              )}
+            </div>
+          )}
+          {inlineError && loading && (
+            <p className="text-sm text-warning bg-warning/10 px-4 py-2 rounded-lg text-center -mt-2 animate-pulse">
               {inlineError}
             </p>
           )}
