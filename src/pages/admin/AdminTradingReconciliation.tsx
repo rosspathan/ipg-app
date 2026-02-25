@@ -44,6 +44,14 @@ export default function AdminTradingReconciliation() {
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [fixingUser, setFixingUser] = useState<string | null>(null);
   const [showOnlyDrift, setShowOnlyDrift] = useState(false);
+  const [expandedTransfers, setExpandedTransfers] = useState<Set<string>>(new Set());
+  const toggleTransferExpand = (id: string) => {
+    setExpandedTransfers(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     stats: true, global: true, users: true, transfers: true, hotwallet: true,
   });
@@ -663,7 +671,105 @@ export default function AdminTradingReconciliation() {
               {transfersLoading ? (
                 <p className="text-[hsl(240_10%_70%)]">Loading transfers...</p>
               ) : (
-                <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <>
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-2 max-h-[600px] overflow-y-auto">
+                  {filteredTransfers.slice(0, 500).map(t => {
+                    const isExpanded = expandedTransfers.has(t.id);
+                    return (
+                      <div
+                        key={t.id}
+                        className="bg-[hsl(235_28%_13%)] border border-[hsl(235_20%_22%)] rounded-xl p-3 space-y-2"
+                        onClick={() => toggleTransferExpand(t.id)}
+                      >
+                        {/* Primary row: Token, Amount, Direction */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[hsl(262_100%_65%)] font-bold text-sm">{t.asset_symbol}</span>
+                            <Badge variant="outline" className={`text-[10px] ${
+                              t.direction === 'to_trading'
+                                ? 'border-[hsl(145_70%_50%/0.5)] text-[hsl(145_70%_60%)]'
+                                : 'border-[hsl(0_70%_50%/0.5)] text-[hsl(0_70%_68%)]'
+                            }`}>
+                              {t.direction === 'to_trading' ? 'On-Chain → Trading' : 'Trading → On-Chain'}
+                            </Badge>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[hsl(0_0%_98%)] font-mono font-semibold text-sm">{fmt(t.amount)}</span>
+                          </div>
+                        </div>
+
+                        {/* Secondary row: Date, Status */}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[hsl(240_10%_60%)]">
+                            {t.created_at ? format(new Date(t.created_at), 'dd MMM yyyy • HH:mm') : '-'}
+                          </span>
+                          <Badge className={`text-[10px] ${
+                            t.status === 'completed' ? 'bg-[hsl(145_70%_20%)] text-[hsl(145_70%_60%)]' :
+                            t.status === 'pending' ? 'bg-[hsl(45_100%_20%)] text-[hsl(45_100%_60%)]' :
+                            'bg-[hsl(0_70%_20%)] text-[hsl(0_70%_68%)]'
+                          }`}>
+                            {t.status}
+                          </Badge>
+                        </div>
+
+                        {/* User */}
+                        <div className="text-xs text-[hsl(240_10%_70%)] truncate">
+                          👤 {t.email}
+                        </div>
+
+                        {/* Expandable details */}
+                        {isExpanded && (
+                          <div className="pt-2 border-t border-[hsl(235_20%_22%/0.5)] space-y-1.5 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-[hsl(240_10%_50%)]">Username</span>
+                              <span className="text-[hsl(0_0%_98%)]">{t.username}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[hsl(240_10%_50%)]">Fee</span>
+                              <span className="text-[hsl(45_100%_60%)] font-mono">{fmt(t.fee)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[hsl(240_10%_50%)]">Net Amount</span>
+                              <span className="text-[hsl(0_0%_98%)] font-mono">{fmt(t.net_amount)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[hsl(240_10%_50%)]">Balance After</span>
+                              <span className="text-[hsl(240_10%_70%)] font-mono">{t.balance_after != null ? fmt(t.balance_after) : '-'}</span>
+                            </div>
+                            {t.tx_hash && (
+                              <div className="flex justify-between">
+                                <span className="text-[hsl(240_10%_50%)]">Tx Hash</span>
+                                <a href={`https://bscscan.com/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer"
+                                  className="text-[hsl(262_100%_70%)] hover:underline font-mono" onClick={e => e.stopPropagation()}>
+                                  {t.tx_hash.substring(0, 10)}…
+                                </a>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-[hsl(240_10%_50%)]">Ref ID</span>
+                              <span className="text-[hsl(240_10%_60%)] font-mono">{t.reference_id || t.id.substring(0, 8)}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Expand hint */}
+                        <div className="text-center">
+                          <ChevronDown className={`inline h-3 w-3 text-[hsl(240_10%_40%)] transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {filteredTransfers.length > 500 && (
+                    <p className="text-center text-xs text-[hsl(240_10%_50%)] py-2">Showing 500 of {filteredTransfers.length} transfers</p>
+                  )}
+                  {filteredTransfers.length === 0 && (
+                    <p className="text-center text-xs text-[hsl(240_10%_50%)] py-8">No transfers found</p>
+                  )}
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden md:block overflow-x-auto max-h-[500px] overflow-y-auto">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 bg-[hsl(235_28%_13%)] z-10">
                       <tr className="border-b border-[hsl(235_20%_22%)]">
@@ -736,6 +842,7 @@ export default function AdminTradingReconciliation() {
                     <p className="text-center text-xs text-[hsl(240_10%_50%)] py-8">No transfers found</p>
                   )}
                 </div>
+                </>
               )}
             </CardContent>
           </CollapsibleContent>
@@ -776,7 +883,64 @@ export default function AdminTradingReconciliation() {
                   </div>
 
                   {/* Token-wise breakdown table */}
-                  <div className="overflow-x-auto">
+                  {/* Mobile Card Layout for Hot Wallet */}
+                  <div className="md:hidden space-y-3">
+                    {(hotWalletData?.flows || []).map(f => {
+                      const totalIn = f.total_deposits + f.total_internal_in;
+                      const totalOut = f.total_withdrawals + f.total_internal_out;
+                      return (
+                        <div key={f.asset_symbol} className="bg-[hsl(235_28%_13%)] border border-[hsl(235_20%_22%)] rounded-xl p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[hsl(0_0%_98%)] font-bold text-sm">{f.asset_symbol}</span>
+                            <span className="text-[hsl(0_0%_98%)] font-bold font-mono text-sm">{fmt(f.net_balance)}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-[hsl(145_70%_20%/0.15)] rounded-lg p-2">
+                              <p className="text-[hsl(240_10%_50%)] text-[10px]">Total Inflows</p>
+                              <p className="text-[hsl(145_70%_60%)] font-mono font-semibold">{fmt(totalIn)}</p>
+                              <p className="text-[hsl(240_10%_40%)] text-[10px]">Deposits: {fmt(f.total_deposits)} ({f.deposit_count})</p>
+                              <p className="text-[hsl(240_10%_40%)] text-[10px]">Internal: {fmt(f.total_internal_in)} ({f.internal_in_count})</p>
+                            </div>
+                            <div className="bg-[hsl(0_70%_20%/0.15)] rounded-lg p-2">
+                              <p className="text-[hsl(240_10%_50%)] text-[10px]">Total Outflows</p>
+                              <p className="text-[hsl(0_70%_68%)] font-mono font-semibold">{fmt(totalOut)}</p>
+                              <p className="text-[hsl(240_10%_40%)] text-[10px]">Withdrawals: {fmt(f.total_withdrawals)} ({f.withdrawal_count})</p>
+                              <p className="text-[hsl(240_10%_40%)] text-[10px]">Internal: {fmt(f.total_internal_out)} ({f.internal_out_count})</p>
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-xs pt-1 border-t border-[hsl(235_20%_22%/0.3)]">
+                            <span className="text-[hsl(240_10%_50%)]">Fees Collected</span>
+                            <span className="text-[hsl(45_100%_60%)] font-mono">{fmt(f.total_fees_collected)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Mobile totals */}
+                    {(hotWalletData?.flows || []).length > 0 && (
+                      <div className="bg-[hsl(262_100%_25%/0.2)] border border-[hsl(262_100%_65%/0.3)] rounded-xl p-3 space-y-1.5">
+                        <p className="text-[hsl(262_100%_65%)] font-bold text-xs">TOTALS</p>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[hsl(240_10%_50%)]">Inflows</span>
+                          <span className="text-[hsl(145_70%_60%)] font-mono font-bold">{fmt(hotWalletData!.flows.reduce((s, f) => s + f.total_deposits + f.total_internal_in, 0))}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[hsl(240_10%_50%)]">Outflows</span>
+                          <span className="text-[hsl(0_70%_68%)] font-mono font-bold">{fmt(hotWalletData!.flows.reduce((s, f) => s + f.total_withdrawals + f.total_internal_out, 0))}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[hsl(240_10%_50%)]">Fees</span>
+                          <span className="text-[hsl(45_100%_60%)] font-mono font-bold">{fmt(hotWalletData!.flows.reduce((s, f) => s + f.total_fees_collected, 0))}</span>
+                        </div>
+                        <div className="flex justify-between text-xs pt-1 border-t border-[hsl(262_100%_65%/0.3)]">
+                          <span className="text-[hsl(0_0%_98%)]">Net Balance</span>
+                          <span className="text-[hsl(0_0%_98%)] font-mono font-bold">{fmt(hotWalletData!.flows.reduce((s, f) => s + f.net_balance, 0))}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Desktop Table Layout for Hot Wallet */}
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-[hsl(235_20%_22%)]">
