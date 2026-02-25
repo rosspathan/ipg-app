@@ -309,8 +309,25 @@ export default function AdminTradingReconciliation() {
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
-          <CollapsibleContent>
+           <CollapsibleContent>
             <CardContent>
+              {/* Formula explanation */}
+              <div className="bg-[hsl(235_28%_12%)] border border-[hsl(235_20%_22%)] rounded-lg p-3 mb-4 text-xs">
+                <p className="text-[hsl(262_100%_65%)] font-semibold mb-1">Reconciliation Formula</p>
+                <p className="text-[hsl(240_10%_70%)] font-mono">
+                  Expected = (On-chain Deposits + Internal In) − (Withdrawals + Custodial Withdrawals + Internal Out)
+                </p>
+                <p className="text-[hsl(240_10%_70%)] font-mono">
+                  Actual = Sum(User Balances) + Platform Fee Account
+                </p>
+                <p className="text-[hsl(240_10%_70%)] font-mono">
+                  Δ = Actual − Expected
+                </p>
+                <p className="text-[hsl(45_100%_60%)] mt-1.5 text-[10px]">
+                  ⚠ Positive Δ = tokens entered through off-chain channels (admin credits, ad mining, badge/referral rewards). These are legitimate if matched to reward records.
+                </p>
+              </div>
+
               {globalLoading ? (
                 <p className="text-[hsl(240_10%_70%)]">Loading...</p>
               ) : (
@@ -319,28 +336,32 @@ export default function AdminTradingReconciliation() {
                     <thead>
                       <tr className="border-b border-[hsl(235_20%_22%)]">
                         <th className="text-left py-2 text-[hsl(240_10%_70%)] font-medium">Asset</th>
-                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Deposits</th>
-                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Withdrawals</th>
-                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Available</th>
+                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Deposits (In)</th>
+                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Withdrawals (Out)</th>
+                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Expected</th>
+                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Actual (Users)</th>
+                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Fees Acct</th>
                         <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Locked</th>
-                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Fees</th>
                         <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Users</th>
-                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Status</th>
+                        <th className="text-right py-2 text-[hsl(240_10%_70%)] font-medium">Δ (Diff)</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(globalData || []).map(a => (
                         <tr key={a.asset_symbol} className="border-b border-[hsl(235_20%_22%/0.5)] hover:bg-[hsl(235_28%_18%)]">
                           <td className="py-2 font-semibold text-[hsl(0_0%_98%)]">{a.asset_symbol}</td>
-                          <td className="text-right py-2 text-[hsl(145_70%_60%)]">{fmt(a.total_deposits)}</td>
-                          <td className="text-right py-2 text-[hsl(0_70%_68%)]">{fmt(a.total_withdrawals)}</td>
-                          <td className="text-right py-2 text-[hsl(0_0%_98%)]">{fmt(a.total_user_available)}</td>
-                          <td className="text-right py-2 text-[hsl(45_100%_60%)]">{fmt(a.total_user_locked)}</td>
+                          <td className="text-right py-2 text-[hsl(145_70%_60%)]">+{fmt(a.total_deposits)}</td>
+                          <td className="text-right py-2 text-[hsl(0_70%_68%)]">-{fmt(a.total_withdrawals)}</td>
+                          <td className="text-right py-2 text-[hsl(240_10%_70%)] font-mono">{fmt(a.expected_balance)}</td>
+                          <td className="text-right py-2 text-[hsl(0_0%_98%)] font-semibold">{fmt(a.total_user_balance)}</td>
                           <td className="text-right py-2 text-[hsl(262_100%_65%)]">{fmt(a.total_platform_fees)}</td>
+                          <td className="text-right py-2 text-[hsl(45_100%_60%)]">{fmt(a.total_user_locked)}</td>
                           <td className="text-right py-2 text-[hsl(240_10%_70%)]">{a.user_count}</td>
                           <td className="text-right py-2">
                             {Math.abs(a.discrepancy) > 0.01 ? (
-                              <Badge className="bg-[hsl(0_70%_20%)] text-[hsl(0_70%_68%)] text-xs">Δ {a.discrepancy.toFixed(4)}</Badge>
+                              <Badge className={`text-xs ${a.discrepancy > 0 ? 'bg-[hsl(45_100%_20%)] text-[hsl(45_100%_60%)]' : 'bg-[hsl(0_70%_20%)] text-[hsl(0_70%_68%)]'}`}>
+                                {a.discrepancy > 0 ? '+' : ''}{a.discrepancy.toFixed(4)}
+                              </Badge>
                             ) : (
                               <Badge className="bg-[hsl(145_70%_20%)] text-[hsl(145_70%_60%)] text-xs">✓ OK</Badge>
                             )}
