@@ -39,17 +39,23 @@ export function useGlobalReconciliation() {
   return useQuery({
     queryKey: ['admin-trading-reconciliation-global'],
     queryFn: async (): Promise<AssetReconciliation[]> => {
-      // Get total deposits per asset
+      // Get total deposits per asset (on-chain inflows)
       const { data: deposits } = await supabase
         .from('custodial_deposits')
         .select('asset_id, amount, assets!inner(symbol)')
         .eq('status', 'credited');
 
-      // Get total withdrawals per asset
+      // Get total withdrawals per asset (manual/legacy)
       const { data: withdrawals } = await supabase
         .from('withdrawals')
         .select('asset_id, amount, assets!inner(symbol)')
         .in('status', ['completed', 'processing']);
+
+      // Get custodial withdrawals (auto-processed outflows)
+      const { data: custWithdrawals } = await supabase
+        .from('custodial_withdrawals')
+        .select('asset_id, amount, fee_amount, assets!inner(symbol)')
+        .in('status', ['completed', 'processing', 'sent']);
 
       // Get all user balances per asset (exclude platform account)
       const { data: balances } = await supabase
@@ -63,7 +69,7 @@ export function useGlobalReconciliation() {
         .select('asset_id, available, assets!inner(symbol)')
         .eq('user_id', '00000000-0000-0000-0000-000000000001');
 
-      // Get internal balance transfers (BSK holdings -> trading)
+      // Get internal balance transfers
       const { data: internalTransfers } = await supabase
         .from('internal_balance_transfers')
         .select('asset_symbol, amount, direction, status')
@@ -100,6 +106,12 @@ export function useGlobalReconciliation() {
         if (sym) getOrCreate(sym).total_withdrawals += Number(w.amount || 0);
       });
 
+      // Include custodial withdrawals as outflows
+      (custWithdrawals || []).forEach(w => {
+        const sym = (w.assets as any)?.symbol;
+        if (sym) getOrCreate(sym).total_withdrawals += Number(w.amount || 0);
+      });
+
       // Track unique users per asset
       const userSets: Record<string, Set<string>> = {};
       (balances || []).forEach(b => {
@@ -119,23 +131,27 @@ export function useGlobalReconciliation() {
         if (sym) getOrCreate(sym).total_platform_fees = Number(p.available || 0);
       });
 
-      // Add internal transfers as inflows
+      // Internal transfers: to_trading = inflow to trading, to_wallet = outflow from trading
       (internalTransfers || []).forEach(t => {
         if (t.asset_symbol) {
           const entry = getOrCreate(t.asset_symbol);
           if (t.direction === 'to_trading') {
             entry.total_deposits += Number(t.amount || 0);
-          } else if (t.direction === 'from_trading') {
+          } else if (t.direction === 'to_wallet') {
             entry.total_withdrawals += Number(t.amount || 0);
           }
         }
       });
 
       // Calculate expected and discrepancy
+      // Expected = total inflows - total outflows (what should remain in the system)
+      // Actual = user balances + platform fees
+      // Discrepancy = Actual - Expected
+      // NOTE: Positive discrepancy means more tokens exist than on-chain deposits justify.
+      // Common legitimate causes: admin credits, ad mining rewards, badge bonuses, referral rewards.
       Object.values(assetMap).forEach(a => {
         a.user_count = userSets[a.asset_symbol]?.size || 0;
         a.expected_balance = a.total_deposits - a.total_withdrawals;
-        // Discrepancy = what users hold + platform fees - expected inflows
         a.discrepancy = (a.total_user_balance + a.total_platform_fees) - a.expected_balance;
       });
 
@@ -221,13 +237,19 @@ export function useLedgerStats() {
   return useQuery({
     queryKey: ['admin-trading-ledger-stats'],
     queryFn: async (): Promise<LedgerStats> => {
+      // Get total count without LIMIT
+      const { count, error: countError } = await supabase
+        .from('trading_balance_ledger')
+        .select('id', { count: 'exact', head: true });
+
+      // Get entry type breakdown
       const { data: entries, error } = await supabase
         .from('trading_balance_ledger')
         .select('entry_type, created_at')
         .order('created_at', { ascending: false })
-        .limit(5000);
+        .limit(10000);
 
-      if (error) throw error;
+      if (error || countError) throw error || countError;
 
       const typeCounts: Record<string, number> = {};
       let lastEntry: string | null = null;
@@ -238,7 +260,7 @@ export function useLedgerStats() {
       });
 
       return {
-        total_entries: entries?.length || 0,
+        total_entries: count || entries?.length || 0,
         entry_types: Object.entries(typeCounts).map(([entry_type, count]) => ({ entry_type, count }))
           .sort((a, b) => b.count - a.count),
         last_entry_at: lastEntry,
