@@ -180,7 +180,9 @@ export function useUserAuditWithEmail(assetSymbol?: string) {
         const a = getAgg(l.user_id, l.asset_symbol);
         a.ledger_entries++;
         a.ledger_net += Number(l.delta_available || 0) + Number(l.delta_locked || 0);
-        if (l.entry_type === 'DEPOSIT' || l.entry_type === 'CREDIT') a.deposits += Number(l.delta_available || 0);
+        if (l.entry_type === 'OPENING_BALANCE' || l.entry_type === 'EXTERNAL_CREDIT' || l.entry_type === 'EXTERNAL_DEBIT') {
+          // These are system backfill/mirror entries - counted in ledger_net but not in individual flow categories
+        } else if (l.entry_type === 'DEPOSIT' || l.entry_type === 'CREDIT') a.deposits += Number(l.delta_available || 0);
         else if (l.entry_type === 'WITHDRAWAL') a.withdrawals += Math.abs(Number(l.delta_available || 0));
         else if (l.entry_type === 'BUY_FILL' || l.entry_type === 'BUY_RECEIVE' || l.entry_type === 'FILL_CREDIT') a.trade_buys += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));
         else if (l.entry_type === 'SELL_FILL' || l.entry_type === 'SELL_DEBIT' || l.entry_type === 'FILL_DEBIT') a.trade_sells += Math.abs(Number(l.delta_available || 0) + Number(l.delta_locked || 0));

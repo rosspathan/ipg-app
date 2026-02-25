@@ -286,11 +286,19 @@ export default function AdminTradingReconciliation() {
               </div>
               {ledgerStats?.entry_types && (
                 <div className="flex flex-wrap gap-2">
-                  {ledgerStats.entry_types.map(et => (
-                    <Badge key={et.entry_type} variant="outline" className="border-[hsl(235_20%_22%)] text-[hsl(240_10%_70%)]">
-                      {et.entry_type}: <span className="ml-1 text-[hsl(0_0%_98%)] font-bold">{et.count}</span>
-                    </Badge>
-                  ))}
+                  {ledgerStats.entry_types.map(et => {
+                    const isSnapshot = et.entry_type === 'OPENING_BALANCE';
+                    const isExternal = et.entry_type === 'EXTERNAL_CREDIT' || et.entry_type === 'EXTERNAL_DEBIT';
+                    return (
+                      <Badge key={et.entry_type} variant="outline" className={
+                        isSnapshot ? 'border-[hsl(262_100%_65%/0.5)] text-[hsl(262_100%_65%)] bg-[hsl(262_100%_65%/0.1)]' :
+                        isExternal ? 'border-[hsl(45_100%_50%/0.5)] text-[hsl(45_100%_60%)] bg-[hsl(45_100%_50%/0.1)]' :
+                        'border-[hsl(235_20%_22%)] text-[hsl(240_10%_70%)]'
+                      }>
+                        {isSnapshot ? '📸 ' : isExternal ? '🔗 ' : ''}{et.entry_type}: <span className="ml-1 text-[hsl(0_0%_98%)] font-bold">{et.count}</span>
+                      </Badge>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -327,6 +335,20 @@ export default function AdminTradingReconciliation() {
                   ⚠ Positive Δ = tokens entered through off-chain channels (admin credits, ad mining, badge/referral rewards). These are legitimate if matched to reward records.
                 </p>
               </div>
+
+              {/* Backfill status */}
+              {ledgerStats?.entry_types?.some(et => et.entry_type === 'OPENING_BALANCE') && (
+                <div className="bg-[hsl(262_100%_20%/0.2)] border border-[hsl(262_100%_65%/0.3)] rounded-lg p-3 mb-4 text-xs flex items-center gap-2">
+                  <span className="text-lg">📸</span>
+                  <div>
+                    <p className="text-[hsl(262_100%_65%)] font-semibold">Historical Snapshot Applied</p>
+                    <p className="text-[hsl(240_10%_70%)]">
+                      OPENING_BALANCE entries backfilled for {ledgerStats.entry_types.find(et => et.entry_type === 'OPENING_BALANCE')?.count || 0} user-asset pairs.
+                      Ledger now reconciles from Dec 17, 2025. Any new drift post-backfill indicates a missing integration.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {globalLoading ? (
                 <p className="text-[hsl(240_10%_70%)]">Loading...</p>
