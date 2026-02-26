@@ -93,8 +93,8 @@ Deno.serve(async (req) => {
 
     console.log(`[internal-balance-transfer] ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}`);
 
-    // SECURITY: For "to_wallet" direction, verify the user has a registered wallet address
-    // This ensures funds can only flow back to the user's own on-chain wallet
+    // Resolve user's on-chain wallet address (needed for to_wallet)
+    let userWalletAddress: string | null = null;
     if (direction === "to_wallet") {
       const { data: profile } = await admin
         .from("profiles")
@@ -102,10 +102,9 @@ Deno.serve(async (req) => {
         .eq("user_id", user.id)
         .single();
 
-      const userWalletAddress = profile?.bsc_wallet_address || profile?.wallet_address;
+      userWalletAddress = profile?.bsc_wallet_address || profile?.wallet_address || null;
 
       if (!userWalletAddress) {
-        // Also check wallets_user table
         const { data: userWallet } = await admin
           .from("wallets_user")
           .select("address")
@@ -113,15 +112,17 @@ Deno.serve(async (req) => {
           .eq("is_primary", true)
           .maybeSingle();
 
-        if (!userWallet?.address) {
-          return new Response(
-            JSON.stringify({ error: "No registered wallet address found. Cannot transfer to wallet without a verified on-chain address." }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+        userWalletAddress = userWallet?.address || null;
       }
 
-      console.log(`[internal-balance-transfer] ✓ User ${user.id} has registered wallet — to_wallet transfer authorized`);
+      if (!userWalletAddress) {
+        return new Response(
+          JSON.stringify({ error: "No registered wallet address found. Cannot transfer to wallet without a verified on-chain address." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`[internal-balance-transfer] ✓ User ${user.id} wallet: ${userWalletAddress}`);
     }
 
     // Map direction for the RPC
@@ -156,10 +157,47 @@ Deno.serve(async (req) => {
 
     console.log(`[internal-balance-transfer] ✓ ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}`);
 
+    // ── For "to_wallet": create a withdrawal record so process-pending-withdrawals sends tokens on-chain ──
+    if (direction === "to_wallet" && userWalletAddress) {
+      const { data: withdrawal, error: wdErr } = await admin
+        .from("withdrawals")
+        .insert({
+          user_id: user.id,
+          asset_id: asset_id,
+          amount: safeAmount,
+          fee: 0,
+          net_amount: safeAmount,
+          to_address: userWalletAddress,
+          network: "BEP20",
+          status: "processing",
+        })
+        .select("id")
+        .single();
+
+      if (wdErr) {
+        console.error("[internal-balance-transfer] WARNING: Failed to create withdrawal record:", wdErr);
+        // The trading balance was already debited — create an admin notification
+        await admin.from("admin_notifications").insert({
+          type: "withdrawal_creation_failed",
+          priority: "critical",
+          title: "Withdrawal Record Creation Failed",
+          message: `User ${user.id} transferred ${safeAmount} ${asset.symbol} to_wallet but withdrawal record failed: ${wdErr.message}. Manual intervention needed.`,
+        });
+      } else {
+        // Update the internal_balance_transfers record with reference to the withdrawal
+        await admin
+          .from("internal_balance_transfers")
+          .update({ notes: `withdrawal_id:${withdrawal.id}` })
+          .eq("id", result.transfer_id);
+
+        console.log(`[internal-balance-transfer] ✓ Created withdrawal ${withdrawal.id} for on-chain processing`);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: `${safeAmount} ${asset.symbol} transferred ${direction === "to_trading" ? "to trading balance" : "to wallet"}`,
+        message: `${safeAmount} ${asset.symbol} transferred ${direction === "to_trading" ? "to trading balance" : "to wallet (pending on-chain)"}`,
         amount: safeAmount,
         symbol: asset.symbol,
         transfer_id: result.transfer_id,
