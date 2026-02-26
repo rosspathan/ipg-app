@@ -1,0 +1,1 @@
+UPDATE withdrawals SET created_at = NOW() - INTERVAL '2 hours' WHERE status = 'processing' AND tx_hash IS NULL AND created_at >= '2026-02-26 11:06:00' AND created_at <= '2026-02-26 11:07:00'
