@@ -62,16 +62,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body: BalanceAdjustmentRequest = await req.json();
+    const body = await req.json();
+
+    // Strict input validation
     const { user_identifier, asset_symbol, amount, reason, related_tx_hash } = body;
 
-    // Validate inputs
-    if (!user_identifier || !asset_symbol || amount === undefined || !reason) {
-      return new Response(JSON.stringify({ 
-        error: 'Missing required fields: user_identifier, asset_symbol, amount, reason' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (!user_identifier || typeof user_identifier !== 'string' || user_identifier.trim().length === 0 || user_identifier.length > 100) {
+      return new Response(JSON.stringify({ error: 'Invalid user_identifier' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!asset_symbol || typeof asset_symbol !== 'string' || !/^[A-Za-z0-9]{1,10}$/.test(asset_symbol)) {
+      return new Response(JSON.stringify({ error: 'Invalid asset_symbol: must be 1-10 alphanumeric characters' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (amount === undefined || amount === null || typeof amount !== 'number' || !isFinite(amount)) {
+      return new Response(JSON.stringify({ error: 'Invalid amount: must be a finite number' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (Math.abs(amount) > 1000000000) {
+      return new Response(JSON.stringify({ error: 'Amount exceeds maximum allowed value' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!reason || typeof reason !== 'string' || reason.trim().length === 0 || reason.length > 500) {
+      return new Response(JSON.stringify({ error: 'Invalid reason: must be 1-500 characters' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (related_tx_hash !== undefined && related_tx_hash !== null && (typeof related_tx_hash !== 'string' || related_tx_hash.length > 200)) {
+      return new Response(JSON.stringify({ error: 'Invalid related_tx_hash' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
