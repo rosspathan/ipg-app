@@ -13364,7 +13364,6 @@ export type Database = {
         Row: {
           created_at: string | null
           display_name: string | null
-          full_name: string | null
           referral_code: string | null
           user_id: string | null
           username: string | null
@@ -13372,7 +13371,6 @@ export type Database = {
         Insert: {
           created_at?: string | null
           display_name?: string | null
-          full_name?: string | null
           referral_code?: string | null
           user_id?: string | null
           username?: string | null
@@ -13380,7 +13378,6 @@ export type Database = {
         Update: {
           created_at?: string | null
           display_name?: string | null
-          full_name?: string | null
           referral_code?: string | null
           user_id?: string | null
           username?: string | null

@@ -223,16 +223,20 @@ export const AdminAdsScreen: React.FC = () => {
     setEditingAd(ad);
     // Set preview URLs for existing media
     if (ad.image_url) {
-      const bannerUrl = ad.image_url.startsWith('http') 
-        ? ad.image_url 
-        : `${supabase.storage.from('ad-media').getPublicUrl(ad.image_url).data.publicUrl}`;
-      setBannerPreview(bannerUrl);
+      if (ad.image_url.startsWith('http')) {
+        setBannerPreview(ad.image_url);
+      } else {
+        supabase.storage.from('ad-media').createSignedUrl(ad.image_url, 3600)
+          .then(({ data }) => { if (data?.signedUrl) setBannerPreview(data.signedUrl); });
+      }
     }
     if (ad.square_image_url) {
-      const squareUrl = ad.square_image_url.startsWith('http')
-        ? ad.square_image_url
-        : `${supabase.storage.from('ad-media').getPublicUrl(ad.square_image_url).data.publicUrl}`;
-      setSquarePreview(squareUrl);
+      if (ad.square_image_url.startsWith('http')) {
+        setSquarePreview(ad.square_image_url);
+      } else {
+        supabase.storage.from('ad-media').createSignedUrl(ad.square_image_url, 3600)
+          .then(({ data }) => { if (data?.signedUrl) setSquarePreview(data.signedUrl); });
+      }
     }
     setDialogOpen(true);
   };
@@ -244,8 +248,8 @@ export const AdminAdsScreen: React.FC = () => {
 
     // Use XMLHttpRequest for progress tracking
     return new Promise((resolve, reject) => {
-      const { data: { publicUrl } } = supabase.storage.from('ad-media').getPublicUrl('');
-      const uploadUrl = publicUrl.replace('/object/public/ad-media/', '/object/ad-media/') + filePath;
+      // Standard upload (bucket is now private)
+      supabase.storage
       
       // Fall back to standard upload (Supabase SDK doesn't support progress)
       supabase.storage

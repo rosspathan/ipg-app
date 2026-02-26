@@ -35,10 +35,18 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   const imageUrl = variant === 'square' && ad.square_image_url ? ad.square_image_url : ad.image_url;
 
   useEffect(() => {
-    // Get public URL from storage if not an external URL
+    // Get signed URL from private storage if not an external URL
     if (imageUrl && !imageUrl.startsWith('http')) {
-      const { data } = supabase.storage.from('ad-media').getPublicUrl(imageUrl);
-      setMediaUrl(data.publicUrl);
+      supabase.storage.from('ad-media')
+        .createSignedUrl(imageUrl, 3600) // 1 hour expiry
+        .then(({ data, error }) => {
+          if (data?.signedUrl) {
+            setMediaUrl(data.signedUrl);
+          } else {
+            console.warn('Failed to get signed URL for ad media:', error);
+            setMediaUrl('');
+          }
+        });
     } else {
       setMediaUrl(imageUrl);
     }
