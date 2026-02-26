@@ -71,7 +71,34 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { badge_name, previous_badge, bsk_amount, is_upgrade }: PurchaseRequest = await req.json();
+    const body = await req.json();
+    const { badge_name, previous_badge, bsk_amount, is_upgrade } = body;
+
+    // Input validation
+    if (!badge_name || typeof badge_name !== 'string' || badge_name.length > 50) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid badge_name' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (bsk_amount === undefined || typeof bsk_amount !== 'number' || !isFinite(bsk_amount) || bsk_amount <= 0 || bsk_amount > 10000000) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid bsk_amount: must be a positive number' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (previous_badge !== undefined && previous_badge !== null && (typeof previous_badge !== 'string' || previous_badge.length > 50)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid previous_badge' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (is_upgrade !== undefined && typeof is_upgrade !== 'boolean') {
+      return new Response(
+        JSON.stringify({ error: 'Invalid is_upgrade: must be boolean' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // SECURITY: Always use authenticated user's ID
     const user_id = authUser.id;

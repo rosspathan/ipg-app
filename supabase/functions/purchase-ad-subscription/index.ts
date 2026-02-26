@@ -34,7 +34,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { tier_id } = await req.json() as PurchaseRequest;
+    const body = await req.json();
+    const { tier_id } = body;
+
+    // Input validation: tier_id must be a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!tier_id || typeof tier_id !== 'string' || !uuidRegex.test(tier_id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid tier_id: must be a valid UUID' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[purchase-ad-subscription] User ${user.id} purchasing tier ${tier_id}`);
 
     // 1. Fetch tier details
