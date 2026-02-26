@@ -8,14 +8,15 @@ const corsHeaders = {
 
 interface WebSocketClient {
   socket: WebSocket;
-  userId?: string;
+  userId: string;
   subscriptions: Set<string>;
 }
 
 const clients = new Map<string, WebSocketClient>();
 let supabase: any;
 
-// Initialize Supabase client
+const MAX_CONNECTIONS_PER_USER = 3;
+
 function initSupabase() {
   supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
@@ -42,7 +43,6 @@ function broadcast(channel: string, data: any) {
   });
 }
 
-// Get order book data from the order_book view
 async function getOrderBook(symbol: string) {
   console.log(`[OrderBook] Fetching order book for ${symbol}`);
   
@@ -82,7 +82,6 @@ async function getOrderBook(symbol: string) {
   return { bids, asks };
 }
 
-// Get recent trades
 async function getRecentTrades(symbol: string, limit = 50) {
   console.log(`[Trades] Fetching recent trades for ${symbol}`);
   
@@ -109,9 +108,7 @@ async function getRecentTrades(symbol: string, limit = 50) {
   }));
 }
 
-// Get ticker data from market_prices table
 async function getTicker(symbol: string) {
-  // Read from market_prices table instead of broken RPC
   const { data, error } = await supabase
     .from('market_prices')
     .select('symbol, current_price, price_change_24h, price_change_percentage_24h, high_24h, low_24h, volume_24h')
@@ -134,7 +131,6 @@ async function getTicker(symbol: string) {
   };
 }
 
-// Handle client messages
 async function handleMessage(clientId: string, message: string) {
   const client = clients.get(clientId);
   if (!client) return;
@@ -145,10 +141,22 @@ async function handleMessage(clientId: string, message: string) {
     switch (msg.type) {
       case 'subscribe':
         const channel = msg.channel;
-        client.subscriptions.add(channel);
-        console.log(`Client ${clientId} subscribed to ${channel}`);
 
-        // Send initial data based on channel type
+        // SECURITY: Validate user channel subscriptions
+        if (channel.startsWith('user:')) {
+          const channelUserId = channel.split(':')[1];
+          if (channelUserId !== client.userId) {
+            client.socket.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Unauthorized: cannot subscribe to other users\' channels' 
+            }));
+            return;
+          }
+        }
+
+        client.subscriptions.add(channel);
+        console.log(`Client ${clientId} (user: ${client.userId}) subscribed to ${channel}`);
+
         if (channel.startsWith('orderbook:')) {
           const symbol = channel.split(':')[1];
           const orderBook = await getOrderBook(symbol);
@@ -190,9 +198,7 @@ async function handleMessage(clientId: string, message: string) {
   }
 }
 
-// Set up real-time subscriptions
 function setupRealtimeSubscriptions() {
-  // Subscribe to order changes
   supabase
     .channel('orders-channel')
     .on('postgres_changes', {
@@ -204,14 +210,12 @@ function setupRealtimeSubscriptions() {
       
       const symbol = payload.new?.symbol || payload.old?.symbol;
       if (symbol) {
-        // Broadcast to orderbook subscribers
         setTimeout(async () => {
           const orderBook = await getOrderBook(symbol);
           broadcast(`orderbook:${symbol}`, orderBook);
-        }, 100); // Small delay to ensure DB consistency
+        }, 100);
       }
 
-      // Broadcast to user channels
       const userId = payload.new?.user_id || payload.old?.user_id;
       if (userId) {
         broadcast(`user:${userId}`, {
@@ -223,7 +227,6 @@ function setupRealtimeSubscriptions() {
     })
     .subscribe();
 
-  // Subscribe to trade changes
   supabase
     .channel('trades-channel')
     .on('postgres_changes', {
@@ -236,7 +239,6 @@ function setupRealtimeSubscriptions() {
       const trade = payload.new;
       const symbol = trade.symbol;
 
-      // Broadcast new trade
       broadcast(`trades:${symbol}`, {
         id: trade.id,
         price: parseFloat(trade.price),
@@ -245,13 +247,11 @@ function setupRealtimeSubscriptions() {
         side: trade.buyer_id ? 'buy' : 'sell'
       });
 
-      // Update ticker data
       setTimeout(async () => {
         const ticker = await getTicker(symbol);
         broadcast(`ticker:${symbol}`, ticker);
       }, 100);
 
-      // Broadcast to user channels
       broadcast(`user:${trade.buyer_id}`, {
         type: 'trade_update',
         trade: trade
@@ -265,7 +265,6 @@ function setupRealtimeSubscriptions() {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -286,17 +285,45 @@ serve(async (req) => {
     setupRealtimeSubscriptions();
   }
 
+  // SECURITY: Authenticate before WebSocket upgrade
+  const url = new URL(req.url);
+  const token = url.searchParams.get('token') || headers.get('Authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Authentication required' }), { 
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Invalid or expired token' }), { 
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // SECURITY: Enforce per-user connection limit
+  const userConnections = Array.from(clients.values()).filter(c => c.userId === user.id).length;
+  if (userConnections >= MAX_CONNECTIONS_PER_USER) {
+    return new Response(JSON.stringify({ error: 'Too many connections' }), { 
+      status: 429,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   const { socket, response } = Deno.upgradeWebSocket(req);
   const clientId = crypto.randomUUID();
   
-  // Store client connection
   clients.set(clientId, {
     socket,
+    userId: user.id,
     subscriptions: new Set()
   });
 
   socket.onopen = () => {
-    console.log(`WebSocket client ${clientId} connected`);
+    console.log(`WebSocket client ${clientId} connected (user: ${user.id})`);
     socket.send(JSON.stringify({ 
       type: 'connected', 
       clientId,

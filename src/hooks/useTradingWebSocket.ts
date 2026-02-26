@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OrderBookData {
   bids: [number, number][];
@@ -42,9 +43,15 @@ export const useTradingWebSocket = () => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const subscriptions = useRef<Set<string>>(new Set());
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     try {
-      const wsUrl = `wss://ocblgldglqhlrmtnynmu.supabase.co/functions/v1/trading-websocket`;
+      // Get auth token for authenticated WebSocket connection
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.warn('WebSocket: No auth session, skipping connection');
+        return;
+      }
+      const wsUrl = `wss://ocblgldglqhlrmtnynmu.supabase.co/functions/v1/trading-websocket?token=${encodeURIComponent(session.access_token)}`;
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {

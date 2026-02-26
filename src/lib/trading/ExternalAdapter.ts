@@ -119,8 +119,8 @@ export class ExternalAdapter extends ExchangeAdapter {
     }
 
     try {
-      // Connect to our trading WebSocket edge function
-      const wsUrl = `wss://ocblgldglqhlrmtnynmu.supabase.co/functions/v1/trading-websocket`;
+      // Connect to our trading WebSocket edge function with auth
+      const wsUrl = `wss://ocblgldglqhlrmtnynmu.supabase.co/functions/v1/trading-websocket?token=${encodeURIComponent(this.config.apiKey || '')}`;
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
