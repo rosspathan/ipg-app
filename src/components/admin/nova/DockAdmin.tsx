@@ -22,7 +22,8 @@ import {
   Ticket,
   CreditCard,
   HandCoins,
-  Receipt
+  Receipt,
+  Ghost
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -190,6 +191,14 @@ export function DockAdmin({ className }: DockAdminProps) {
       icon: CreditCard,
       onClick: () => {
         navigate("/admin/subscriptions");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Phantom Report",
+      icon: Ghost,
+      onClick: () => {
+        navigate("/admin/phantom-report");
         setShowQuickAdd(false);
       },
     },
