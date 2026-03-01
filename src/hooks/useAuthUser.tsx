@@ -123,7 +123,10 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
     if (!error && data?.user) {
       supabase.functions.invoke('log-login', {
         body: { user_id: data.user.id, email, user_agent: navigator.userAgent, referer: window.location.href }
-      }).catch(() => {});
+      }).then(res => {
+        if (res.error) console.error('[login-tracking] Failed:', res.error);
+        else console.log('[login-tracking] Login recorded for', email);
+      }).catch(err => console.error('[login-tracking] Network error:', err));
     }
     return { error };
   };
