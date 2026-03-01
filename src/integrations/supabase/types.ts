@@ -13812,15 +13812,26 @@ export type Database = {
         }
         Returns: Json
       }
-      execute_internal_balance_transfer: {
-        Args: {
-          p_amount: number
-          p_asset_id: string
-          p_direction: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
+      execute_internal_balance_transfer:
+        | {
+            Args: {
+              p_amount: number
+              p_asset_id: string
+              p_direction: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_asset_id: string
+              p_direction: string
+              p_tx_hash?: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       execute_internal_crypto_transfer: {
         Args: {
           p_amount: number

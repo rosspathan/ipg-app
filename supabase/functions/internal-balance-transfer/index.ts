@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 /**
@@ -12,7 +13,7 @@ const corsHeaders = {
  * Uses atomic RPC with FOR UPDATE row locking to prevent race conditions.
  * 
  * Directions:
- *   to_trading  → credits wallet_balances (available)
+ *   to_trading  → credits wallet_balances (available) — REQUIRES tx_hash proof
  *   to_wallet   → debits  wallet_balances (available)
  */
 Deno.serve(async (req) => {
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { asset_id, amount, direction } = await req.json();
+    const { asset_id, amount, direction, tx_hash } = await req.json();
 
     // Validate inputs
     if (!asset_id || !amount || !direction) {
@@ -71,6 +72,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // SECURITY: Require tx_hash for to_trading direction
+    if (direction === "to_trading" && (!tx_hash || typeof tx_hash !== "string" || tx_hash.trim() === "")) {
+      console.error("[internal-balance-transfer] BLOCKED: to_trading without tx_hash");
+      return new Response(
+        JSON.stringify({ error: "tx_hash is required for to_trading transfers. On-chain deposit proof is mandatory." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Round to 8 decimal places
     const safeAmount = Math.round(numAmount * 1e8) / 1e8;
 
@@ -91,7 +101,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[internal-balance-transfer] ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}`);
+    console.log(`[internal-balance-transfer] ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}${tx_hash ? ` TX: ${tx_hash}` : ""}`);
 
     // Resolve user's on-chain wallet address (needed for to_wallet)
     let userWalletAddress: string | null = null;
@@ -129,6 +139,7 @@ Deno.serve(async (req) => {
     const rpcDirection = direction === "to_trading" ? "to_trading" : "from_trading";
 
     // Execute atomic transfer with FOR UPDATE row locking
+    // For to_trading: pass tx_hash for custodial_deposits verification
     const { data: result, error: rpcError } = await admin.rpc(
       "execute_internal_balance_transfer",
       {
@@ -136,6 +147,7 @@ Deno.serve(async (req) => {
         p_asset_id: asset_id,
         p_amount: safeAmount,
         p_direction: rpcDirection,
+        p_tx_hash: direction === "to_trading" ? tx_hash.trim() : null,
       }
     );
 
@@ -152,6 +164,20 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: result?.error || "Transfer failed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle "already_credited" idempotency response
+    if (result?.status === "already_credited") {
+      console.log(`[internal-balance-transfer] Already credited for TX: ${tx_hash}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: result.message || "Already credited",
+          amount: safeAmount,
+          symbol: asset.symbol,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -176,7 +202,6 @@ Deno.serve(async (req) => {
 
       if (wdErr) {
         console.error("[internal-balance-transfer] WARNING: Failed to create withdrawal record:", wdErr);
-        // The trading balance was already debited — create an admin notification
         await admin.from("admin_notifications").insert({
           type: "withdrawal_creation_failed",
           priority: "critical",
@@ -184,7 +209,6 @@ Deno.serve(async (req) => {
           message: `User ${user.id} transferred ${safeAmount} ${asset.symbol} to_wallet but withdrawal record failed: ${wdErr.message}. Manual intervention needed.`,
         });
       } else {
-        // Update the internal_balance_transfers record with reference to the withdrawal
         await admin
           .from("internal_balance_transfers")
           .update({ notes: `withdrawal_id:${withdrawal.id}` })
