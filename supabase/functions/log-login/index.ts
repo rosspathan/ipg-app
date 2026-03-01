@@ -1,18 +1,21 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { user_id, email, user_agent, referer } = await req.json();
+    const body = await req.json();
+    const { user_id, email, user_agent, referer } = body;
+
+    console.log("[log-login] Received request for:", email || user_id);
 
     if (!user_id) {
       return new Response(JSON.stringify({ error: "user_id required" }), {
@@ -28,26 +31,49 @@ serve(async (req) => {
       req.headers.get("x-real-ip") ||
       "unknown";
 
-    // Fetch geolocation from IP
-    let geo: { city?: string; region?: string; country?: string; lat?: number; lon?: number; isp?: string } = {};
+    console.log("[log-login] IP address:", ip_address);
+
+    // Fetch geolocation using HTTPS-compatible API
+    let geo: {
+      city?: string;
+      region?: string;
+      country?: string;
+      lat?: number;
+      lon?: number;
+      isp?: string;
+    } = {};
+
     if (ip_address && ip_address !== "unknown") {
       try {
-        const geoRes = await fetch(`http://ip-api.com/json/${ip_address}?fields=city,regionName,country,lat,lon,isp`);
+        // Use ipapi.co which supports HTTPS on free tier
+        const geoRes = await fetch(
+          `https://ipapi.co/${ip_address}/json/`,
+          { signal: AbortSignal.timeout(5000) }
+        );
         if (geoRes.ok) {
           const geoData = await geoRes.json();
-          geo = {
-            city: geoData.city || null,
-            region: geoData.regionName || null,
-            country: geoData.country || null,
-            lat: geoData.lat || null,
-            lon: geoData.lon || null,
-            isp: geoData.isp || null,
-          };
+          if (!geoData.error) {
+            geo = {
+              city: geoData.city || null,
+              region: geoData.region || null,
+              country: geoData.country_name || null,
+              lat: geoData.latitude || null,
+              lon: geoData.longitude || null,
+              isp: geoData.org || null,
+            };
+          } else {
+            console.warn("[log-login] Geo API error:", geoData.reason);
+          }
+        } else {
+          const errText = await geoRes.text();
+          console.warn("[log-login] Geo API HTTP error:", geoRes.status, errText);
         }
       } catch (geoErr) {
-        console.error("Geolocation lookup failed:", geoErr);
+        console.warn("[log-login] Geolocation lookup failed:", geoErr);
       }
     }
+
+    console.log("[log-login] Geo data:", JSON.stringify(geo));
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -69,20 +95,22 @@ serve(async (req) => {
     });
 
     if (error) {
-      console.error("Error logging login:", error);
+      console.error("[log-login] DB insert error:", JSON.stringify(error));
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(`Login logged for ${email || user_id} from IP: ${ip_address} | ${geo.city}, ${geo.region}, ${geo.country}`);
+    console.log(
+      `[log-login] ✅ Success: ${email || user_id} from ${ip_address} | ${geo.city || "?"}, ${geo.region || "?"}, ${geo.country || "?"}`
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("log-login error:", err);
+    console.error("[log-login] Fatal error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
