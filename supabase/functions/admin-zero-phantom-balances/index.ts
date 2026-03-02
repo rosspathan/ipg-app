@@ -5,6 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Only zero BNB-related asset balances
+const BNB_ASSET_IDS = [
+  'c1b712ab-664a-41e9-b8f7-dd89d2f290be',  // BNB
+  '3dbd238f-a263-4b6f-b5ca-78651f10424a',  // BNB ORIGINAL
+]
+
 // All identified phantom account emails
 const PHANTOM_EMAILS = [
   "aarthibodiga456@gmail.com",
@@ -100,30 +106,33 @@ Deno.serve(async (req) => {
       })
     }
 
-    console.log(`[PHANTOM-ZERO] Admin ${user.email} zeroing ${profiles?.length ?? 0} phantom accounts`)
+    console.log(`[PHANTOM-ZERO] Admin ${user.email} zeroing BNB balances for ${profiles?.length ?? 0} phantom accounts`)
 
     for (const profile of (profiles || [])) {
       const userId = profile.user_id
       const email = profile.email
 
-      // 1. Cancel all active/open orders for this user
+      // 1. Cancel all active/open BNB-related orders for this user
       const { data: cancelledOrders, error: orderErr } = await supabase
         .from('orders')
         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('user_id', userId)
         .in('status', ['open', 'partially_filled'])
+        .or('pair.ilike.%BNB%')
         .select('id, side, pair')
 
-      // 2. Zero out all wallet_balances
+      // 2. Zero out only BNB wallet_balances
       const { data: balancesBefore, error: balErr } = await supabase
         .from('wallet_balances')
         .select('id, asset_id, available, locked')
         .eq('user_id', userId)
+        .in('asset_id', BNB_ASSET_IDS)
 
       const { error: zeroErr } = await supabase
         .from('wallet_balances')
         .update({ available: 0, locked: 0 })
         .eq('user_id', userId)
+        .in('asset_id', BNB_ASSET_IDS)
 
       results.push({
         email,
@@ -140,7 +149,7 @@ Deno.serve(async (req) => {
         order_error: orderErr?.message || null,
       })
 
-      console.log(`[PHANTOM-ZERO] ${email}: zeroed ${balancesBefore?.length ?? 0} balances, cancelled ${cancelledOrders?.length ?? 0} orders`)
+      console.log(`[PHANTOM-ZERO] ${email}: zeroed ${balancesBefore?.length ?? 0} BNB balances, cancelled ${cancelledOrders?.length ?? 0} BNB orders`)
     }
 
     // Log admin action
