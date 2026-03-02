@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { FileDown, Loader2, ShieldAlert } from "lucide-react";
+import { FileDown, Loader2, ShieldAlert, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface PhantomRecord {
   email: string;
@@ -17,6 +18,7 @@ interface PhantomRecord {
 
 export default function PhantomAccountsReport() {
   const [loading, setLoading] = useState(false);
+  const [zeroing, setZeroing] = useState(false);
 
   const fetchAndGeneratePDF = async () => {
     setLoading(true);
@@ -160,6 +162,27 @@ export default function PhantomAccountsReport() {
     doc.save(`Phantom_Accounts_Report_${new Date().toISOString().split("T")[0]}.pdf`);
   };
 
+  const handleZeroPhantoms = async () => {
+    if (!confirm("⚠️ DESTRUCTIVE ACTION: This will zero out ALL 35 phantom account balances and cancel their active orders. Continue?")) return;
+    if (!confirm("FINAL CONFIRMATION: This cannot be undone. Are you absolutely sure?")) return;
+
+    setZeroing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-zero-phantom-balances");
+      if (error) throw error;
+      toast.success(`Zeroed ${data.accounts_processed} phantom accounts`, {
+        description: `${data.emails_not_found?.length || 0} emails not found in system`,
+        duration: 10000,
+      });
+      console.log("[PHANTOM-ZERO] Result:", data);
+    } catch (err: any) {
+      toast.error("Failed to zero phantom balances", { description: err.message });
+      console.error(err);
+    } finally {
+      setZeroing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center space-y-6">
@@ -173,7 +196,7 @@ export default function PhantomAccountsReport() {
         <Button
           size="lg"
           onClick={fetchAndGeneratePDF}
-          disabled={loading}
+          disabled={loading || zeroing}
           className="w-full"
         >
           {loading ? (
@@ -183,6 +206,25 @@ export default function PhantomAccountsReport() {
           )}
           Download PDF Report
         </Button>
+        <div className="border-t border-destructive/20 pt-4">
+          <Button
+            size="lg"
+            variant="destructive"
+            onClick={handleZeroPhantoms}
+            disabled={zeroing || loading}
+            className="w-full"
+          >
+            {zeroing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="mr-2 h-4 w-4" />
+            )}
+            Zero All Phantom Balances
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Sets all 35 phantom account balances to 0 and cancels active orders.
+          </p>
+        </div>
       </div>
     </div>
   );
