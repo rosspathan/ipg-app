@@ -219,10 +219,10 @@ export default function PhantomAccountsReport() {
             ) : (
               <Trash2 className="mr-2 h-4 w-4" />
             )}
-            Zero All Phantom Balances
+            Zero Phantom BNB Balances
           </Button>
           <p className="text-xs text-muted-foreground mt-2">
-            Sets all 35 phantom account balances to 0 and cancels active orders.
+            Zeros only BNB &amp; BNB ORIGINAL balances for all 38 phantom accounts and cancels their BNB-related orders. Other token balances are NOT affected.
           </p>
         </div>
       </div>
