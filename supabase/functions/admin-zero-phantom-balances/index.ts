@@ -48,6 +48,9 @@ const PHANTOM_EMAILS = [
   "akuthotavenkatesh@123mail.com",
   "immidisettisatyanarayana8@gmail.com",
   "togubhimsen1234@gmail.com",
+  "annepuharinarayanaharinarayana@gmail.com",
+  "banalasathish143143@gmail.com",
+  "knmadhu2005@gmail.com",
 ]
 
 Deno.serve(async (req) => {
@@ -115,11 +118,11 @@ Deno.serve(async (req) => {
       // 1. Cancel all active/open BNB-related orders for this user
       const { data: cancelledOrders, error: orderErr } = await supabase
         .from('orders')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('user_id', userId)
-        .in('status', ['open', 'partially_filled'])
-        .or('pair.ilike.%BNB%')
-        .select('id, side, pair')
+        .in('status', ['open', 'pending', 'partially_filled'])
+        .ilike('symbol', '%BNB%')
+        .select('id, side, symbol')
 
       // 2. Zero out only BNB wallet_balances
       const { data: balancesBefore, error: balErr } = await supabase
