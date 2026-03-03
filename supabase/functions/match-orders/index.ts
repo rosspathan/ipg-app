@@ -256,11 +256,16 @@ Deno.serve(async (req) => {
             buyerIsTaker = false;
           } else {
             // Both limit orders: match if buy price >= sell price
-            // The order that was placed first is the maker
+            // The order that was placed first (resting in book) is the maker
             canMatch = buyOrder.price >= sellOrder.price;
-            executionPrice = new BigNumber(String(sellOrder.price)); // Maker (seller who had resting order) sets the price
             // Determine taker: the order placed later is the taker
             buyerIsTaker = new Date(buyOrder.created_at) > new Date(sellOrder.created_at);
+            // CRITICAL: Execute at the MAKER's price (the resting order)
+            // If buyer is taker (placed later), maker is seller → use seller's price
+            // If seller is taker (placed later), maker is buyer → use buyer's price
+            executionPrice = buyerIsTaker
+              ? new BigNumber(String(sellOrder.price))   // Seller is maker
+              : new BigNumber(String(buyOrder.price));    // Buyer is maker
           }
 
           if (canMatch && executionPrice.isGreaterThan(0)) {
