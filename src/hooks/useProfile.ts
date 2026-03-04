@@ -96,11 +96,7 @@ export const useProfile = () => {
       }
     } catch (error) {
       console.error('[PROFILE] Error fetching profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile data",
-        variant: "destructive",
-      });
+      // Silently handle - profile will retry on next auth event
     } finally {
       if (initialLoad) {
         setLoading(false);
