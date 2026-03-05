@@ -291,11 +291,13 @@ const TransferScreen = () => {
     });
 
     // Immediately credit trading balance via RPC (debit onchain, credit trading)
+    // CRITICAL: Must pass tx_hash — edge function requires on-chain proof for to_trading
     const { data: creditResult, error: creditError } = await supabase.functions.invoke('internal-balance-transfer', {
       body: {
         asset_id: currentTradingAsset.assetId,
         amount: amountNum,
         direction: "to_trading",
+        tx_hash: result.txHash,
       }
     });
 
@@ -455,8 +457,10 @@ const TransferScreen = () => {
             amount: amountNum,
             fee: withdrawResult.fee || 0,
             net_amount: amountNum - (withdrawResult.fee || 0),
-            status: 'success',
+            status: 'pending',
             reference_id: refId,
+            notes: withdrawResult.withdrawal_id ? `withdrawal_id:${withdrawResult.withdrawal_id}` : undefined,
+            balance_after: withdrawResult.new_balance ?? null,
           });
         }
         queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
