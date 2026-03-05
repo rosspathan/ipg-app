@@ -20,6 +20,7 @@ import { ethers } from "ethers";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 import PinEntryDialog from "@/components/profile/PinEntryDialog";
+import { useOnchainBalances } from "@/hooks/useOnchainBalances";
 
 type TransferDirection = "to_trading" | "to_wallet";
 
@@ -41,6 +42,7 @@ const TransferScreen = () => {
   const { wallet, refreshWallet } = useWeb3();
   const { retrieveBackup, backupStatus, checkBackupExists } = useEncryptedWalletBackup();
   const { data: dynamicHotWalletAddress } = useHotWalletAddress();
+  const { balances: liveOnchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances();
   
   const [selectedAsset, setSelectedAsset] = useState("");
   const [direction, setDirection] = useState<TransferDirection>("to_trading");
@@ -71,6 +73,7 @@ const TransferScreen = () => {
         });
         // Refetch after sync so onchain_balances DB table is fresh
         refetchTrading();
+        refetchOnchain();
       } catch (err) {
         console.warn('[TransferScreen] sync-bep20-balances failed:', err);
       } finally {
@@ -152,7 +155,9 @@ const TransferScreen = () => {
 
   const currentTradingAsset = tradingAssets.find(a => a.symbol === selectedAsset);
   const tradingAvailable = currentTradingAsset?.tradingAvailable || 0;
-  const walletBalance = currentTradingAsset?.walletBalance || 0;
+  // Use LIVE RPC on-chain balance (not stale DB) for accurate validation
+  const liveWalletBalance = liveOnchainBalances.find(b => b.symbol === selectedAsset)?.balance || 0;
+  const walletBalance = liveWalletBalance > 0 ? liveWalletBalance : (currentTradingAsset?.walletBalance || 0);
   // Use wallet balance for to_trading, trading balance for to_wallet
   const availableBalance = direction === "to_trading" ? walletBalance : tradingAvailable;
 
@@ -678,7 +683,7 @@ const TransferScreen = () => {
                                 <span>{asset.symbol}</span>
                                 <span className="text-muted-foreground ml-2">
                                   ({direction === "to_trading" 
-                                    ? `${asset.walletBalance.toFixed(4)} in wallet`
+                                    ? `${(liveOnchainBalances.find(b => b.symbol === asset.symbol)?.balance ?? asset.walletBalance).toFixed(4)} in wallet`
                                     : `${asset.tradingAvailable.toFixed(4)} available`})
                                 </span>
                               </div>
