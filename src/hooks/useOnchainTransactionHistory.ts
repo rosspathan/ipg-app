@@ -15,6 +15,8 @@ export interface OnchainTransaction {
   token_logo_url: string | null;
   direction: 'SEND' | 'RECEIVE' | 'SELF';
   counterparty_address: string;
+  from_address?: string;
+  to_address?: string;
   amount_raw: string;
   amount_formatted: number;
   status: 'PENDING' | 'CONFIRMING' | 'CONFIRMED' | 'FAILED' | 'DROPPED';
@@ -61,6 +63,48 @@ interface UseOnchainTransactionHistoryOptions {
   limit?: number;
 }
 
+const HASH_RE = /^0x[a-fA-F0-9]{64}$/;
+
+const isOnchainHash = (value: string | null | undefined) => !!value && HASH_RE.test(value.trim());
+
+const normalizeStatus = (
+  status: string | null | undefined,
+  hasRealTxHash: boolean
+): OnchainTransaction['status'] => {
+  const s = (status || '').toLowerCase();
+
+  if (['completed', 'credited', 'success', 'confirmed'].includes(s)) {
+    return hasRealTxHash ? 'CONFIRMED' : 'PENDING';
+  }
+  if (['processing', 'sent', 'confirming', 'broadcasted'].includes(s)) return 'CONFIRMING';
+  if (['failed', 'rejected', 'cancelled', 'error'].includes(s)) return 'FAILED';
+  if (s === 'dropped') return 'DROPPED';
+  return 'PENDING';
+};
+
+const normalizeTxHash = (raw: string | null | undefined, fallbackPrefix: string, id: string) => {
+  if (isOnchainHash(raw)) return raw!.trim().toLowerCase();
+  return `${fallbackPrefix}:${id}`;
+};
+
+const withDerivedFromTo = (tx: OnchainTransaction): OnchainTransaction => {
+  if (tx.direction === 'SELF') {
+    return { ...tx, from_address: tx.wallet_address, to_address: tx.wallet_address };
+  }
+
+  if (tx.direction === 'SEND') {
+    return { ...tx, from_address: tx.wallet_address, to_address: tx.counterparty_address };
+  }
+
+  return { ...tx, from_address: tx.counterparty_address, to_address: tx.wallet_address };
+};
+
+const ranking = (tx: OnchainTransaction) => {
+  const sourceScore = tx.source === 'ONCHAIN' ? 3 : tx.source === 'INTERNAL' ? 2 : 1;
+  const statusScore = tx.status === 'CONFIRMED' ? 3 : tx.status === 'CONFIRMING' ? 2 : tx.status === 'PENDING' ? 1 : 0;
+  return sourceScore * 10 + statusScore;
+};
+
 export function useOnchainTransactionHistory(options: UseOnchainTransactionHistoryOptions = {}) {
   const { user } = useAuthUser();
   const queryClient = useQueryClient();
@@ -71,81 +115,280 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
     lastResult: null,
   });
   const indexingRef = useRef(false);
-  const timeoutRef = useRef<number | null>(null);
-  const hasInitialIndexAttemptRef = useRef(false);
+  const initialIndexDoneRef = useRef<string | null>(null);
   const lastIndexAttemptAtRef = useRef(0);
-  const { 
-    direction = 'all', 
-    status = 'all', 
+
+  const {
+    direction = 'all',
+    status = 'all',
     tokenSymbol,
     searchHash,
-    limit = 100 
+    limit = 100,
   } = options;
 
-  // Fetch transactions from the onchain_transactions table
   const { data: transactions = [], isLoading, error, refetch } = useQuery({
     queryKey: ['onchain-transactions', user?.id, direction, status, tokenSymbol, searchHash, limit],
     queryFn: async () => {
       if (!user) return [];
 
+      const fetchWindow = Math.max(limit * 3, 150);
       console.log('[onchain-history] Fetching transactions from DB...');
 
-      let query = supabase
-        .from('onchain_transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const [
+        onchainRes,
+        internalRes,
+        custodialRes,
+        withdrawalsRes,
+        profileRes,
+        hotWalletRes,
+      ] = await Promise.all([
+        supabase
+          .from('onchain_transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(fetchWindow),
 
-      // Apply direction filter
-      if (direction !== 'all') {
-        query = query.eq('direction', direction);
+        supabase
+          .from('internal_balance_transfers')
+          .select(`
+            id, user_id, direction, amount, status, tx_hash, created_at, updated_at,
+            assets (symbol, name, logo_url, contract_address, decimals)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(fetchWindow),
+
+        supabase
+          .from('custodial_withdrawals')
+          .select(`
+            id, user_id, amount, status, tx_hash, to_address, error_message, created_at, updated_at,
+            assets (symbol, name, logo_url, contract_address, decimals)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(fetchWindow),
+
+        supabase
+          .from('withdrawals')
+          .select(`
+            id, user_id, amount, status, tx_hash, to_address, network, created_at, updated_at,
+            assets (symbol, name, logo_url, contract_address, decimals)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(fetchWindow),
+
+        supabase
+          .from('profiles')
+          .select('wallet_address, bsc_wallet_address, wallet_addresses')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+
+        supabase
+          .from('platform_hot_wallet')
+          .select('address')
+          .eq('is_active', true)
+          .eq('chain', 'BSC')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      if (onchainRes.error) {
+        console.error('[onchain-history] Query error:', onchainRes.error);
+        throw onchainRes.error;
       }
 
-      // Apply status filter
-      if (status !== 'all') {
-        if (status === 'PENDING') {
-          query = query.in('status', ['PENDING', 'CONFIRMING']);
-        } else if (status === 'FAILED') {
-          query = query.in('status', ['FAILED', 'DROPPED']);
-        } else {
-          query = query.eq('status', status);
+      const userWallet = (
+        profileRes.data?.bsc_wallet_address ||
+        (profileRes.data as any)?.wallet_addresses?.['bsc-mainnet'] ||
+        (profileRes.data as any)?.wallet_addresses?.['bsc'] ||
+        profileRes.data?.wallet_address ||
+        ''
+      ).toLowerCase();
+
+      const hotWallet = (hotWalletRes.data?.address || '').toLowerCase();
+
+      const onchainRows = ((onchainRes.data || []) as OnchainTransaction[]).map(withDerivedFromTo);
+
+      const internalRows = ((internalRes.data || []) as any[])
+        .filter((row) => row.direction === 'to_trading' || row.direction === 'to_wallet')
+        .map((row) => {
+          const directionMapped: OnchainTransaction['direction'] = row.direction === 'to_trading' ? 'SEND' : 'RECEIVE';
+          const realHash = isOnchainHash(row.tx_hash);
+          const txHash = normalizeTxHash(row.tx_hash, 'internal_transfer', row.id);
+          const txStatus = normalizeStatus(row.status, realHash);
+          const asset = row.assets || {};
+
+          const mapped: OnchainTransaction = {
+            id: `internal-${row.id}`,
+            user_id: row.user_id,
+            wallet_address: userWallet || '',
+            chain_id: 56,
+            token_contract: asset.contract_address || '0x0000000000000000000000000000000000000000',
+            token_symbol: asset.symbol || 'UNKNOWN',
+            token_name: asset.name || asset.symbol || null,
+            token_decimals: asset.decimals ?? 18,
+            token_logo_url: asset.logo_url || null,
+            direction: directionMapped,
+            counterparty_address: hotWallet || '',
+            amount_raw: String(row.amount ?? 0),
+            amount_formatted: Number(row.amount || 0),
+            status: txStatus,
+            confirmations: txStatus === 'CONFIRMED' ? 12 : 0,
+            required_confirmations: 12,
+            block_number: null,
+            tx_hash: txHash,
+            log_index: null,
+            gas_fee_wei: null,
+            gas_fee_formatted: null,
+            nonce: null,
+            source: 'INTERNAL',
+            error_message: null,
+            created_at: row.created_at,
+            updated_at: row.updated_at || row.created_at,
+            confirmed_at: txStatus === 'CONFIRMED' ? (row.updated_at || row.created_at) : null,
+          };
+
+          return withDerivedFromTo(mapped);
+        });
+
+      const custodialRows = ((custodialRes.data || []) as any[]).map((row) => {
+        const realHash = isOnchainHash(row.tx_hash);
+        const txHash = normalizeTxHash(row.tx_hash, 'custodial_withdrawal', row.id);
+        const txStatus = normalizeStatus(row.status, realHash);
+        const asset = row.assets || {};
+
+        const mapped: OnchainTransaction = {
+          id: `custodial-${row.id}`,
+          user_id: row.user_id,
+          wallet_address: (row.to_address || userWallet || '').toLowerCase(),
+          chain_id: 56,
+          token_contract: asset.contract_address || '0x0000000000000000000000000000000000000000',
+          token_symbol: asset.symbol || 'UNKNOWN',
+          token_name: asset.name || asset.symbol || null,
+          token_decimals: asset.decimals ?? 18,
+          token_logo_url: asset.logo_url || null,
+          direction: 'RECEIVE',
+          counterparty_address: hotWallet || '',
+          amount_raw: String(row.amount ?? 0),
+          amount_formatted: Number(row.amount || 0),
+          status: txStatus,
+          confirmations: txStatus === 'CONFIRMED' ? 12 : 0,
+          required_confirmations: 12,
+          block_number: null,
+          tx_hash: txHash,
+          log_index: null,
+          gas_fee_wei: null,
+          gas_fee_formatted: null,
+          nonce: null,
+          source: 'INTERNAL',
+          error_message: row.error_message || null,
+          created_at: row.created_at,
+          updated_at: row.updated_at || row.created_at,
+          confirmed_at: txStatus === 'CONFIRMED' ? (row.updated_at || row.created_at) : null,
+        };
+
+        return withDerivedFromTo(mapped);
+      });
+
+      const withdrawalRows = ((withdrawalsRes.data || []) as any[]).map((row) => {
+        const realHash = isOnchainHash(row.tx_hash);
+        const txHash = normalizeTxHash(row.tx_hash, 'withdrawal', row.id);
+        const txStatus = normalizeStatus(row.status, realHash);
+        const asset = row.assets || {};
+
+        const mapped: OnchainTransaction = {
+          id: `withdrawal-${row.id}`,
+          user_id: row.user_id,
+          wallet_address: (row.to_address || userWallet || '').toLowerCase(),
+          chain_id: String(row.network || '').toLowerCase().includes('bep20') ? 56 : 56,
+          token_contract: asset.contract_address || '0x0000000000000000000000000000000000000000',
+          token_symbol: asset.symbol || 'UNKNOWN',
+          token_name: asset.name || asset.symbol || null,
+          token_decimals: asset.decimals ?? 18,
+          token_logo_url: asset.logo_url || null,
+          direction: 'RECEIVE',
+          counterparty_address: hotWallet || '',
+          amount_raw: String(row.amount ?? 0),
+          amount_formatted: Number(row.amount || 0),
+          status: txStatus,
+          confirmations: txStatus === 'CONFIRMED' ? 12 : 0,
+          required_confirmations: 12,
+          block_number: null,
+          tx_hash: txHash,
+          log_index: null,
+          gas_fee_wei: null,
+          gas_fee_formatted: null,
+          nonce: null,
+          source: 'INTERNAL',
+          error_message: null,
+          created_at: row.created_at,
+          updated_at: row.updated_at || row.created_at,
+          confirmed_at: txStatus === 'CONFIRMED' ? (row.updated_at || row.created_at) : null,
+        };
+
+        return withDerivedFromTo(mapped);
+      });
+
+      const merged = [...onchainRows, ...internalRows, ...custodialRows, ...withdrawalRows];
+
+      const deduped = new Map<string, OnchainTransaction>();
+      for (const tx of merged) {
+        const dedupeKey = isOnchainHash(tx.tx_hash)
+          ? `${tx.tx_hash.toLowerCase()}|${tx.direction}|${tx.token_symbol}|${Number(tx.amount_formatted).toFixed(8)}`
+          : `${tx.source}|${tx.id}`;
+
+        const existing = deduped.get(dedupeKey);
+        if (!existing || ranking(tx) > ranking(existing)) {
+          deduped.set(dedupeKey, tx);
         }
       }
 
-      // Apply token filter
+      let result = Array.from(deduped.values());
+
+      if (direction !== 'all') {
+        result = result.filter((tx) => tx.direction === direction);
+      }
+
+      if (status !== 'all') {
+        if (status === 'PENDING') {
+          result = result.filter((tx) => tx.status === 'PENDING' || tx.status === 'CONFIRMING');
+        } else if (status === 'FAILED') {
+          result = result.filter((tx) => tx.status === 'FAILED' || tx.status === 'DROPPED');
+        } else {
+          result = result.filter((tx) => tx.status === 'CONFIRMED');
+        }
+      }
+
       if (tokenSymbol) {
-        query = query.ilike('token_symbol', tokenSymbol);
+        const tokenLower = tokenSymbol.toLowerCase();
+        result = result.filter((tx) => tx.token_symbol.toLowerCase() === tokenLower);
       }
 
-      // Apply hash search
       if (searchHash) {
-        query = query.ilike('tx_hash', `%${searchHash}%`);
+        const hashLower = searchHash.toLowerCase();
+        result = result.filter((tx) => tx.tx_hash.toLowerCase().includes(hashLower));
       }
 
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('[onchain-history] Query error:', error);
-        throw error;
-      }
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      result = result.slice(0, limit);
 
-      console.log(`[onchain-history] Loaded ${data?.length || 0} transactions from DB`);
-      return (data || []) as OnchainTransaction[];
+      console.log(`[onchain-history] Loaded ${result.length} unified transactions`);
+      return result;
     },
     enabled: !!user,
-    refetchInterval: 30000, // Refetch every 30 seconds
-    staleTime: 10000, // Consider data fresh for 10 seconds
+    refetchInterval: 30000,
+    staleTime: 10000,
   });
 
-  // Index new transactions from blockchain with timeout
   const indexTransactions = useCallback(async (forceRefresh = false) => {
     if (!user || indexingRef.current) {
       console.log('[onchain-history] Skipping index: no user or already indexing');
       return;
     }
 
-    // Throttle to avoid hammering the edge function (prevents WORKER_LIMIT)
     const now = Date.now();
     if (!forceRefresh && now - lastIndexAttemptAtRef.current < 30_000) {
       console.log('[onchain-history] Skipping index: throttled');
@@ -154,14 +397,13 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
     lastIndexAttemptAtRef.current = now;
 
     indexingRef.current = true;
-    setIndexingStatus(prev => ({ ...prev, isIndexing: true, lastError: null }));
+    setIndexingStatus((prev) => ({ ...prev, isIndexing: true, lastError: null }));
 
-    // Hard cap UI loading at 10 seconds (requirement)
     let didTimeout = false;
     const indexTimeout = setTimeout(() => {
       didTimeout = true;
       console.warn('[onchain-history] Index timed out after 10 seconds');
-      setIndexingStatus(prev => ({
+      setIndexingStatus((prev) => ({
         ...prev,
         isIndexing: false,
         lastError: 'Request timed out. Please try again.',
@@ -181,7 +423,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       if (!session?.access_token) {
         clearTimeout(indexTimeout);
         indexingRef.current = false;
-        setIndexingStatus(prev => ({
+        setIndexingStatus((prev) => ({
           ...prev,
           isIndexing: false,
           lastError: 'Not authenticated. Please log in again.',
@@ -201,7 +443,6 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const duration = Date.now() - startTime;
       console.log(`[onchain-history] Index response in ${duration}ms:`, data);
 
-      // If we already timed out on the client, don't overwrite UI state with a late response.
       if (didTimeout) return;
 
       if (error) {
@@ -211,7 +452,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
           : msg;
 
         console.error('[onchain-history] Index function error:', error);
-        setIndexingStatus(prev => ({
+        setIndexingStatus((prev) => ({
           ...prev,
           isIndexing: false,
           lastError: userMsg,
@@ -229,7 +470,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       if (data) {
         const result = data as IndexingStatus['lastResult'];
-        setIndexingStatus(prev => ({
+        setIndexingStatus((prev) => ({
           ...prev,
           isIndexing: false,
           lastIndexedAt: new Date(),
@@ -237,7 +478,6 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
           lastResult: result,
         }));
 
-        // Always refetch after an index attempt so UI updates immediately.
         await refetch();
       }
     } catch (err: any) {
@@ -245,7 +485,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       if (didTimeout) return;
 
       console.error('[onchain-history] Index failed:', err);
-      setIndexingStatus(prev => ({
+      setIndexingStatus((prev) => ({
         ...prev,
         isIndexing: false,
         lastError: err?.message || 'Network error. Please check your connection.',
@@ -263,23 +503,19 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
     }
   }, [user, refetch]);
 
-  // Index on mount (debounced) — guarded for StrictMode/dev double-invoke
+  // StrictMode-safe initial index: first effect pass is cleaned up; second pass executes timer.
   useEffect(() => {
-    if (!user) return;
-    if (hasInitialIndexAttemptRef.current) return;
-    hasInitialIndexAttemptRef.current = true;
+    if (!user?.id) return;
+    if (initialIndexDoneRef.current === user.id) return;
 
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       indexTransactions(false);
+      initialIndexDoneRef.current = user.id;
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => window.clearTimeout(timer);
   }, [user?.id, indexTransactions]);
 
-  // NOTE: Removed periodic edge-function indexing to avoid WORKER_LIMIT.
-  // Users can always pull-to-refresh / tap Refresh to resync.
-
-  // Real-time subscription for instant updates
   useEffect(() => {
     if (!user) return;
 
@@ -292,15 +528,15 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
           event: '*',
           schema: 'public',
           table: 'onchain_transactions',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
           console.log('[onchain-history] Realtime update:', payload.eventType);
           queryClient.invalidateQueries({ queryKey: ['onchain-transactions'] });
         }
       )
-      .subscribe((status) => {
-        console.log('[onchain-history] Realtime subscription status:', status);
+      .subscribe((subStatus) => {
+        console.log('[onchain-history] Realtime subscription status:', subStatus);
       });
 
     return () => {
@@ -315,11 +551,10 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
     indexingStatus,
     error,
     refetch,
-    indexTransactions
+    indexTransactions,
   };
 }
 
-// Get unique tokens from transaction history for filtering
 export function useOnchainTokens() {
   const { user } = useAuthUser();
 
@@ -328,24 +563,49 @@ export function useOnchainTokens() {
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
-        .from('onchain_transactions')
-        .select('token_symbol, token_logo_url')
-        .eq('user_id', user.id);
+      const [onchainRes, internalRes, custodialRes, withdrawalsRes] = await Promise.all([
+        supabase
+          .from('onchain_transactions')
+          .select('token_symbol, token_logo_url')
+          .eq('user_id', user.id),
+        supabase
+          .from('internal_balance_transfers')
+          .select('assets(symbol, logo_url)')
+          .eq('user_id', user.id)
+          .limit(200),
+        supabase
+          .from('custodial_withdrawals')
+          .select('assets(symbol, logo_url)')
+          .eq('user_id', user.id)
+          .limit(200),
+        supabase
+          .from('withdrawals')
+          .select('assets(symbol, logo_url)')
+          .eq('user_id', user.id)
+          .limit(200),
+      ]);
 
-      if (error) throw error;
+      if (onchainRes.error) throw onchainRes.error;
 
-      // Get unique tokens
       const tokenMap = new Map<string, string | null>();
-      (data || []).forEach((t: any) => {
-        if (!tokenMap.has(t.token_symbol)) {
-          tokenMap.set(t.token_symbol, t.token_logo_url);
+
+      (onchainRes.data || []).forEach((t: any) => {
+        if (t?.token_symbol && !tokenMap.has(t.token_symbol)) {
+          tokenMap.set(t.token_symbol, t.token_logo_url || null);
+        }
+      });
+
+      [...(internalRes.data || []), ...(custodialRes.data || []), ...(withdrawalsRes.data || [])].forEach((row: any) => {
+        const symbol = row?.assets?.symbol;
+        const logo = row?.assets?.logo_url || null;
+        if (symbol && !tokenMap.has(symbol)) {
+          tokenMap.set(symbol, logo);
         }
       });
 
       return Array.from(tokenMap.entries()).map(([symbol, logo]) => ({
         symbol,
-        logo_url: logo
+        logo_url: logo,
       }));
     },
     enabled: !!user,
