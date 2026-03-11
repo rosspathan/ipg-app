@@ -225,12 +225,18 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const onchainRows = ((onchainRes.data || []) as OnchainTransaction[]).map(withDerivedFromTo);
 
       const internalRows = ((internalRes.data || []) as any[])
-        .filter((row) => row.direction === 'to_trading' || row.direction === 'to_wallet')
+        .filter((row) => {
+          // Keep to_trading events and only keep to_wallet when a real on-chain hash exists.
+          // This removes placeholder internal rows that were causing duplicate/stale pending history entries.
+          if (row.direction === 'to_trading') return true;
+          if (row.direction === 'to_wallet') return isOnchainHash(row.tx_hash);
+          return false;
+        })
         .map((row) => {
           const directionMapped: OnchainTransaction['direction'] = row.direction === 'to_trading' ? 'SEND' : 'RECEIVE';
           const realHash = isOnchainHash(row.tx_hash);
           const txHash = normalizeTxHash(row.tx_hash, 'internal_transfer', row.id);
-          const txStatus = normalizeStatus(row.status, realHash);
+          const txStatus = normalizeStatus(row.status, realHash, row.updated_at || row.created_at);
           const asset = row.assets || {};
 
           const mapped: OnchainTransaction = {
