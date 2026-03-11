@@ -461,7 +461,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const startTime = Date.now();
 
       const { data, error } = await supabase.functions.invoke('index-bep20-history', {
-        body: { lookbackHours: 168, forceRefresh },
+        body: { lookbackHours: 720, forceRefresh },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
@@ -473,6 +473,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       if (error) {
         const msg = error.message || 'Failed to sync blockchain data';
+        const blockingError = msg.includes('WORKER_LIMIT') || msg.includes('546') || transactions.length === 0;
         const userMsg = msg.includes('WORKER_LIMIT') || msg.includes('546')
           ? 'Server is busy (worker limit). Please wait 30 seconds and retry.'
           : msg;
@@ -481,7 +482,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
         setIndexingStatus((prev) => ({
           ...prev,
           isIndexing: false,
-          lastError: userMsg,
+          lastError: blockingError ? userMsg : null,
           lastResult: {
             success: false,
             indexed: 0,
@@ -489,6 +490,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
             error: msg,
             error_code: msg.includes('WORKER_LIMIT') ? 'WORKER_LIMIT' : 'FUNCTION_ERROR',
             duration_ms: duration,
+            warning: blockingError ? undefined : 'Sync provider temporarily unavailable; showing existing history.',
           },
         }));
         return;
@@ -496,11 +498,14 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       if (data) {
         const result = data as IndexingStatus['lastResult'];
+        const errorCode = (result as any)?.error_code || '';
+        const isBlocking = ['NO_WALLET_ADDRESS', 'UNAUTHORIZED', 'INVALID_TOKEN', 'SERVER_ERROR', 'MISSING_SERVICE_KEY', 'DB_ERROR'].includes(errorCode);
+
         setIndexingStatus((prev) => ({
           ...prev,
           isIndexing: false,
           lastIndexedAt: new Date(),
-          lastError: (result as any)?.success === false ? (result as any)?.error ?? null : null,
+          lastError: isBlocking ? ((result as any)?.error ?? null) : null,
           lastResult: result,
         }));
 
@@ -514,13 +519,14 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       setIndexingStatus((prev) => ({
         ...prev,
         isIndexing: false,
-        lastError: err?.message || 'Network error. Please check your connection.',
+        lastError: transactions.length === 0 ? (err?.message || 'Network error. Please check your connection.') : null,
         lastResult: {
           success: false,
           indexed: 0,
           created: 0,
           error_code: 'NETWORK_ERROR',
           error: err?.message || 'Network error',
+          warning: transactions.length > 0 ? 'Network issue during sync; showing cached history.' : undefined,
         },
       }));
     } finally {
