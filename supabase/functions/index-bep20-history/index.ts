@@ -37,6 +37,7 @@ type IndexResponse = {
   duration_ms?: number;
   cached?: boolean;
   throttled?: boolean;
+  queued?: boolean;
   warning?: string;
   fallback_reason?: string;
   error?: string;
