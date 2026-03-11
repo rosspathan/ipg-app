@@ -54,6 +54,9 @@ export interface IndexingStatus {
     fallback_reason?: string;
     error?: string;
     error_code?: string;
+    queued?: boolean;
+    throttled?: boolean;
+    cached?: boolean;
   } | null;
 }
 
