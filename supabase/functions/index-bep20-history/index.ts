@@ -341,7 +341,7 @@ async function fetchTransfersViaExplorer(params: {
 
   const startTimestamp = Math.floor(Date.now() / 1000) - lookbackHours * 3600;
   const explorerUrl =
-    `https://api.bscscan.com/v2/api?chainid=56&module=account&action=tokentx` +
+    `https://api.bscscan.com/api?module=account&action=tokentx` +
     `&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc` +
     `&apikey=${apiKey}`;
 
