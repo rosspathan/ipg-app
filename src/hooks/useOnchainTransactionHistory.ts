@@ -533,7 +533,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       clearTimeout(indexTimeout);
       indexingRef.current = false;
     }
-  }, [user, refetch]);
+  }, [user, refetch, transactions.length]);
 
   // StrictMode-safe initial index: first effect pass is cleaned up; second pass executes timer.
   useEffect(() => {
