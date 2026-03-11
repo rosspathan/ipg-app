@@ -275,7 +275,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const custodialRows = ((custodialRes.data || []) as any[]).map((row) => {
         const realHash = isOnchainHash(row.tx_hash);
         const txHash = normalizeTxHash(row.tx_hash, 'custodial_withdrawal', row.id);
-        const txStatus = normalizeStatus(row.status, realHash);
+        const txStatus = normalizeStatus(row.status, realHash, row.updated_at || row.created_at);
         const asset = row.assets || {};
 
         const mapped: OnchainTransaction = {
