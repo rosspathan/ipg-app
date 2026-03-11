@@ -314,7 +314,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const withdrawalRows = ((withdrawalsRes.data || []) as any[]).map((row) => {
         const realHash = isOnchainHash(row.tx_hash);
         const txHash = normalizeTxHash(row.tx_hash, 'withdrawal', row.id);
-        const txStatus = normalizeStatus(row.status, realHash);
+        const txStatus = normalizeStatus(row.status, realHash, row.updated_at || row.created_at);
         const asset = row.assets || {};
 
         const mapped: OnchainTransaction = {
@@ -354,8 +354,16 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       const deduped = new Map<string, OnchainTransaction>();
       for (const tx of merged) {
+        const txHashKey = tx.tx_hash.toLowerCase();
         const dedupeKey = isOnchainHash(tx.tx_hash)
-          ? `${tx.tx_hash.toLowerCase()}|${tx.direction}|${tx.token_symbol}|${Number(tx.amount_formatted).toFixed(8)}`
+          ? [
+              txHashKey,
+              String(tx.log_index ?? 0),
+              tx.token_contract?.toLowerCase?.() || '',
+              (tx.from_address || '').toLowerCase(),
+              (tx.to_address || '').toLowerCase(),
+              tx.direction,
+            ].join('|')
           : `${tx.source}|${tx.id}`;
 
         const existing = deduped.get(dedupeKey);
