@@ -498,7 +498,7 @@ Deno.serve(async (req: Request) => {
     const cacheKey = `${userId}:${wallet}:${clampedLookbackHours}`;
 
     const cached = resultCache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    if (!forceRefresh && cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return json({ ...cached.payload, cached: true, duration_ms: Date.now() - startTime });
     }
 
