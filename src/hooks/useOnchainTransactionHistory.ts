@@ -50,6 +50,8 @@ export interface IndexingStatus {
     provider?: string;
     wallet?: string;
     duration_ms?: number;
+    warning?: string;
+    fallback_reason?: string;
     error?: string;
     error_code?: string;
   } | null;
@@ -67,18 +69,28 @@ const HASH_RE = /^0x[a-fA-F0-9]{64}$/;
 
 const isOnchainHash = (value: string | null | undefined) => !!value && HASH_RE.test(value.trim());
 
+const isStalePending = (status: string | null | undefined, hasRealTxHash: boolean, updatedAt?: string | null) => {
+  const s = (status || '').toLowerCase();
+  if (hasRealTxHash) return false;
+  if (!['pending', 'processing', 'confirming', 'broadcasted', 'sent'].includes(s)) return false;
+  if (!updatedAt) return false;
+
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  return ageMs > 6 * 60 * 60 * 1000; // 6h
+};
+
 const normalizeStatus = (
   status: string | null | undefined,
-  hasRealTxHash: boolean
+  hasRealTxHash: boolean,
+  updatedAt?: string | null
 ): OnchainTransaction['status'] => {
   const s = (status || '').toLowerCase();
 
-  if (['completed', 'credited', 'success', 'confirmed'].includes(s)) {
-    return hasRealTxHash ? 'CONFIRMED' : 'PENDING';
-  }
-  if (['processing', 'sent', 'confirming', 'broadcasted'].includes(s)) return 'CONFIRMING';
+  if (['completed', 'credited', 'success', 'confirmed'].includes(s)) return 'CONFIRMED';
   if (['failed', 'rejected', 'cancelled', 'error'].includes(s)) return 'FAILED';
   if (s === 'dropped') return 'DROPPED';
+  if (isStalePending(s, hasRealTxHash, updatedAt)) return 'FAILED';
+  if (['processing', 'sent', 'confirming', 'broadcasted'].includes(s)) return 'CONFIRMING';
   return 'PENDING';
 };
 
