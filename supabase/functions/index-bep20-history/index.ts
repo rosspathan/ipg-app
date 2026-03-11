@@ -359,7 +359,7 @@ async function fetchTransfersViaExplorer(params: {
 
   if (payload?.status !== "1" || !Array.isArray(payload?.result)) {
     const err = explorerErrorMessage(payload);
-    console.error("[index-bep20] BscScan V2 returned NOTOK", {
+    console.error("[index-bep20] BscScan returned NOTOK", {
       message: payload?.message,
       result: payload?.result,
     });
