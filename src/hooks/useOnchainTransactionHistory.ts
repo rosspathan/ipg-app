@@ -50,6 +50,8 @@ export interface IndexingStatus {
     provider?: string;
     wallet?: string;
     duration_ms?: number;
+    warning?: string;
+    fallback_reason?: string;
     error?: string;
     error_code?: string;
   } | null;
@@ -67,18 +69,28 @@ const HASH_RE = /^0x[a-fA-F0-9]{64}$/;
 
 const isOnchainHash = (value: string | null | undefined) => !!value && HASH_RE.test(value.trim());
 
+const isStalePending = (status: string | null | undefined, hasRealTxHash: boolean, updatedAt?: string | null) => {
+  const s = (status || '').toLowerCase();
+  if (hasRealTxHash) return false;
+  if (!['pending', 'processing', 'confirming', 'broadcasted', 'sent'].includes(s)) return false;
+  if (!updatedAt) return false;
+
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  return ageMs > 6 * 60 * 60 * 1000; // 6h
+};
+
 const normalizeStatus = (
   status: string | null | undefined,
-  hasRealTxHash: boolean
+  hasRealTxHash: boolean,
+  updatedAt?: string | null
 ): OnchainTransaction['status'] => {
   const s = (status || '').toLowerCase();
 
-  if (['completed', 'credited', 'success', 'confirmed'].includes(s)) {
-    return hasRealTxHash ? 'CONFIRMED' : 'PENDING';
-  }
-  if (['processing', 'sent', 'confirming', 'broadcasted'].includes(s)) return 'CONFIRMING';
+  if (['completed', 'credited', 'success', 'confirmed'].includes(s)) return 'CONFIRMED';
   if (['failed', 'rejected', 'cancelled', 'error'].includes(s)) return 'FAILED';
   if (s === 'dropped') return 'DROPPED';
+  if (isStalePending(s, hasRealTxHash, updatedAt)) return 'FAILED';
+  if (['processing', 'sent', 'confirming', 'broadcasted'].includes(s)) return 'CONFIRMING';
   return 'PENDING';
 };
 
@@ -213,12 +225,18 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const onchainRows = ((onchainRes.data || []) as OnchainTransaction[]).map(withDerivedFromTo);
 
       const internalRows = ((internalRes.data || []) as any[])
-        .filter((row) => row.direction === 'to_trading' || row.direction === 'to_wallet')
+        .filter((row) => {
+          // Keep to_trading events and only keep to_wallet when a real on-chain hash exists.
+          // This removes placeholder internal rows that were causing duplicate/stale pending history entries.
+          if (row.direction === 'to_trading') return true;
+          if (row.direction === 'to_wallet') return isOnchainHash(row.tx_hash);
+          return false;
+        })
         .map((row) => {
           const directionMapped: OnchainTransaction['direction'] = row.direction === 'to_trading' ? 'SEND' : 'RECEIVE';
           const realHash = isOnchainHash(row.tx_hash);
           const txHash = normalizeTxHash(row.tx_hash, 'internal_transfer', row.id);
-          const txStatus = normalizeStatus(row.status, realHash);
+          const txStatus = normalizeStatus(row.status, realHash, row.updated_at || row.created_at);
           const asset = row.assets || {};
 
           const mapped: OnchainTransaction = {
@@ -257,7 +275,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const custodialRows = ((custodialRes.data || []) as any[]).map((row) => {
         const realHash = isOnchainHash(row.tx_hash);
         const txHash = normalizeTxHash(row.tx_hash, 'custodial_withdrawal', row.id);
-        const txStatus = normalizeStatus(row.status, realHash);
+        const txStatus = normalizeStatus(row.status, realHash, row.updated_at || row.created_at);
         const asset = row.assets || {};
 
         const mapped: OnchainTransaction = {
@@ -296,7 +314,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const withdrawalRows = ((withdrawalsRes.data || []) as any[]).map((row) => {
         const realHash = isOnchainHash(row.tx_hash);
         const txHash = normalizeTxHash(row.tx_hash, 'withdrawal', row.id);
-        const txStatus = normalizeStatus(row.status, realHash);
+        const txStatus = normalizeStatus(row.status, realHash, row.updated_at || row.created_at);
         const asset = row.assets || {};
 
         const mapped: OnchainTransaction = {
@@ -336,8 +354,16 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       const deduped = new Map<string, OnchainTransaction>();
       for (const tx of merged) {
+        const txHashKey = tx.tx_hash.toLowerCase();
         const dedupeKey = isOnchainHash(tx.tx_hash)
-          ? `${tx.tx_hash.toLowerCase()}|${tx.direction}|${tx.token_symbol}|${Number(tx.amount_formatted).toFixed(8)}`
+          ? [
+              txHashKey,
+              String(tx.log_index ?? 0),
+              tx.token_contract?.toLowerCase?.() || '',
+              (tx.from_address || '').toLowerCase(),
+              (tx.to_address || '').toLowerCase(),
+              tx.direction,
+            ].join('|')
           : `${tx.source}|${tx.id}`;
 
         const existing = deduped.get(dedupeKey);
@@ -435,7 +461,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const startTime = Date.now();
 
       const { data, error } = await supabase.functions.invoke('index-bep20-history', {
-        body: { lookbackHours: 168, forceRefresh },
+        body: { lookbackHours: 720, forceRefresh },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
@@ -447,6 +473,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       if (error) {
         const msg = error.message || 'Failed to sync blockchain data';
+        const blockingError = msg.includes('WORKER_LIMIT') || msg.includes('546') || transactions.length === 0;
         const userMsg = msg.includes('WORKER_LIMIT') || msg.includes('546')
           ? 'Server is busy (worker limit). Please wait 30 seconds and retry.'
           : msg;
@@ -455,7 +482,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
         setIndexingStatus((prev) => ({
           ...prev,
           isIndexing: false,
-          lastError: userMsg,
+          lastError: blockingError ? userMsg : null,
           lastResult: {
             success: false,
             indexed: 0,
@@ -463,6 +490,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
             error: msg,
             error_code: msg.includes('WORKER_LIMIT') ? 'WORKER_LIMIT' : 'FUNCTION_ERROR',
             duration_ms: duration,
+            warning: blockingError ? undefined : 'Sync provider temporarily unavailable; showing existing history.',
           },
         }));
         return;
@@ -470,11 +498,14 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       if (data) {
         const result = data as IndexingStatus['lastResult'];
+        const errorCode = (result as any)?.error_code || '';
+        const isBlocking = ['NO_WALLET_ADDRESS', 'UNAUTHORIZED', 'INVALID_TOKEN', 'SERVER_ERROR', 'MISSING_SERVICE_KEY', 'DB_ERROR'].includes(errorCode);
+
         setIndexingStatus((prev) => ({
           ...prev,
           isIndexing: false,
           lastIndexedAt: new Date(),
-          lastError: (result as any)?.success === false ? (result as any)?.error ?? null : null,
+          lastError: isBlocking ? ((result as any)?.error ?? null) : null,
           lastResult: result,
         }));
 
@@ -488,20 +519,21 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       setIndexingStatus((prev) => ({
         ...prev,
         isIndexing: false,
-        lastError: err?.message || 'Network error. Please check your connection.',
+        lastError: transactions.length === 0 ? (err?.message || 'Network error. Please check your connection.') : null,
         lastResult: {
           success: false,
           indexed: 0,
           created: 0,
           error_code: 'NETWORK_ERROR',
           error: err?.message || 'Network error',
+          warning: transactions.length > 0 ? 'Network issue during sync; showing cached history.' : undefined,
         },
       }));
     } finally {
       clearTimeout(indexTimeout);
       indexingRef.current = false;
     }
-  }, [user, refetch]);
+  }, [user, refetch, transactions.length]);
 
   // StrictMode-safe initial index: first effect pass is cleaned up; second pass executes timer.
   useEffect(() => {
