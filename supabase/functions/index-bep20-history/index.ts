@@ -24,6 +24,7 @@ const DEFAULT_BSC_RPC_URLS = [
 type IndexRequest = {
   lookbackHours?: number;
   forceRefresh?: boolean;
+  async?: boolean;
 };
 
 type IndexResponse = {
