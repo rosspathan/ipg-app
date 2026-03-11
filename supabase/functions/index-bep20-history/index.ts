@@ -518,7 +518,7 @@ Deno.serve(async (req: Request) => {
 
     inFlight.set(cacheKey, Date.now());
 
-    try {
+    const executeSync = async (): Promise<IndexResponse> => {
       let assetMap: Map<string, AssetRow>;
       if (assetCache && Date.now() - assetCache.ts < ASSET_CACHE_TTL_MS) {
         assetMap = assetCache.map;
@@ -667,7 +667,7 @@ Deno.serve(async (req: Request) => {
             duration_ms: Date.now() - startTime,
           };
           resultCache.set(cacheKey, { ts: Date.now(), payload: out });
-          return json(out);
+          return out;
         }
       }
 
@@ -684,6 +684,41 @@ Deno.serve(async (req: Request) => {
       };
 
       resultCache.set(cacheKey, { ts: Date.now(), payload: out });
+      return out;
+    };
+
+    if (runAsync) {
+      const edgeRuntime = (globalThis as any)?.EdgeRuntime;
+      const backgroundSync = (async () => {
+        try {
+          await executeSync();
+        } catch (backgroundError: any) {
+          console.error(`[index-bep20] Background sync error: ${backgroundError?.message || backgroundError}`);
+        } finally {
+          inFlight.delete(cacheKey);
+        }
+      })();
+
+      if (edgeRuntime?.waitUntil) {
+        edgeRuntime.waitUntil(backgroundSync);
+      }
+
+      const queued: IndexResponse = {
+        success: true,
+        indexed: 0,
+        created: 0,
+        provider: "database",
+        wallet: walletShort,
+        queued: true,
+        duration_ms: Date.now() - startTime,
+        warning: "Sync started in background; showing latest indexed history.",
+      };
+
+      return json(queued);
+    }
+
+    try {
+      const out = await executeSync();
       return json(out);
     } finally {
       inFlight.delete(cacheKey);
