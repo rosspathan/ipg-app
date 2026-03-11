@@ -54,6 +54,9 @@ export interface IndexingStatus {
     fallback_reason?: string;
     error?: string;
     error_code?: string;
+    queued?: boolean;
+    throttled?: boolean;
+    cached?: boolean;
   } | null;
 }
 
@@ -425,29 +428,9 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
     indexingRef.current = true;
     setIndexingStatus((prev) => ({ ...prev, isIndexing: true, lastError: null }));
 
-    let didTimeout = false;
-    const indexTimeout = setTimeout(() => {
-      didTimeout = true;
-      console.warn('[onchain-history] Index timed out after 10 seconds');
-      setIndexingStatus((prev) => ({
-        ...prev,
-        isIndexing: false,
-        lastError: 'Request timed out. Please try again.',
-        lastResult: {
-          success: false,
-          indexed: 0,
-          created: 0,
-          error_code: 'TIMEOUT',
-          error: 'Request timed out',
-        },
-      }));
-      indexingRef.current = false;
-    }, 10_000);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        clearTimeout(indexTimeout);
         indexingRef.current = false;
         setIndexingStatus((prev) => ({
           ...prev,
@@ -461,15 +444,12 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const startTime = Date.now();
 
       const { data, error } = await supabase.functions.invoke('index-bep20-history', {
-        body: { lookbackHours: 720, forceRefresh },
+        body: { lookbackHours: 720, forceRefresh, async: true },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
-      clearTimeout(indexTimeout);
       const duration = Date.now() - startTime;
       console.log(`[onchain-history] Index response in ${duration}ms:`, data);
-
-      if (didTimeout) return;
 
       if (error) {
         const msg = error.message || 'Failed to sync blockchain data';
@@ -506,15 +486,26 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
           isIndexing: false,
           lastIndexedAt: new Date(),
           lastError: isBlocking ? ((result as any)?.error ?? null) : null,
-          lastResult: result,
+          lastResult: {
+            ...(result || { success: true, indexed: 0, created: 0 }),
+            duration_ms: (result as any)?.duration_ms ?? duration,
+          },
         }));
 
         await refetch();
+
+        if ((result as any)?.queued || (result as any)?.throttled) {
+          window.setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['onchain-transactions'] });
+            refetch();
+          }, 3000);
+          window.setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['onchain-transactions'] });
+            refetch();
+          }, 9000);
+        }
       }
     } catch (err: any) {
-      clearTimeout(indexTimeout);
-      if (didTimeout) return;
-
       console.error('[onchain-history] Index failed:', err);
       setIndexingStatus((prev) => ({
         ...prev,
@@ -530,10 +521,9 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
         },
       }));
     } finally {
-      clearTimeout(indexTimeout);
       indexingRef.current = false;
     }
-  }, [user, refetch, transactions.length]);
+  }, [user, refetch, transactions.length, queryClient]);
 
   // StrictMode-safe initial index: first effect pass is cleaned up; second pass executes timer.
   useEffect(() => {

@@ -24,6 +24,7 @@ const DEFAULT_BSC_RPC_URLS = [
 type IndexRequest = {
   lookbackHours?: number;
   forceRefresh?: boolean;
+  async?: boolean;
 };
 
 type IndexResponse = {
@@ -36,6 +37,7 @@ type IndexResponse = {
   duration_ms?: number;
   cached?: boolean;
   throttled?: boolean;
+  queued?: boolean;
   warning?: string;
   fallback_reason?: string;
   error?: string;
@@ -339,7 +341,7 @@ async function fetchTransfersViaExplorer(params: {
 
   const startTimestamp = Math.floor(Date.now() / 1000) - lookbackHours * 3600;
   const explorerUrl =
-    `https://api.bscscan.com/v2/api?chainid=56&module=account&action=tokentx` +
+    `https://api.bscscan.com/api?module=account&action=tokentx` +
     `&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc` +
     `&apikey=${apiKey}`;
 
@@ -357,7 +359,7 @@ async function fetchTransfersViaExplorer(params: {
 
   if (payload?.status !== "1" || !Array.isArray(payload?.result)) {
     const err = explorerErrorMessage(payload);
-    console.error("[index-bep20] BscScan V2 returned NOTOK", {
+    console.error("[index-bep20] BscScan returned NOTOK", {
       message: payload?.message,
       result: payload?.result,
     });
@@ -428,7 +430,8 @@ Deno.serve(async (req: Request) => {
 
     const bscscanApiKey = (Deno.env.get("BSCSCAN_API_KEY") ?? "").trim();
 
-    const { lookbackHours = 720 }: IndexRequest = await req.json().catch(() => ({}));
+    const body: IndexRequest = await req.json().catch(() => ({}));
+    const { lookbackHours = 720, forceRefresh = false, async: runAsync = true } = body;
     const clampedLookbackHours = Math.max(1, Math.min(Number(lookbackHours) || 720, 2160));
 
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -495,7 +498,7 @@ Deno.serve(async (req: Request) => {
     const cacheKey = `${userId}:${wallet}:${clampedLookbackHours}`;
 
     const cached = resultCache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    if (!forceRefresh && cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return json({ ...cached.payload, cached: true, duration_ms: Date.now() - startTime });
     }
 
@@ -515,7 +518,7 @@ Deno.serve(async (req: Request) => {
 
     inFlight.set(cacheKey, Date.now());
 
-    try {
+    const executeSync = async (): Promise<IndexResponse> => {
       let assetMap: Map<string, AssetRow>;
       if (assetCache && Date.now() - assetCache.ts < ASSET_CACHE_TTL_MS) {
         assetMap = assetCache.map;
@@ -664,7 +667,7 @@ Deno.serve(async (req: Request) => {
             duration_ms: Date.now() - startTime,
           };
           resultCache.set(cacheKey, { ts: Date.now(), payload: out });
-          return json(out);
+          return out;
         }
       }
 
@@ -681,6 +684,41 @@ Deno.serve(async (req: Request) => {
       };
 
       resultCache.set(cacheKey, { ts: Date.now(), payload: out });
+      return out;
+    };
+
+    if (runAsync) {
+      const edgeRuntime = (globalThis as any)?.EdgeRuntime;
+      const backgroundSync = (async () => {
+        try {
+          await executeSync();
+        } catch (backgroundError: any) {
+          console.error(`[index-bep20] Background sync error: ${backgroundError?.message || backgroundError}`);
+        } finally {
+          inFlight.delete(cacheKey);
+        }
+      })();
+
+      if (edgeRuntime?.waitUntil) {
+        edgeRuntime.waitUntil(backgroundSync);
+      }
+
+      const queued: IndexResponse = {
+        success: true,
+        indexed: 0,
+        created: 0,
+        provider: "database",
+        wallet: walletShort,
+        queued: true,
+        duration_ms: Date.now() - startTime,
+        warning: "Sync started in background; showing latest indexed history.",
+      };
+
+      return json(queued);
+    }
+
+    try {
+      const out = await executeSync();
       return json(out);
     } finally {
       inFlight.delete(cacheKey);
