@@ -430,7 +430,8 @@ Deno.serve(async (req: Request) => {
 
     const bscscanApiKey = (Deno.env.get("BSCSCAN_API_KEY") ?? "").trim();
 
-    const { lookbackHours = 720 }: IndexRequest = await req.json().catch(() => ({}));
+    const body: IndexRequest = await req.json().catch(() => ({}));
+    const { lookbackHours = 720, forceRefresh = false, async: runAsync = true } = body;
     const clampedLookbackHours = Math.max(1, Math.min(Number(lookbackHours) || 720, 2160));
 
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
