@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface BalanceAdjustmentRequest {
@@ -72,8 +72,8 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    if (!asset_symbol || typeof asset_symbol !== 'string' || !/^[A-Za-z0-9]{1,10}$/.test(asset_symbol)) {
-      return new Response(JSON.stringify({ error: 'Invalid asset_symbol: must be 1-10 alphanumeric characters' }), {
+    if (!asset_symbol || typeof asset_symbol !== 'string' || !/^[A-Za-z0-9 ]{1,20}$/.test(asset_symbol)) {
+      return new Response(JSON.stringify({ error: 'Invalid asset_symbol: must be 1-20 alphanumeric characters' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -116,7 +116,6 @@ Deno.serve(async (req) => {
     let targetUserId: string;
     let targetUsername: string;
 
-    // Try UUID first
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user_identifier);
     
     if (isUUID) {
@@ -135,7 +134,6 @@ Deno.serve(async (req) => {
       targetUserId = profile.user_id;
       targetUsername = profile.username || 'unknown';
     } else {
-      // Try by username
       const { data: profile, error: profileError } = await adminClient
         .from('profiles')
         .select('user_id, username')
@@ -174,8 +172,8 @@ Deno.serve(async (req) => {
       .eq('asset_id', asset.id)
       .single();
 
-    const beforeAvailable = currentBalance?.available || 0;
-    const beforeLocked = currentBalance?.locked || 0;
+    const beforeAvailable = Number(currentBalance?.available) || 0;
+    const beforeLocked = Number(currentBalance?.locked) || 0;
 
     // For debit, check if sufficient balance
     if (amount < 0 && beforeAvailable < Math.abs(amount)) {
@@ -189,7 +187,38 @@ Deno.serve(async (req) => {
 
     const afterAvailable = beforeAvailable + amount;
 
-    // Update balance
+    // ===== ATOMIC: Write ledger FIRST, then update balance =====
+    // If ledger write fails, we abort — no phantom balances.
+
+    const { error: ledgerError } = await adminClient
+      .from('trading_balance_ledger')  // FIX: was 'trading_ledger' (non-existent table)
+      .insert({
+        user_id: targetUserId,
+        asset_symbol: asset.symbol,           // FIX: correct column name
+        delta_available: amount,              // FIX: correct column name
+        delta_locked: 0,                      // FIX: correct column name
+        balance_available_after: afterAvailable,  // FIX: correct column name
+        balance_locked_after: beforeLocked,       // FIX: correct column name
+        entry_type: amount > 0 ? 'ADMIN_CREDIT' : 'ADMIN_DEBIT',
+        reference_type: 'admin_adjustment',
+        reference_id: null,
+        notes: `Admin ${user.email}: ${reason}${related_tx_hash ? ` [ref: ${related_tx_hash}]` : ''}`,
+      });
+
+    if (ledgerError) {
+      // CRITICAL FIX: Do NOT continue if ledger write fails.
+      // Previously this was swallowed with "Continue anyway" — creating phantom balances.
+      console.error('[ADMIN] ABORT: Failed to write ledger entry:', ledgerError);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to record audit trail. Balance NOT modified. Contact engineering.',
+        detail: ledgerError.message,
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Only update balance AFTER ledger succeeds
     const { error: updateError } = await adminClient
       .from('wallet_balances')
       .upsert({
@@ -203,31 +232,16 @@ Deno.serve(async (req) => {
       });
 
     if (updateError) {
-      console.error('Failed to update balance:', updateError);
-      return new Response(JSON.stringify({ error: 'Failed to update balance' }), {
+      console.error('[ADMIN] CRITICAL: Ledger written but balance update failed!', updateError);
+      // Ledger entry exists but balance wasn't updated — admin must investigate
+      // This is the safer failure mode: ledger has the record, balance can be fixed
+      return new Response(JSON.stringify({ 
+        error: 'Balance update failed but audit trail was recorded. Manual correction required.',
+        ledger_recorded: true,
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-
-    // Log to trading_ledger
-    const { error: ledgerError } = await adminClient
-      .from('trading_ledger')
-      .insert({
-        user_id: targetUserId,
-        asset_id: asset.id,
-        entry_type: amount > 0 ? 'credit' : 'debit',
-        amount: Math.abs(amount),
-        balance_before: beforeAvailable,
-        balance_after: afterAvailable,
-        reference_type: 'admin_adjustment',
-        reference_id: related_tx_hash || null,
-        notes: `Admin adjustment by ${user.email}: ${reason}`,
-      });
-
-    if (ledgerError) {
-      console.error('Failed to log to trading_ledger:', ledgerError);
-      // Continue anyway, the balance was updated
     }
 
     // Log to admin_notifications for audit
@@ -236,7 +250,7 @@ Deno.serve(async (req) => {
       .insert({
         type: 'balance_adjustment',
         title: `Balance Adjustment: ${targetUsername}`,
-        message: `${amount > 0 ? 'Credited' : 'Debited'} ${Math.abs(amount)} ${asset_symbol} ${amount > 0 ? 'to' : 'from'} ${targetUsername}. Reason: ${reason}`,
+        message: `${amount > 0 ? 'Credited' : 'Debited'} ${Math.abs(amount)} ${asset.symbol} ${amount > 0 ? 'to' : 'from'} ${targetUsername}. Reason: ${reason}`,
         priority: 'high',
         related_user_id: targetUserId,
         metadata: {
@@ -244,7 +258,7 @@ Deno.serve(async (req) => {
           admin_email: user.email,
           target_user_id: targetUserId,
           target_username: targetUsername,
-          asset_symbol: asset_symbol,
+          asset_symbol: asset.symbol,
           amount: amount,
           before_balance: beforeAvailable,
           after_balance: afterAvailable,
@@ -257,7 +271,7 @@ Deno.serve(async (req) => {
     console.log(`[ADMIN] Balance adjustment successful:`, {
       admin: user.email,
       target: targetUsername,
-      asset: asset_symbol,
+      asset: asset.symbol,
       amount,
       before: beforeAvailable,
       after: afterAvailable,
@@ -268,11 +282,12 @@ Deno.serve(async (req) => {
       adjustment: {
         user_id: targetUserId,
         username: targetUsername,
-        asset: asset_symbol,
+        asset: asset.symbol,
         amount,
         before_balance: beforeAvailable,
         after_balance: afterAvailable,
         reason,
+        ledger_recorded: true,
       },
     }), {
       status: 200,
