@@ -248,28 +248,43 @@ Deno.serve(async (req) => {
           console.error(`[process-pending-withdrawals] Failed to update withdrawal ${withdrawal.id}:`, updateError);
           results.push({ id: withdrawal.id, status: 'failed', error: updateError.message });
         } else {
-          // Record WITHDRAWAL ledger entry for audit trail
-          const { data: walletBal } = await supabase
-            .from('wallet_balances')
-            .select('available, locked')
+          // Idempotency guard: only write ledger if no entry exists for this withdrawal
+          // (validate_and_record_withdrawal may have already written one with reference_type='withdrawal')
+          const { data: existingLedger } = await supabase
+            .from('trading_balance_ledger')
+            .select('id')
             .eq('user_id', withdrawal.user_id)
-            .eq('asset_id', withdrawal.asset_id)
+            .eq('reference_id', withdrawal.id)
+            .in('reference_type', ['withdrawal', 'withdrawal_completed', 'internal_transfer_to_wallet'])
+            .eq('entry_type', 'WITHDRAWAL')
             .maybeSingle();
 
-          await supabase
-            .from('trading_balance_ledger')
-            .insert({
-              user_id: withdrawal.user_id,
-              asset_symbol: asset.symbol,
-              delta_available: -Number(withdrawal.net_amount),
-              delta_locked: 0,
-              balance_available_after: Number(walletBal?.available ?? 0),
-              balance_locked_after: Number(walletBal?.locked ?? 0),
-              entry_type: 'WITHDRAWAL',
-              reference_type: 'withdrawal_completed',
-              reference_id: withdrawal.id,
-              notes: `Withdrawal completed: ${withdrawal.net_amount} ${asset.symbol} to ${withdrawal.to_address} | TX: ${txHash}`
-            });
+          if (!existingLedger) {
+            const { data: walletBal } = await supabase
+              .from('wallet_balances')
+              .select('available, locked')
+              .eq('user_id', withdrawal.user_id)
+              .eq('asset_id', withdrawal.asset_id)
+              .maybeSingle();
+
+            await supabase
+              .from('trading_balance_ledger')
+              .insert({
+                user_id: withdrawal.user_id,
+                asset_symbol: asset.symbol,
+                delta_available: -Number(withdrawal.net_amount),
+                delta_locked: 0,
+                balance_available_after: Number(walletBal?.available ?? 0),
+                balance_locked_after: Number(walletBal?.locked ?? 0),
+                entry_type: 'WITHDRAWAL',
+                reference_type: 'withdrawal_completed',
+                reference_id: withdrawal.id,
+                notes: `Withdrawal completed: ${withdrawal.net_amount} ${asset.symbol} to ${withdrawal.to_address} | TX: ${txHash}`
+              });
+            console.log(`[process-pending-withdrawals] Ledger entry recorded for ${withdrawal.id}`);
+          } else {
+            console.log(`[process-pending-withdrawals] Ledger entry already exists for ${withdrawal.id}, skipping duplicate`);
+          }
 
           console.log(`[process-pending-withdrawals] ✓ Completed ${asset.symbol} withdrawal ${withdrawal.id}: ${txHash} (ledger recorded)`);
           processed++;
