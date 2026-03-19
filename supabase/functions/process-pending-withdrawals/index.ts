@@ -132,6 +132,25 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // ── PHASE 4: SOLVENCY CHECK before any withdrawal ──
+        const assetSymbol = asset.symbol?.toUpperCase();
+        const { data: solvencyResult, error: solvencyError } = await supabase.rpc(
+          'check_solvency_before_withdrawal',
+          { p_asset_symbol: assetSymbol }
+        );
+        
+        if (solvencyError) {
+          console.warn(`[process-pending-withdrawals] Solvency check failed for ${withdrawal.id}: ${solvencyError.message}. Blocking withdrawal.`);
+          results.push({ id: withdrawal.id, status: 'blocked', reason: 'Solvency check unavailable' });
+          continue;
+        }
+        
+        if (solvencyResult && !solvencyResult.solvent) {
+          console.error(`[process-pending-withdrawals] SOLVENCY DRIFT detected for ${assetSymbol}. Drift: ${solvencyResult.drift}. Withdrawals frozen.`);
+          results.push({ id: withdrawal.id, status: 'blocked', reason: `Solvency drift: ${solvencyResult.drift_percent}%` });
+          continue;
+        }
+
         // ── HARDENED: Full re-validation for EVERY withdrawal (no stale bypass) ──
         // Every withdrawal must pass full validation regardless of age.
         const { data: validation, error: valError } = await supabase.rpc(

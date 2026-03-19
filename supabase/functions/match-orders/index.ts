@@ -317,8 +317,8 @@ Deno.serve(async (req) => {
             try {
               console.log(`[Matching Engine] Executing atomic trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity.toFixed(8)} ${baseSymbol}, quote=${quoteAmount.toFixed(8)} ${quoteSymbol}`);
 
-              // Use atomic execute_trade RPC that handles settle + trade record + order updates + fee credit in one transaction
-              const { data: tradeId, error: executeError } = await supabase.rpc('execute_trade', {
+              // Use SERIALIZABLE atomic execute_trade RPC (with retry on serialization failure)
+              const { data: tradeId, error: executeError } = await supabase.rpc('execute_trade_serializable', {
                 p_buy_order_id: buyOrder.id,
                 p_sell_order_id: sellOrder.id,
                 p_buyer_id: buyOrder.user_id,

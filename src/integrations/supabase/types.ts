@@ -13857,6 +13857,10 @@ export type Database = {
         Args: { p_symbol: string; p_trade_price: number }
         Returns: Json
       }
+      check_solvency_before_withdrawal: {
+        Args: { p_asset_symbol: string }
+        Returns: Json
+      }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_order_rate_limits: { Args: never; Returns: undefined }
       clone_program_module: {
@@ -14012,6 +14016,23 @@ export type Database = {
             }
             Returns: string
           }
+      execute_trade_serializable: {
+        Args: {
+          p_base_amount: number
+          p_base_asset: string
+          p_buy_order_id: string
+          p_buyer_fee: number
+          p_buyer_id: string
+          p_quote_amount: number
+          p_quote_asset: string
+          p_sell_order_id: string
+          p_seller_fee: number
+          p_seller_id: string
+          p_symbol: string
+          p_trading_type?: string
+        }
+        Returns: string
+      }
       execute_withdrawal_request: {
         Args: {
           p_amount: number

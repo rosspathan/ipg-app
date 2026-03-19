@@ -321,28 +321,10 @@ const TransferScreen = () => {
         balance_after: creditResult?.new_balance ?? null,
       });
 
-      // CRITICAL: Insert a pre-credited custodial_deposits record so the
-      // monitor-custodial-deposits cron job does NOT re-credit this tx_hash.
-      // Without this, the monitor detects the same on-chain tx and double-credits
-      // the trading balance.
-      if (result.txHash && transferStatus === 'success') {
-        const userWalletAddress = getStoredWallet()?.address || null;
-        await supabase.from('custodial_deposits').insert({
-          user_id: authUser.id,
-          asset_id: currentTradingAsset.assetId,
-          amount: amountNum,
-          tx_hash: result.txHash.toLowerCase(),
-          from_address: userWalletAddress?.toLowerCase() || '',
-          confirmations: 999,
-          required_confirmations: 15,
-          status: 'credited',
-          credited_at: new Date().toISOString(),
-        }).then(({ error }) => {
-          if (error && error.code !== '23505') {
-            console.warn('[TransferScreen] Failed to insert custodial_deposits dedup record:', error.message);
-          }
-        });
-      }
+      // SECURITY: custodial_deposits insertion is now BLOCKED at DB level.
+      // The monitor-custodial-deposits server-side function handles all deposit
+      // detection and crediting via SECURITY DEFINER RPCs.
+      // Double-credit prevention is enforced by UNIQUE(tx_hash) constraint.
     }
     queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
 
