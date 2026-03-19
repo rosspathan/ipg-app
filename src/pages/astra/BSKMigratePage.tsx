@@ -521,6 +521,77 @@ export function BSKMigratePage() {
               </Card>
             )}
 
+            {/* Step: Pending Admin Approval */}
+            {step === 'pending_approval' && result && (
+              <Card className="border-warning/30 bg-warning/5">
+                <CardContent className="py-8">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="p-4 rounded-full bg-warning/20 border border-warning/30">
+                      <Clock className="h-10 w-10 text-warning" />
+                    </div>
+                    <h3 className="text-xl font-bold text-warning">Request Submitted!</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs">
+                      Your migration request has been submitted and is awaiting admin approval. You'll be notified once it's processed.
+                    </p>
+
+                    <div className="w-full space-y-3 p-4 rounded-xl bg-background/50 text-left">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Amount Requested</span>
+                        <span className="font-bold">{result.amount_requested?.toLocaleString()} BSK</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Est. Fee</span>
+                        <span className="text-destructive">-{result.estimated_fee?.toLocaleString()} BSK</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Est. Gas</span>
+                        <span className="text-destructive">-{result.estimated_gas_deduction} BSK</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-bold">
+                        <span>Est. You'll Receive</span>
+                        <span className="text-primary">{result.estimated_net_amount?.toLocaleString()} BSK</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Destination</span>
+                        <span className="font-mono text-xs">{result.wallet_address?.slice(0, 8)}...{result.wallet_address?.slice(-6)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Status</span>
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Pending Approval
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <Alert className="bg-muted/30 border-muted text-left">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-sm">
+                        An admin will review your request. Once approved, BSK will be transferred from the migration wallet to your wallet automatically.
+                      </AlertDescription>
+                    </Alert>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep('input')
+                        setAmount('')
+                        setConfirmed(false)
+                        setUnderstands(false)
+                        setResult(null)
+                        checkEligibility()
+                        fetchHistory()
+                      }}
+                      className="w-full"
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Step: Success */}
             {step === 'success' && result && (
               <Card className="border-success/30 bg-success/5">
