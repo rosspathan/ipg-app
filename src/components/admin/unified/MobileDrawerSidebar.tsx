@@ -216,6 +216,13 @@ export function MobileDrawerSidebar({ open, onClose }: MobileDrawerSidebarProps)
             defaultOpen={true}
           />
           <NavSection
+            label="System"
+            items={systemNav}
+            location={location}
+            onNavigate={handleNavigate}
+            defaultOpen={false}
+          />
+          <NavSection
             label="BSK Reports"
             items={reportsNav}
             location={location}
