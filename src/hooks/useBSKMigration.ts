@@ -179,7 +179,11 @@ export function useBSKMigration() {
       }
 
       setResult(data);
-      toast.success(`Successfully migrated ${data.net_amount} BSK to on-chain!`);
+      if (data.status === 'pending_admin_approval') {
+        toast.success('Migration request submitted! Awaiting admin approval.');
+      } else {
+        toast.success(`Successfully migrated ${data.net_amount} BSK to on-chain!`);
+      }
       // Refresh history after migration
       fetchHistory();
       return data as MigrationResult;
