@@ -20,13 +20,16 @@ import { format } from "date-fns"
 type MigrationStep = 'check' | 'input' | 'confirm' | 'processing' | 'pending_approval' | 'success'
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
+  pending_admin_approval: { label: 'Pending Approval', variant: 'secondary', icon: Clock },
   pending: { label: 'Pending', variant: 'secondary', icon: Clock },
   validating: { label: 'Validating', variant: 'secondary', icon: Loader2 },
   debiting: { label: 'Debiting', variant: 'secondary', icon: Loader2 },
+  approved_executing: { label: 'Executing', variant: 'secondary', icon: Loader2 },
   signing: { label: 'Signing', variant: 'secondary', icon: Loader2 },
   broadcasting: { label: 'Broadcasting', variant: 'secondary', icon: Loader2 },
   confirming: { label: 'Confirming', variant: 'secondary', icon: Loader2 },
   completed: { label: 'Completed', variant: 'default', icon: CheckCircle2 },
+  rejected: { label: 'Rejected', variant: 'destructive', icon: XCircle },
   failed: { label: 'Failed', variant: 'destructive', icon: XCircle },
   rolled_back: { label: 'Refunded', variant: 'outline', icon: ArrowLeft },
 }
