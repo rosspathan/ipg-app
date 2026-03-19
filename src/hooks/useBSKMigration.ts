@@ -44,14 +44,19 @@ export interface MigrationEligibility {
 export interface MigrationResult {
   success: boolean;
   migration_id: string;
-  tx_hash: string;
+  status: string;
+  message?: string;
+  tx_hash?: string;
   amount_requested: number;
-  gas_deducted: number;
-  migration_fee: number;
-  net_amount: number;
+  estimated_fee?: number;
+  estimated_gas_deduction?: number;
+  estimated_net_amount?: number;
+  gas_deducted?: number;
+  migration_fee?: number;
+  net_amount?: number;
   wallet_address: string;
-  block_number: number;
-  confirmations: number;
+  block_number?: number;
+  confirmations?: number;
 }
 
 export interface MigrationHistoryItem {
@@ -174,7 +179,11 @@ export function useBSKMigration() {
       }
 
       setResult(data);
-      toast.success(`Successfully migrated ${data.net_amount} BSK to on-chain!`);
+      if (data.status === 'pending_admin_approval') {
+        toast.success('Migration request submitted! Awaiting admin approval.');
+      } else {
+        toast.success(`Successfully migrated ${data.net_amount} BSK to on-chain!`);
+      }
       // Refresh history after migration
       fetchHistory();
       return data as MigrationResult;

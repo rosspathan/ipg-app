@@ -17,16 +17,19 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
-type MigrationStep = 'check' | 'input' | 'confirm' | 'processing' | 'success'
+type MigrationStep = 'check' | 'input' | 'confirm' | 'processing' | 'pending_approval' | 'success'
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
+  pending_admin_approval: { label: 'Pending Approval', variant: 'secondary', icon: Clock },
   pending: { label: 'Pending', variant: 'secondary', icon: Clock },
   validating: { label: 'Validating', variant: 'secondary', icon: Loader2 },
   debiting: { label: 'Debiting', variant: 'secondary', icon: Loader2 },
+  approved_executing: { label: 'Executing', variant: 'secondary', icon: Loader2 },
   signing: { label: 'Signing', variant: 'secondary', icon: Loader2 },
   broadcasting: { label: 'Broadcasting', variant: 'secondary', icon: Loader2 },
   confirming: { label: 'Confirming', variant: 'secondary', icon: Loader2 },
   completed: { label: 'Completed', variant: 'default', icon: CheckCircle2 },
+  rejected: { label: 'Rejected', variant: 'destructive', icon: XCircle },
   failed: { label: 'Failed', variant: 'destructive', icon: XCircle },
   rolled_back: { label: 'Refunded', variant: 'outline', icon: ArrowLeft },
 }
@@ -84,7 +87,10 @@ export function BSKMigratePage() {
       // Check for in-progress migration and resume stepper
       if (eligibility.has_pending_migration && eligibility.pending_migration) {
         const pendingStatus = eligibility.pending_migration.status;
-        if (['validating', 'debiting', 'signing', 'broadcasting', 'confirming'].includes(pendingStatus)) {
+        if (pendingStatus === 'pending_admin_approval') {
+          // Show that it's awaiting admin approval
+          setStep('input');
+        } else if (['validating', 'debiting', 'signing', 'broadcasting', 'confirming', 'approved_executing'].includes(pendingStatus)) {
           setStep('processing');
         }
       } else {
@@ -136,7 +142,11 @@ export function BSKMigratePage() {
     setStep('processing')
     const res = await initiateMigration(amountNum)
     if (res) {
-      setStep('success')
+      if (res.status === 'pending_admin_approval') {
+        setStep('pending_approval')
+      } else {
+        setStep('success')
+      }
     } else {
       setStep('input')
     }
@@ -509,6 +519,77 @@ export function BSKMigratePage() {
                       <Badge variant="secondary">Signing</Badge>
                       <Badge variant="secondary">Broadcasting</Badge>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step: Pending Admin Approval */}
+            {step === 'pending_approval' && result && (
+              <Card className="border-warning/30 bg-warning/5">
+                <CardContent className="py-8">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="p-4 rounded-full bg-warning/20 border border-warning/30">
+                      <Clock className="h-10 w-10 text-warning" />
+                    </div>
+                    <h3 className="text-xl font-bold text-warning">Request Submitted!</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs">
+                      Your migration request has been submitted and is awaiting admin approval. You'll be notified once it's processed.
+                    </p>
+
+                    <div className="w-full space-y-3 p-4 rounded-xl bg-background/50 text-left">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Amount Requested</span>
+                        <span className="font-bold">{result.amount_requested?.toLocaleString()} BSK</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Est. Fee</span>
+                        <span className="text-destructive">-{result.estimated_fee?.toLocaleString()} BSK</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Est. Gas</span>
+                        <span className="text-destructive">-{result.estimated_gas_deduction} BSK</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-bold">
+                        <span>Est. You'll Receive</span>
+                        <span className="text-primary">{result.estimated_net_amount?.toLocaleString()} BSK</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Destination</span>
+                        <span className="font-mono text-xs">{result.wallet_address?.slice(0, 8)}...{result.wallet_address?.slice(-6)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Status</span>
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Pending Approval
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <Alert className="bg-muted/30 border-muted text-left">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-sm">
+                        An admin will review your request. Once approved, BSK will be transferred from the migration wallet to your wallet automatically.
+                      </AlertDescription>
+                    </Alert>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep('input')
+                        setAmount('')
+                        setConfirmed(false)
+                        setUnderstands(false)
+                        setResult(null)
+                        checkEligibility()
+                        fetchHistory()
+                      }}
+                      className="w-full"
+                    >
+                      Done
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
