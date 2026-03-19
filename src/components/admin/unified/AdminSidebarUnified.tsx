@@ -80,6 +80,7 @@ const reportsNav: NavItem[] = [
 
 const systemNav: NavItem[] = [
   { title: "Missing Referrals", url: "/admin/missing-referrals", icon: LinkIcon, badge: 13 },
+  { title: "Migration Control", url: "/admin/migration-control", icon: Shield },
   { title: "BSK Migration Audit", url: "/admin/bsk-migration-audit", icon: Activity },
   { title: "Announcements", url: "/admin/announcements", icon: Bell },
   { title: "System Health", url: "/admin/system-health", icon: Database },

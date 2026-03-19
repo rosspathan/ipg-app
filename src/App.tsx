@@ -702,6 +702,7 @@ function AppContent() {
                 <Route path="bsk-ledger-complete" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKLedgerComplete /></React.Suspense>} />
                 <Route path="bsk-reconciliation" element={<React.Suspense fallback={<LoadingFallback />}><BSKReconciliation /></React.Suspense>} />
                 <Route path="bsk-onchain-migration" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKOnchainMigration')))}</React.Suspense>} />
+                <Route path="migration-control" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminMigrationControl')))}</React.Suspense>} />
                 <Route path="bsk-migration-audit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationAudit')))}</React.Suspense>} />
                 <Route path="bsk-migration-settings" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationSettings')))}</React.Suspense>} />
                 {/* BSK Reports */}
