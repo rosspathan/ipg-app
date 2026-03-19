@@ -132,44 +132,41 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // ── Phase 3a: Circuit Breaker — Re-validate before broadcast ──
-        // Skip cooldown/rate-limit checks for withdrawals stuck > 1 hour (already validated at submission)
-        const withdrawalAgeMs = Date.now() - new Date(withdrawal.created_at).getTime();
-        const isStale = withdrawalAgeMs > 60 * 60 * 1000; // > 1 hour old
-
-        if (!isStale) {
-          const { data: validation, error: valError } = await supabase.rpc(
-            'validate_withdrawal_request',
-            {
-              _user_id: withdrawal.user_id,
-              _amount: withdrawal.amount,
-              _asset_symbol: asset.symbol,
-              _destination_address: withdrawal.to_address,
-            }
-          );
-
-          if (valError) {
-            console.warn(`[process-pending-withdrawals] Circuit breaker RPC unavailable for ${withdrawal.id}: ${valError.message}. Proceeding.`);
-          } else if (validation && !validation.valid) {
-            console.warn(`[process-pending-withdrawals] Circuit breaker BLOCKED withdrawal ${withdrawal.id}: ${validation.reason}`);
-            const { error: refundError } = await supabase.rpc(
-              'refund_failed_withdrawal',
-              { p_withdrawal_id: withdrawal.id, p_reason: `Circuit breaker: ${validation.reason}` }
-            );
-            if (refundError) {
-              console.error(`[process-pending-withdrawals] CRITICAL: Refund failed for ${withdrawal.id}:`, refundError);
-            }
-            await supabase.from('security_audit_log').insert({
-              event_type: 'WITHDRAWAL_CIRCUIT_BREAKER',
-              severity: 'high',
-              source: 'process-pending-withdrawals',
-              details: { withdrawal_id: withdrawal.id, user_id: withdrawal.user_id, reason: validation.reason, amount: withdrawal.amount },
-            });
-            results.push({ id: withdrawal.id, status: 'blocked', reason: validation.reason, refunded: !refundError });
-            continue;
+        // ── HARDENED: Full re-validation for EVERY withdrawal (no stale bypass) ──
+        // Every withdrawal must pass full validation regardless of age.
+        const { data: validation, error: valError } = await supabase.rpc(
+          'validate_withdrawal_full',
+          {
+            p_user_id: withdrawal.user_id,
+            p_withdrawal_id: withdrawal.id,
+            p_amount: withdrawal.amount,
+            p_asset_symbol: asset.symbol,
           }
-        } else {
-          console.log(`[process-pending-withdrawals] Skipping circuit breaker for stale withdrawal ${withdrawal.id} (${Math.round(withdrawalAgeMs / 3600000)}h old)`);
+        );
+
+        if (valError) {
+          console.warn(`[process-pending-withdrawals] Validation RPC failed for ${withdrawal.id}: ${valError.message}. Blocking withdrawal.`);
+          results.push({ id: withdrawal.id, status: 'blocked', reason: 'Validation RPC unavailable' });
+          continue;
+        }
+        
+        if (validation && !validation.valid) {
+          console.warn(`[process-pending-withdrawals] BLOCKED withdrawal ${withdrawal.id}: ${validation.reason}`);
+          const { error: refundError } = await supabase.rpc(
+            'refund_failed_withdrawal',
+            { p_withdrawal_id: withdrawal.id, p_reason: `Validation: ${validation.reason}` }
+          );
+          if (refundError) {
+            console.error(`[process-pending-withdrawals] CRITICAL: Refund failed for ${withdrawal.id}:`, refundError);
+          }
+          await supabase.from('security_audit_log').insert({
+            event_type: 'WITHDRAWAL_VALIDATION_BLOCKED',
+            severity: 'high',
+            source: 'process-pending-withdrawals',
+            details: { withdrawal_id: withdrawal.id, user_id: withdrawal.user_id, reason: validation.reason, amount: withdrawal.amount },
+          });
+          results.push({ id: withdrawal.id, status: 'blocked', reason: validation.reason, refunded: !refundError });
+          continue;
         }
 
         // ── Phase 3b: Estimate outflow & check cap ────────────────────
@@ -294,18 +291,63 @@ Deno.serve(async (req) => {
         console.error(`[process-pending-withdrawals] Error processing withdrawal ${withdrawal.id}:`, error);
 
         const reason = error.message || 'On-chain transfer failed';
-        const { data: refundResult, error: refundError } = await supabase.rpc(
-          'refund_failed_withdrawal',
-          { p_withdrawal_id: withdrawal.id, p_reason: reason }
-        );
+        
+        // ── DEAD-LETTER RETRY QUEUE ──
+        // Insert or update retry queue with exponential backoff
+        const { data: existingRetry } = await supabase
+          .from('withdrawal_retry_queue')
+          .select('retry_count, max_retries')
+          .eq('withdrawal_id', withdrawal.id)
+          .maybeSingle();
 
-        if (refundError) {
-          console.error(`[process-pending-withdrawals] CRITICAL: Atomic refund failed for ${withdrawal.id}:`, refundError);
+        const currentRetry = existingRetry?.retry_count ?? 0;
+        const maxRetries = existingRetry?.max_retries ?? 5;
+
+        if (currentRetry >= maxRetries) {
+          // Permanent failure — refund and alert admin
+          console.error(`[process-pending-withdrawals] PERMANENT FAILURE for ${withdrawal.id} after ${currentRetry} retries`);
+          
+          const { error: refundError } = await supabase.rpc(
+            'refund_failed_withdrawal',
+            { p_withdrawal_id: withdrawal.id, p_reason: `Permanent failure after ${currentRetry} retries: ${reason}` }
+          );
+          
+          await supabase.from('withdrawal_retry_queue').upsert({
+            withdrawal_id: withdrawal.id,
+            retry_count: currentRetry,
+            last_error: reason,
+            status: 'failed_permanent',
+            next_retry_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'withdrawal_id' });
+
+          await supabase.from('admin_notifications').insert({
+            type: 'withdrawal_permanent_failure',
+            priority: 'critical',
+            title: `Withdrawal Permanently Failed: ${withdrawal.id}`,
+            message: `Withdrawal of ${withdrawal.amount} ${withdrawal.assets?.symbol} to ${withdrawal.to_address} failed after ${currentRetry} retries. Last error: ${reason}. ${refundError ? 'REFUND ALSO FAILED — MANUAL INTERVENTION REQUIRED' : 'Funds refunded.'}`,
+            related_user_id: withdrawal.user_id,
+            related_resource_id: withdrawal.id,
+          });
+
+          results.push({ id: withdrawal.id, status: 'failed_permanent', error: reason, refunded: !refundError });
         } else {
-          console.log(`[process-pending-withdrawals] Refund result for ${withdrawal.id}:`, refundResult);
-        }
+          // Schedule retry with exponential backoff: 2^retry * 5 minutes
+          const backoffMinutes = Math.pow(2, currentRetry) * 5;
+          const nextRetryAt = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
+          
+          await supabase.from('withdrawal_retry_queue').upsert({
+            withdrawal_id: withdrawal.id,
+            retry_count: currentRetry + 1,
+            last_error: reason,
+            status: 'pending',
+            next_retry_at: nextRetryAt,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'withdrawal_id' });
 
-        results.push({ id: withdrawal.id, status: 'error', error: error.message, refunded: !refundError });
+          console.log(`[process-pending-withdrawals] Retry ${currentRetry + 1}/${maxRetries} scheduled for ${withdrawal.id} at ${nextRetryAt} (backoff: ${backoffMinutes}m)`);
+          results.push({ id: withdrawal.id, status: 'retry_scheduled', retry: currentRetry + 1, next_retry: nextRetryAt, error: reason });
+        }
 
         if (error.message?.includes('nonce') || error.message?.includes('replacement')) {
           console.warn(`[process-pending-withdrawals] Nonce conflict detected, re-fetching...`);

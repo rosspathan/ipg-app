@@ -4619,6 +4619,51 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_reconciliation_snapshots: {
+        Row: {
+          asset_symbol: string
+          created_at: string
+          drift_amount: number | null
+          hot_wallet_balance: number | null
+          id: string
+          notes: string | null
+          pending_withdrawals_amount: number
+          reconciliation_status: string
+          snapshot_date: string
+          total_available: number
+          total_fees_collected: number
+          total_locked: number
+        }
+        Insert: {
+          asset_symbol: string
+          created_at?: string
+          drift_amount?: number | null
+          hot_wallet_balance?: number | null
+          id?: string
+          notes?: string | null
+          pending_withdrawals_amount?: number
+          reconciliation_status?: string
+          snapshot_date?: string
+          total_available?: number
+          total_fees_collected?: number
+          total_locked?: number
+        }
+        Update: {
+          asset_symbol?: string
+          created_at?: string
+          drift_amount?: number | null
+          hot_wallet_balance?: number | null
+          id?: string
+          notes?: string | null
+          pending_withdrawals_amount?: number
+          reconciliation_status?: string
+          snapshot_date?: string
+          total_available?: number
+          total_fees_collected?: number
+          total_locked?: number
+        }
+        Relationships: []
+      }
       daily_rewards: {
         Row: {
           claimed_at: string
@@ -11184,12 +11229,15 @@ export type Database = {
       trading_engine_settings: {
         Row: {
           admin_fee_wallet: string | null
+          auto_freeze_on_drift: boolean
           auto_matching_enabled: boolean
           auto_withdrawal_batch_size: number
           auto_withdrawal_enabled: boolean
           auto_withdrawal_threshold: number
           circuit_breaker_active: boolean
           created_at: string
+          drift_absolute_minimum: number
+          drift_threshold_percent: number
           id: string
           maker_fee_percent: number
           market_maker_depth_levels: number | null
@@ -11204,12 +11252,15 @@ export type Database = {
         }
         Insert: {
           admin_fee_wallet?: string | null
+          auto_freeze_on_drift?: boolean
           auto_matching_enabled?: boolean
           auto_withdrawal_batch_size?: number
           auto_withdrawal_enabled?: boolean
           auto_withdrawal_threshold?: number
           circuit_breaker_active?: boolean
           created_at?: string
+          drift_absolute_minimum?: number
+          drift_threshold_percent?: number
           id?: string
           maker_fee_percent?: number
           market_maker_depth_levels?: number | null
@@ -11224,12 +11275,15 @@ export type Database = {
         }
         Update: {
           admin_fee_wallet?: string | null
+          auto_freeze_on_drift?: boolean
           auto_matching_enabled?: boolean
           auto_withdrawal_batch_size?: number
           auto_withdrawal_enabled?: boolean
           auto_withdrawal_threshold?: number
           circuit_breaker_active?: boolean
           created_at?: string
+          drift_absolute_minimum?: number
+          drift_threshold_percent?: number
           id?: string
           maker_fee_percent?: number
           market_maker_depth_levels?: number | null
@@ -13171,6 +13225,42 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_retry_queue: {
+        Row: {
+          created_at: string
+          id: string
+          last_error: string | null
+          max_retries: number
+          next_retry_at: string
+          retry_count: number
+          status: string
+          updated_at: string
+          withdrawal_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_retries?: number
+          next_retry_at?: string
+          retry_count?: number
+          status?: string
+          updated_at?: string
+          withdrawal_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_retries?: number
+          next_retry_at?: string
+          retry_count?: number
+          status?: string
+          updated_at?: string
+          withdrawal_id?: string
+        }
+        Relationships: []
+      }
       withdrawal_security_config: {
         Row: {
           anomaly_threshold_multiplier: number
@@ -13887,23 +13977,41 @@ export type Database = {
             }
             Returns: Json
           }
-      execute_trade: {
-        Args: {
-          p_base_amount: number
-          p_base_asset: string
-          p_buy_order_id: string
-          p_buyer_fee: number
-          p_buyer_id: string
-          p_quote_amount: number
-          p_quote_asset: string
-          p_sell_order_id: string
-          p_seller_fee: number
-          p_seller_id: string
-          p_symbol: string
-          p_trading_type?: string
-        }
-        Returns: string
-      }
+      execute_trade:
+        | {
+            Args: {
+              p_base_amount: number
+              p_base_asset: string
+              p_buy_order_id: string
+              p_buyer_fee: number
+              p_buyer_id: string
+              p_quote_amount: number
+              p_quote_asset: string
+              p_sell_order_id: string
+              p_seller_fee: number
+              p_seller_id: string
+              p_symbol: string
+              p_trading_type?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_base_amount: number
+              p_base_asset: string
+              p_buy_order_id: string
+              p_buyer_fee: number
+              p_buyer_id: string
+              p_quote_amount: number
+              p_quote_asset: string
+              p_sell_order_id: string
+              p_seller_fee: number
+              p_seller_id: string
+              p_symbol: string
+              p_trading_type?: string
+            }
+            Returns: string
+          }
       execute_withdrawal_request: {
         Args: {
           p_amount: number
@@ -14464,6 +14572,15 @@ export type Database = {
         Returns: Json
       }
       validate_referral_code: { Args: { code: string }; Returns: boolean }
+      validate_withdrawal_full: {
+        Args: {
+          p_amount: number
+          p_asset_symbol: string
+          p_user_id: string
+          p_withdrawal_id: string
+        }
+        Returns: Json
+      }
       validate_withdrawal_request:
         | {
             Args: {
