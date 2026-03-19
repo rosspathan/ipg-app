@@ -17,7 +17,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
-type MigrationStep = 'check' | 'input' | 'confirm' | 'processing' | 'success'
+type MigrationStep = 'check' | 'input' | 'confirm' | 'processing' | 'pending_approval' | 'success'
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
   pending: { label: 'Pending', variant: 'secondary', icon: Clock },
