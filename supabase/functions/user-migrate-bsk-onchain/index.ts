@@ -15,7 +15,7 @@ const BSK_ABI = [
 ];
 
 // Version for debugging
-const VERSION = '2.1.0';
+const VERSION = '3.0.0-admin-approval';
 
 // Reason codes for availability
 type ReasonCode = 
@@ -45,6 +45,8 @@ interface MigrationSettings {
   fixed_gas_fee_bsk: number;
   min_amount_bsk: number;
   max_amount_bsk: number | null;
+  max_per_request_bsk: number | null;
+  per_user_daily_limit_bsk: number | null;
   required_confirmations: number;
   primary_rpc_url: string;
   fallback_rpc_url: string | null;
@@ -166,7 +168,6 @@ async function getSettings(supabase: any): Promise<MigrationSettings> {
     .single();
   
   if (error || !data) {
-    // Return defaults if no settings - but log it
     console.warn('[USER-MIGRATE-BSK] No settings found, using defaults');
     return {
       migration_enabled: true,
@@ -178,6 +179,8 @@ async function getSettings(supabase: any): Promise<MigrationSettings> {
       fixed_gas_fee_bsk: 5,
       min_amount_bsk: 100,
       max_amount_bsk: null,
+      max_per_request_bsk: null,
+      per_user_daily_limit_bsk: null,
       required_confirmations: 3,
       primary_rpc_url: 'https://bsc-dataseed.binance.org',
       fallback_rpc_url: 'https://bsc-dataseed1.binance.org',
@@ -191,7 +194,7 @@ async function getSettings(supabase: any): Promise<MigrationSettings> {
 }
 
 // ============================================
-// CHECK AVAILABILITY (STRUCTURED REASON CODES)
+// CHECK AVAILABILITY
 // ============================================
 async function checkAvailability(supabase: any, userId: string): Promise<Response> {
   const settings = await getSettings(supabase);
@@ -200,7 +203,6 @@ async function checkAvailability(supabase: any, userId: string): Promise<Respons
   let reasonCode: ReasonCode = 'OK';
   let debugDetails: Record<string, any> = {};
 
-  // Check blockers in priority order
   if (!settings.migration_enabled) {
     reasonCode = 'MIGRATION_DISABLED';
     debugDetails = { migration_enabled: false };
@@ -236,7 +238,6 @@ async function checkAvailability(supabase: any, userId: string): Promise<Respons
     await provider.getBlockNumber();
     rpcOk = true;
   } catch (e) {
-    // Try fallback
     if (settings.fallback_rpc_url) {
       try {
         const fallback = new ethers.JsonRpcProvider(settings.fallback_rpc_url);
@@ -255,7 +256,6 @@ async function checkAvailability(supabase: any, userId: string): Promise<Respons
     return createAvailabilityResponse(reasonCode, null, debugDetails);
   }
 
-  // System is available - balance checks happen on confirm
   return createAvailabilityResponse('OK', null, { 
     migration_enabled: true,
     wallet_configured: true,
@@ -303,24 +303,14 @@ async function getHealthStatus(supabase: any): Promise<Response> {
   const issues: string[] = [];
   const warnings: string[] = [];
   
-  // Check wallet configuration
   const walletAddress = settings.migration_wallet_address;
   const privateKeyConfigured = !!Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY');
-  
   const walletConfigured = !!walletAddress && privateKeyConfigured;
 
-  if (!walletAddress) {
-    issues.push('Migration wallet address not configured in settings');
-  }
-  if (!privateKeyConfigured) {
-    issues.push('MIGRATION_WALLET_PRIVATE_KEY secret not configured');
-  }
-  if (!settings.migration_enabled) {
-    issues.push('Migration feature is disabled');
-  }
-  if (settings.maintenance_mode) {
-    warnings.push(`Maintenance mode is ON: ${settings.maintenance_message || '(no message)'}`);
-  }
+  if (!walletAddress) issues.push('Migration wallet address not configured in settings');
+  if (!privateKeyConfigured) issues.push('MIGRATION_WALLET_PRIVATE_KEY secret not configured');
+  if (!settings.migration_enabled) issues.push('Migration feature is disabled');
+  if (settings.maintenance_mode) warnings.push(`Maintenance mode is ON: ${settings.maintenance_message || '(no message)'}`);
   
   let hotWalletBskBalance = 0;
   let gasBalanceBnb = 0;
@@ -334,16 +324,13 @@ async function getHealthStatus(supabase: any): Promise<Response> {
       const privateKey = Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY')!;
       const walletInstance = new ethers.Wallet(privateKey, provider);
       
-      // Verify wallet address matches
       if (walletInstance.address.toLowerCase() !== walletAddress!.toLowerCase()) {
-        issues.push(`Private key does not match configured wallet address (key: ${walletInstance.address.slice(0,10)}..., config: ${walletAddress!.slice(0,10)}...)`);
+        issues.push(`Private key does not match configured wallet address`);
       }
       
-      // Check BNB balance
       const bnbBalance = await provider.getBalance(walletInstance.address);
       gasBalanceBnb = Number(ethers.formatEther(bnbBalance));
       
-      // Check BSK balance
       const bskContract = new ethers.Contract(BSK_CONTRACT, BSK_ABI, provider);
       const bskBalance = await bskContract.balanceOf(walletInstance.address);
       hotWalletBskBalance = Number(ethers.formatUnits(bskBalance, BSK_DECIMALS));
@@ -351,7 +338,6 @@ async function getHealthStatus(supabase: any): Promise<Response> {
       rpcStatus = 'ok';
       rpcLatencyMs = Date.now() - startTime;
       
-      // Warnings for low balances (not blockers)
       if (gasBalanceBnb < Number(settings.min_gas_balance_bnb)) {
         warnings.push(`Low gas balance: ${gasBalanceBnb.toFixed(4)} BNB (min: ${settings.min_gas_balance_bnb})`);
       }
@@ -364,7 +350,6 @@ async function getHealthStatus(supabase: any): Promise<Response> {
     }
   }
 
-  // Get last migration
   const { data: lastMigration } = await supabase
     .from('bsk_onchain_migrations')
     .select('id, tx_hash, completed_at')
@@ -372,7 +357,6 @@ async function getHealthStatus(supabase: any): Promise<Response> {
     .limit(1)
     .maybeSingle();
   
-  // System is healthy if there are NO issues (warnings are okay)
   const health: HealthStatus = {
     healthy: issues.length === 0,
     wallet_configured: !!walletAddress,
@@ -402,11 +386,9 @@ async function getHealthStatus(supabase: any): Promise<Response> {
 async function checkEligibility(supabase: any, userId: string) {
   const settings = await getSettings(supabase);
   
-  // Check availability first
   const availabilityResponse = await checkAvailability(supabase, userId);
   const availability = await availabilityResponse.clone().json() as AvailabilityResult;
   
-  // Get user profile
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('bsc_wallet_address, wallet_address, kyc_status, account_status')
@@ -419,7 +401,6 @@ async function checkEligibility(supabase: any, userId: string) {
 
   const walletAddress = profile.bsc_wallet_address || profile.wallet_address;
 
-  // Get BSK balance
   const { data: balanceData } = await supabase
     .from('user_bsk_balances')
     .select('withdrawable_balance')
@@ -428,16 +409,15 @@ async function checkEligibility(supabase: any, userId: string) {
 
   const withdrawableBalance = Number(balanceData?.withdrawable_balance || 0);
 
-  // Get pending migrations
+  // Check for any pending migrations (including PENDING_ADMIN_APPROVAL)
   const { data: pendingMigrations } = await supabase
     .from('bsk_onchain_migrations')
     .select('id, status, amount_requested')
     .eq('user_id', userId)
-    .in('status', ['pending', 'validating', 'debiting', 'signing', 'broadcasting', 'confirming']);
+    .in('status', ['pending_admin_approval', 'approved_executing', 'pending', 'validating', 'debiting', 'signing', 'broadcasting', 'confirming']);
 
   const hasPending = pendingMigrations && pendingMigrations.length > 0;
 
-  // Get recent completed migrations
   const { data: recentMigrations } = await supabase
     .from('bsk_onchain_migrations')
     .select('id, amount_requested, net_amount_migrated, migration_fee_bsk, gas_deduction_bsk, tx_hash, completed_at, status, error_message')
@@ -454,21 +434,33 @@ async function checkEligibility(supabase: any, userId: string) {
       const gasPrice = feeData.gasPrice || ethers.parseUnits('3', 'gwei');
       const estimatedGas = 65000n;
       const gasCostBnb = Number(ethers.formatEther(gasPrice * estimatedGas));
-      const bnbToBsk = 10000; // 1 BNB ≈ 10000 BSK
-      gasEstimateBsk = Math.ceil(gasCostBnb * bnbToBsk * 1.2); // 20% buffer
+      const bnbToBsk = 10000;
+      gasEstimateBsk = Math.ceil(gasCostBnb * bnbToBsk * 1.2);
     } catch (e) {
       gasEstimateBsk = Number(settings.fixed_gas_fee_bsk);
     }
   }
 
-  // Calculate min valid amount (where net_receive > 0)
   const feeMultiplier = 1 - Number(settings.migration_fee_percent) / 100;
   const minValidAmount = Math.ceil(gasEstimateBsk / feeMultiplier) + 1;
+
+  // Calculate daily total for user
+  const today = new Date().toISOString().split('T')[0];
+  const { data: todayMigrations } = await supabase
+    .from('bsk_onchain_migrations')
+    .select('amount_requested')
+    .eq('user_id', userId)
+    .in('status', ['pending_admin_approval', 'approved_executing', 'completed'])
+    .gte('created_at', `${today}T00:00:00Z`);
+
+  const dailyTotal = (todayMigrations || []).reduce((sum: number, m: any) => sum + Number(m.amount_requested), 0);
+
+  const maxPerRequest = settings.max_per_request_bsk ? Number(settings.max_per_request_bsk) : null;
+  const perUserDailyLimit = settings.per_user_daily_limit_bsk ? Number(settings.per_user_daily_limit_bsk) : null;
 
   const eligibility = {
     eligible: false,
     reasons: [] as string[],
-    // CRITICAL: system_available should be true when available
     system_available: availability.available,
     system_reason_code: availability.reason_code,
     system_message: availability.user_message,
@@ -479,20 +471,21 @@ async function checkEligibility(supabase: any, userId: string) {
     withdrawable_balance: withdrawableBalance,
     min_amount: Math.max(Number(settings.min_amount_bsk), minValidAmount),
     max_amount: settings.max_amount_bsk ? Math.min(Number(settings.max_amount_bsk), withdrawableBalance) : withdrawableBalance,
+    max_per_request: maxPerRequest,
+    per_user_daily_limit: perUserDailyLimit,
+    daily_total: dailyTotal,
     has_pending_migration: hasPending,
     pending_migration: hasPending ? pendingMigrations[0] : null,
     recent_migrations: recentMigrations || [],
     gas_estimate_bsk: gasEstimateBsk,
     migration_fee_percent: Number(settings.migration_fee_percent),
     required_confirmations: settings.required_confirmations,
+    approval_required: true, // NEW: always admin approval
   };
 
-  // Determine eligibility - system blockers first
   if (!availability.available) {
     eligibility.reasons.push(availability.user_message);
   }
-  
-  // User-specific blockers (show even if system unavailable so user can fix)
   if (!walletAddress) {
     eligibility.reasons.push('Please link a BSC wallet address first');
   }
@@ -503,10 +496,15 @@ async function checkEligibility(supabase: any, userId: string) {
     eligibility.reasons.push(`Minimum ${eligibility.min_amount} BSK required`);
   }
   if (hasPending) {
-    eligibility.reasons.push('You have a pending migration');
+    eligibility.reasons.push('You have a pending migration request');
+  }
+  if (maxPerRequest && withdrawableBalance > 0) {
+    eligibility.max_amount = Math.min(eligibility.max_amount, maxPerRequest);
+  }
+  if (perUserDailyLimit && dailyTotal >= perUserDailyLimit) {
+    eligibility.reasons.push(`Daily migration limit reached (${perUserDailyLimit} BSK)`);
   }
 
-  // User is eligible only if system is available AND no user blockers
   eligibility.eligible = availability.available && eligibility.reasons.filter(r => 
     r !== availability.user_message
   ).length === 0;
@@ -518,7 +516,8 @@ async function checkEligibility(supabase: any, userId: string) {
 }
 
 // ============================================
-// INITIATE MIGRATION (IDEMPOTENT)
+// INITIATE MIGRATION — REQUEST ONLY (NO DEBIT, NO BROADCAST)
+// Status: PENDING_ADMIN_APPROVAL
 // ============================================
 async function initiateMigration(supabase: any, userId: string, amountBsk: number) {
   const settings = await getSettings(supabase);
@@ -567,38 +566,52 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     throw new Error('Insufficient balance');
   }
 
+  // Check max per request
+  if (settings.max_per_request_bsk && amountBsk > Number(settings.max_per_request_bsk)) {
+    throw new Error(`Maximum ${settings.max_per_request_bsk} BSK per request`);
+  }
+
+  // Check daily limit
+  if (settings.per_user_daily_limit_bsk) {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayMigrations } = await supabase
+      .from('bsk_onchain_migrations')
+      .select('amount_requested')
+      .eq('user_id', userId)
+      .in('status', ['pending_admin_approval', 'approved_executing', 'completed'])
+      .gte('created_at', `${today}T00:00:00Z`);
+
+    const dailyTotal = (todayMigrations || []).reduce((sum: number, m: any) => sum + Number(m.amount_requested), 0);
+    if (dailyTotal + amountBsk > Number(settings.per_user_daily_limit_bsk)) {
+      throw new Error(`Daily migration limit would be exceeded (${settings.per_user_daily_limit_bsk} BSK)`);
+    }
+  }
+
   // Check for existing pending/processing migrations - IDEMPOTENCY CHECK
   const { data: existingMigration } = await supabase
     .from('bsk_onchain_migrations')
     .select('id, status, amount_requested, tx_hash')
     .eq('user_id', userId)
-    .in('status', ['pending', 'validating', 'debiting', 'signing', 'broadcasting', 'confirming'])
+    .in('status', ['pending_admin_approval', 'approved_executing', 'pending', 'validating', 'debiting', 'signing', 'broadcasting', 'confirming'])
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (existingMigration) {
-    console.log(`[USER-MIGRATE-BSK] User ${userId} has existing migration ${existingMigration.id}, returning it`);
+    console.log(`[USER-MIGRATE-BSK] User ${userId} has existing migration ${existingMigration.id}`);
     return new Response(
       JSON.stringify({
         success: false,
         error: 'pending_migration',
-        message: 'You have a pending migration. Please wait for it to complete.',
+        message: 'You have a pending migration request. Please wait for admin review.',
         migration_id: existingMigration.id,
         status: existingMigration.status,
-        tx_hash: existingMigration.tx_hash,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // NOW check hot wallet balances (only on confirm, not initial page)
-  const privateKey = Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY')!;
-  const provider = new ethers.JsonRpcProvider(settings.primary_rpc_url);
-  const walletInstance = new ethers.Wallet(privateKey, provider);
-  const bskContract = new ethers.Contract(BSK_CONTRACT, BSK_ABI, provider);
-  
-  // Calculate fees
+  // Calculate fees (for display, NO debit yet)
   const SCALE = 100000000;
   const amountScaled = Math.round(amountBsk * SCALE);
   const feePercent = Number(settings.migration_fee_percent);
@@ -608,6 +621,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
   let gasDeductionBsk = Number(settings.fixed_gas_fee_bsk);
   if (settings.gas_fee_model === 'dynamic') {
     try {
+      const provider = new ethers.JsonRpcProvider(settings.primary_rpc_url);
       const feeData = await provider.getFeeData();
       const gasPrice = feeData.gasPrice || ethers.parseUnits('3', 'gwei');
       const estimatedGas = 65000n;
@@ -624,35 +638,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     throw new Error('Amount too small after fees and gas deduction');
   }
 
-  // Check hot wallet has enough BSK
-  const hotWalletBsk = await bskContract.balanceOf(walletInstance.address);
-  const requiredBsk = ethers.parseUnits(netAmount.toFixed(8), BSK_DECIMALS);
-  if (hotWalletBsk < requiredBsk) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: 'insufficient_bsk',
-        message: 'Migration is temporarily unavailable due to liquidity. Please try again later.',
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
-  // Check hot wallet has enough BNB for gas
-  const bnbBalance = await provider.getBalance(walletInstance.address);
-  const minBnb = ethers.parseEther(settings.min_gas_balance_bnb.toString());
-  if (bnbBalance < minBnb) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: 'insufficient_bnb',
-        message: 'Migration is temporarily unavailable due to gas. Please try again later.',
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
-  // Get ledger sum for audit
+  // Get ledger sum for audit snapshot
   const { data: ledgerData } = await supabase
     .from('unified_bsk_ledger')
     .select('amount_bsk, tx_type')
@@ -671,16 +657,16 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     });
   }
 
-  // Create a unique batch for this request
+  // Create batch
   const { data: newBatch, error: batchError } = await supabase
     .from('bsk_onchain_migration_batches')
     .insert({
       batch_number: `USER-${Date.now()}`,
       initiated_by: userId,
-      status: 'pending',
+      status: 'pending_approval',
       total_users: 1,
       total_bsk_requested: amountBsk,
-      notes: 'User-initiated migration'
+      notes: 'User-initiated migration (pending admin approval)'
     })
     .select('id')
     .single();
@@ -692,7 +678,8 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
   
   const batchId = newBatch.id;
 
-  // Create migration record
+  // Create migration record — STATUS: PENDING_ADMIN_APPROVAL
+  // NO balance debit at this stage
   const idempotencyKey = `user_migrate_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   const { data: migration, error: migrationError } = await supabase
@@ -705,309 +692,45 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
       amount_requested: amountBsk,
       ledger_sum_at_snapshot: ledgerSum,
       balance_matches_ledger: Math.abs(withdrawableBalance - ledgerSum) < 0.01,
-      status: 'pending',
+      status: 'pending_admin_approval',
       idempotency_key: idempotencyKey,
       gas_deduction_bsk: gasDeductionBsk,
       migration_fee_bsk: migrationFeeBsk,
       migration_fee_percent: feePercent,
-      admin_notes: 'User-initiated migration'
+      admin_notes: 'Awaiting admin approval',
+      // Admin approval fields — null until reviewed
+      approved_by: null,
+      approved_at: null,
+      rejected_at: null,
+      rejected_by: null,
+      rejection_reason: null,
+      admin_approval_note: null,
     })
     .select()
     .single();
 
   if (migrationError) {
     console.error('[USER-MIGRATE-BSK] Migration creation error:', migrationError);
-    throw new Error('Failed to create migration record');
+    throw new Error('Failed to create migration request');
   }
 
-  console.log(`[USER-MIGRATE-BSK] Created migration ${migration.id} for ${amountBsk} BSK`);
+  console.log(`[USER-MIGRATE-BSK v${VERSION}] Created PENDING migration ${migration.id} for ${amountBsk} BSK — awaiting admin approval`);
 
-  // Process the migration
-  const result = await processMigration(supabase, migration.id, settings);
-  return result;
-}
-
-// ============================================
-// PROCESS MIGRATION (STATE MACHINE)
-// ============================================
-async function processMigration(supabase: any, migrationId: string, settings: MigrationSettings) {
-  const { data: migration, error: migrationError } = await supabase
-    .from('bsk_onchain_migrations')
-    .select('*')
-    .eq('id', migrationId)
-    .single();
-
-  if (migrationError || !migration) {
-    throw new Error('Migration not found');
-  }
-
-  const userId = migration.user_id;
-  const walletAddress = migration.wallet_address;
-  const amountBsk = Number(migration.amount_requested);
-  const gasDeductionBsk = Number(migration.gas_deduction_bsk || 5);
-  const migrationFeeBsk = Number(migration.migration_fee_bsk || 0);
-  const netAmountBsk = amountBsk - gasDeductionBsk - migrationFeeBsk;
-
-  // ===== STEP 1: VALIDATE =====
-  await updateMigrationStatus(supabase, migrationId, 'validating', { validated_at: new Date().toISOString() });
-
-  // Re-check balance
-  const { data: currentBalance } = await supabase
-    .from('user_bsk_balances')
-    .select('withdrawable_balance')
-    .eq('user_id', userId)
-    .single();
-
-  const currentBsk = Number(currentBalance?.withdrawable_balance || 0);
-  if (currentBsk < amountBsk) {
-    await updateMigrationFailed(supabase, migrationId, `Insufficient balance: ${currentBsk} < ${amountBsk}`);
-    throw new Error('Insufficient balance');
-  }
-
-  // ===== STEP 2: DEBIT (IDEMPOTENT) =====
-  await updateMigrationStatus(supabase, migrationId, 'debiting');
-
-  const debitKey = `migrate_debit_${migrationId}`;
-  const { data: debitResult, error: debitError } = await supabase.rpc(
-    'record_bsk_transaction',
-    {
-      p_user_id: userId,
-      p_tx_type: 'debit',
-      p_tx_subtype: 'onchain_migration',
-      p_balance_type: 'withdrawable',
-      p_amount_bsk: amountBsk,
-      p_idempotency_key: debitKey,
-      p_meta_json: {
-        migration_id: migrationId,
-        wallet_address: walletAddress,
-        net_amount: netAmountBsk,
-        gas_deduction: gasDeductionBsk,
-        migration_fee: migrationFeeBsk
-      }
-    }
-  );
-
-  if (debitError && !debitError.message?.includes('duplicate')) {
-    await updateMigrationFailed(supabase, migrationId, `Debit failed: ${debitError.message}`);
-    throw new Error(`Debit failed: ${debitError.message}`);
-  }
-
-  await supabase
-    .from('bsk_onchain_migrations')
-    .update({
-      debited_at: new Date().toISOString(),
-      ledger_debit_tx_id: debitResult || debitKey
-    })
-    .eq('id', migrationId);
-
-  // ===== STEP 3: SIGN =====
-  const privateKey = Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY');
-  if (!privateKey) {
-    await rollbackMigration(supabase, migrationId, userId, amountBsk, 'wallet_not_configured');
-    throw new Error('Migration system not configured');
-  }
-
-  await updateMigrationStatus(supabase, migrationId, 'signing', { signed_at: new Date().toISOString() });
-
-  const rpcUrl = settings.primary_rpc_url;
-  let provider: ethers.JsonRpcProvider;
-  
-  try {
-    provider = new ethers.JsonRpcProvider(rpcUrl);
-  } catch (e: any) {
-    if (settings.fallback_rpc_url) {
-      try {
-        provider = new ethers.JsonRpcProvider(settings.fallback_rpc_url);
-      } catch (e2: any) {
-        await rollbackMigration(supabase, migrationId, userId, amountBsk, 'rpc_failure');
-        throw new Error('RPC connection failed');
-      }
-    } else {
-      await rollbackMigration(supabase, migrationId, userId, amountBsk, 'rpc_failure');
-      throw new Error('RPC connection failed');
-    }
-  }
-  
-  const wallet = new ethers.Wallet(privateKey, provider);
-  const bskContract = new ethers.Contract(BSK_CONTRACT, BSK_ABI, wallet);
-  
-  const amountWei = ethers.parseUnits(netAmountBsk.toFixed(8), BSK_DECIMALS);
-
-  const hotWalletBalance = await bskContract.balanceOf(wallet.address);
-  if (hotWalletBalance < amountWei) {
-    await rollbackMigration(supabase, migrationId, userId, amountBsk, 'insufficient_hot_wallet');
-    throw new Error('Migration temporarily unavailable');
-  }
-
-  // ===== STEP 4: BROADCAST =====
-  await updateMigrationStatus(supabase, migrationId, 'broadcasting', { broadcasted_at: new Date().toISOString() });
-
-  let tx: ethers.TransactionResponse;
-  try {
-    const feeData = await provider.getFeeData();
-    const estimatedGas = 65000n;
-    
-    tx = await bskContract.transfer(walletAddress, amountWei, {
-      gasLimit: estimatedGas,
-      gasPrice: feeData.gasPrice
-    });
-    
-    console.log(`[USER-MIGRATE-BSK] TX sent: ${tx.hash}`);
-    
-    await supabase
-      .from('bsk_onchain_migrations')
-      .update({ tx_hash: tx.hash })
-      .eq('id', migrationId);
-      
-  } catch (txError: any) {
-    console.error('[USER-MIGRATE-BSK] TX error:', txError);
-    
-    if (txError.message?.includes('nonce') || txError.message?.includes('replacement')) {
-      await updateMigrationFailed(supabase, migrationId, `Transaction failed: ${txError.message}. Please retry.`);
-    } else {
-      await rollbackMigration(supabase, migrationId, userId, amountBsk, 'tx_failed');
-    }
-    throw new Error('Transaction failed');
-  }
-
-  // ===== STEP 5: CONFIRM =====
-  await updateMigrationStatus(supabase, migrationId, 'confirming');
-
-  const receipt = await tx.wait(settings.required_confirmations);
-
-  if (!receipt || receipt.status !== 1) {
-    await rollbackMigration(supabase, migrationId, userId, amountBsk, 'tx_reverted');
-    throw new Error('Transaction failed on-chain');
-  }
-
-  const actualGasUsed = receipt.gasUsed;
-  const feeData = await provider.getFeeData();
-  const actualGasCost = actualGasUsed * (feeData.gasPrice || 0n);
-  const actualGasCostBnb = Number(ethers.formatEther(actualGasCost));
-
-  // ===== STEP 6: COMPLETE =====
-  await supabase
-    .from('bsk_onchain_migrations')
-    .update({
-      status: 'completed',
-      error_message: null,
-      failed_at: null,
-      refunded_at: null,
-      block_number: receipt.blockNumber,
-      gas_used: Number(actualGasUsed),
-      actual_gas_cost_bnb: actualGasCostBnb,
-      confirmations: settings.required_confirmations,
-      net_amount_migrated: netAmountBsk,
-      confirmed_at: new Date().toISOString(),
-      completed_at: new Date().toISOString()
-    })
-    .eq('id', migrationId);
-
-  await supabase
-    .from('bsk_onchain_migration_batches')
-    .update({
-      status: 'completed',
-      successful_users: 1,
-      processed_users: 1,
-      total_bsk_migrated: netAmountBsk,
-      completed_at: new Date().toISOString()
-    })
-    .eq('id', migration.batch_id);
-
-  console.log(`[USER-MIGRATE-BSK] Migration ${migrationId} completed: ${netAmountBsk} BSK to ${walletAddress}`);
-
+  // Return success — but migration is NOT executed yet
   return new Response(
     JSON.stringify({
       success: true,
-      migration_id: migrationId,
-      tx_hash: tx.hash,
+      migration_id: migration.id,
+      status: 'pending_admin_approval',
+      message: 'Your migration request has been submitted and is awaiting admin approval.',
       amount_requested: amountBsk,
-      gas_deducted: gasDeductionBsk,
-      migration_fee: migrationFeeBsk,
-      net_amount: netAmountBsk,
+      estimated_fee: migrationFeeBsk,
+      estimated_gas_deduction: gasDeductionBsk,
+      estimated_net_amount: netAmount,
       wallet_address: walletAddress,
-      block_number: receipt.blockNumber,
-      confirmations: settings.required_confirmations
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
-}
-
-// ============================================
-// HELPER: ROLLBACK MIGRATION (REFUND)
-// ============================================
-async function rollbackMigration(
-  supabase: any, 
-  migrationId: string, 
-  userId: string, 
-  amountBsk: number, 
-  reason: string
-) {
-  console.log(`[USER-MIGRATE-BSK] Rolling back migration ${migrationId}: ${reason}`);
-  
-  const refundKey = `migrate_refund_${migrationId}`;
-  const { error: refundError } = await supabase.rpc('record_bsk_transaction', {
-    p_user_id: userId,
-    p_tx_type: 'credit',
-    p_tx_subtype: 'migration_refund',
-    p_balance_type: 'withdrawable',
-    p_amount_bsk: amountBsk,
-    p_idempotency_key: refundKey,
-    p_meta_json: { migration_id: migrationId, reason }
-  });
-
-  if (refundError && !refundError.message?.includes('duplicate')) {
-    console.error('[USER-MIGRATE-BSK] Refund failed:', refundError);
-    await supabase
-      .from('bsk_onchain_migrations')
-      .update({
-        status: 'failed',
-        error_message: `Refund failed: ${refundError.message}. Original failure: ${reason}`,
-        failed_at: new Date().toISOString()
-      })
-      .eq('id', migrationId);
-    return;
-  }
-
-  await supabase
-    .from('bsk_onchain_migrations')
-    .update({
-      status: 'rolled_back',
-      error_message: reason,
-      failed_at: new Date().toISOString(),
-      refunded_at: new Date().toISOString(),
-      rolled_back_at: new Date().toISOString()
-    })
-    .eq('id', migrationId);
-}
-
-// ============================================
-// HELPER: UPDATE STATUS
-// ============================================
-async function updateMigrationStatus(
-  supabase: any, 
-  migrationId: string, 
-  status: string, 
-  extras: Record<string, any> = {}
-) {
-  await supabase
-    .from('bsk_onchain_migrations')
-    .update({ status, ...extras })
-    .eq('id', migrationId);
-}
-
-// ============================================
-// HELPER: MARK FAILED
-// ============================================
-async function updateMigrationFailed(supabase: any, migrationId: string, error: string) {
-  await supabase
-    .from('bsk_onchain_migrations')
-    .update({
-      status: 'failed',
-      error_message: error,
-      failed_at: new Date().toISOString()
-    })
-    .eq('id', migrationId);
 }
 
 // ============================================
