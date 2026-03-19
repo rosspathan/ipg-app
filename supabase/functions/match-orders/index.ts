@@ -418,58 +418,12 @@ Deno.serve(async (req) => {
                 else console.log('[Matching Engine] ✓ Fill notifications sent to both parties');
               }
 
-              // Record fees in trading_fees_collected ledger (status: collected - no on-chain transfer needed)
+              // Fee recording + market price updates are now handled ATOMICALLY
+              // inside the execute_trade RPC. No edge-function-level fee insertion needed.
+              // This eliminates the risk of partial fee recording on RPC success + edge failure.
               if (tradeId) {
-                // Buyer fee record
-                await supabase
-                  .from('trading_fees_collected')
-                  .insert({
-                    trade_id: tradeId,
-                    symbol,
-                    fee_asset: quoteSymbol,
-                    fee_amount: buyerFee.toNumber(),
-                    fee_percent: (buyerIsTaker ? takerFeePercent : makerFeePercent).toNumber(),
-                    user_id: buyOrder.user_id,
-                    side: 'buy',
-                    admin_wallet: 'platform_account',
-                    status: 'collected' // Fees credited to platform account internally
-                  });
-
-                // Seller fee record
-                await supabase
-                  .from('trading_fees_collected')
-                  .insert({
-                    trade_id: tradeId,
-                    symbol,
-                    fee_asset: quoteSymbol,
-                    fee_amount: sellerFee.toNumber(),
-                    fee_percent: (buyerIsTaker ? makerFeePercent : takerFeePercent).toNumber(),
-                    user_id: sellOrder.user_id,
-                    side: 'sell',
-                    admin_wallet: 'platform_account',
-                    status: 'collected' // Fees credited to platform account internally
-                  });
-
                 const totalFee = buyerFee.plus(sellerFee);
-                console.log(`[Matching Engine] ✓ Fees collected: Total=${totalFee.toString()} ${quoteSymbol} (credited to platform account)`);
-
-                // HYBRID MODEL: No P2P on-chain settlement needed
-                // Trades are settled internally via execute_trade RPC
-                // Fees are credited to platform account (user_id: 00000000-0000-0000-0000-000000000001)
-                // On-chain transfers only happen during user-initiated withdrawals
-                console.log(`[Matching Engine] ✓ Trade settled internally (hybrid model)`);
-
-                // Update market_prices with the latest execution price using RPC for reliability
-                const { error: updatePriceError } = await supabase.rpc('update_last_traded_price', {
-                  p_symbol: symbol,
-                  p_price: executionPrice.toNumber()
-                });
-
-                if (updatePriceError) {
-                  console.warn(`[Matching Engine] Failed to update market_prices for ${symbol}:`, updatePriceError);
-                } else {
-                  console.log(`[Matching Engine] ✓ Updated market_prices.current_price to ${executionPrice.toFixed(8)} for ${symbol}`);
-                }
+                console.log(`[Matching Engine] ✓ Trade + fees + market price settled atomically inside DB (trade_id: ${tradeId}, total_fee: ${totalFee.toString()} ${quoteSymbol})`);
               }
 
               totalMatches++;
