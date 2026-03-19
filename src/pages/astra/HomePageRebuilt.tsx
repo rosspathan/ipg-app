@@ -196,7 +196,7 @@ export function HomePageRebuilt() {
                   {balanceHidden ? '••••' : balance.withdrawable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
                 <p className="text-[10px] font-semibold text-muted-foreground">BSK</p>
-                <div className="flex gap-1.5 pt-2">
+                <div className="flex gap-1.5 pt-2 flex-wrap">
                   <button
                     onClick={() => navigate("/app/programs/bsk-withdraw")}
                     className="flex-1 h-8 rounded-xl text-[10px] font-semibold bg-success/15 border border-success/30 text-success transition-all hover:bg-success/20 hover:shadow-sm active:scale-[0.97]"
@@ -208,6 +208,12 @@ export function HomePageRebuilt() {
                     className="flex-1 h-8 rounded-xl text-[10px] font-semibold bg-muted/60 border border-border text-foreground/70 transition-all hover:border-primary/20 hover:shadow-sm active:scale-[0.97]"
                   >
                     Transfer
+                  </button>
+                  <button
+                    onClick={() => navigate("/app/programs/bsk-migrate")}
+                    className="flex-1 h-8 rounded-xl text-[10px] font-semibold bg-accent/15 border border-accent/30 text-accent transition-all hover:bg-accent/20 hover:shadow-sm active:scale-[0.97]"
+                  >
+                    Migrate
                   </button>
                 </div>
               </div>
