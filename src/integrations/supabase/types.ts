@@ -2808,6 +2808,7 @@ export type Database = {
           maintenance_message: string | null
           maintenance_mode: boolean
           max_amount_bsk: number | null
+          max_per_request_bsk: number | null
           migration_enabled: boolean
           migration_fee_percent: number
           migration_wallet_address: string | null
@@ -2831,6 +2832,7 @@ export type Database = {
           maintenance_message?: string | null
           maintenance_mode?: boolean
           max_amount_bsk?: number | null
+          max_per_request_bsk?: number | null
           migration_enabled?: boolean
           migration_fee_percent?: number
           migration_wallet_address?: string | null
@@ -2854,6 +2856,7 @@ export type Database = {
           maintenance_message?: string | null
           maintenance_mode?: boolean
           max_amount_bsk?: number | null
+          max_per_request_bsk?: number | null
           migration_enabled?: boolean
           migration_fee_percent?: number
           migration_wallet_address?: string | null
@@ -2938,8 +2941,11 @@ export type Database = {
       bsk_onchain_migrations: {
         Row: {
           actual_gas_cost_bnb: number | null
+          admin_approval_note: string | null
           admin_notes: string | null
           amount_requested: number
+          approved_at: string | null
+          approved_by: string | null
           balance_matches_ledger: boolean | null
           batch_id: string
           block_number: number | null
@@ -2964,6 +2970,9 @@ export type Database = {
           migration_fee_percent: number | null
           net_amount_migrated: number
           refunded_at: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           retry_count: number
           rolled_back_at: string | null
           signed_at: string | null
@@ -2975,8 +2984,11 @@ export type Database = {
         }
         Insert: {
           actual_gas_cost_bnb?: number | null
+          admin_approval_note?: string | null
           admin_notes?: string | null
           amount_requested: number
+          approved_at?: string | null
+          approved_by?: string | null
           balance_matches_ledger?: boolean | null
           batch_id: string
           block_number?: number | null
@@ -3001,6 +3013,9 @@ export type Database = {
           migration_fee_percent?: number | null
           net_amount_migrated?: number
           refunded_at?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           retry_count?: number
           rolled_back_at?: string | null
           signed_at?: string | null
@@ -3012,8 +3027,11 @@ export type Database = {
         }
         Update: {
           actual_gas_cost_bnb?: number | null
+          admin_approval_note?: string | null
           admin_notes?: string | null
           amount_requested?: number
+          approved_at?: string | null
+          approved_by?: string | null
           balance_matches_ledger?: boolean | null
           batch_id?: string
           block_number?: number | null
@@ -3038,6 +3056,9 @@ export type Database = {
           migration_fee_percent?: number | null
           net_amount_migrated?: number
           refunded_at?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           retry_count?: number
           rolled_back_at?: string | null
           signed_at?: string | null
