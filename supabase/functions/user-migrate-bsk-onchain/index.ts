@@ -663,7 +663,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     .insert({
       batch_number: `USER-${Date.now()}`,
       initiated_by: userId,
-      status: 'pending_approval',
+      status: 'pending',
       total_users: 1,
       total_bsk_requested: amountBsk,
       notes: 'User-initiated migration (pending admin approval)'
