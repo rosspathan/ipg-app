@@ -139,7 +139,11 @@ export function BSKMigratePage() {
     setStep('processing')
     const res = await initiateMigration(amountNum)
     if (res) {
-      setStep('success')
+      if (res.status === 'pending_admin_approval') {
+        setStep('pending_approval')
+      } else {
+        setStep('success')
+      }
     } else {
       setStep('input')
     }
