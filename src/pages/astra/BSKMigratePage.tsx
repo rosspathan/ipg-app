@@ -87,7 +87,10 @@ export function BSKMigratePage() {
       // Check for in-progress migration and resume stepper
       if (eligibility.has_pending_migration && eligibility.pending_migration) {
         const pendingStatus = eligibility.pending_migration.status;
-        if (['validating', 'debiting', 'signing', 'broadcasting', 'confirming'].includes(pendingStatus)) {
+        if (pendingStatus === 'pending_admin_approval') {
+          // Show that it's awaiting admin approval
+          setStep('input');
+        } else if (['validating', 'debiting', 'signing', 'broadcasting', 'confirming', 'approved_executing'].includes(pendingStatus)) {
           setStep('processing');
         }
       } else {
