@@ -425,11 +425,11 @@ function TradingPairPageContent() {
           </div>
 
           {/* ── Trade Panel + Order Book side-by-side ── */}
-          <div className="flex flex-row gap-0 px-0 overflow-visible">
-            {/* Trade Panel */}
+          <div className="flex flex-row gap-0 px-0 overflow-visible" style={{ minHeight: 420 }}>
+            {/* Order Entry (Left) */}
             <div
-              className="flex flex-col px-1 min-w-0"
-              style={{ flex: '0 0 62%' }}
+              className="flex flex-col px-1.5 py-1 min-w-0"
+              style={{ flex: '0 0 52%' }}
             >
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
@@ -446,19 +446,27 @@ function TradingPairPageContent() {
                 bestAsk={bestAskPrice}
                 selectedPrice={selectedPrice}
                 compact={!isSideBySide}
+                asks={orderBook?.asks?.map((a: any) => ({
+                  price: typeof a === 'object' ? a.price : a[0],
+                  quantity: typeof a === 'object' ? a.quantity : a[1]
+                })) || []}
+                bids={orderBook?.bids?.map((b: any) => ({
+                  price: typeof b === 'object' ? b.price : b[0],
+                  quantity: typeof b === 'object' ? b.quantity : b[1]
+                })) || []}
               />
             </div>
-            {/* Order Book */}
+            {/* Order Book (Right) */}
             <div
-              className="flex flex-col min-w-0"
+              className="flex flex-col min-w-0 py-1 pr-1"
               style={{ flex: '1 1 0%' }}
             >
-              <OrderBookPremium
-                asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
+              <OrderBookUnified
+                asks={orderBook?.asks?.slice(0, 30).map((a: any) => ({ 
                   price: typeof a === 'object' ? a.price : a[0], 
                   quantity: typeof a === 'object' ? a.quantity : a[1] 
                 })) || []}
-                bids={orderBook?.bids?.slice(0, 20).map((b: any) => ({ 
+                bids={orderBook?.bids?.slice(0, 30).map((b: any) => ({ 
                   price: typeof b === 'object' ? b.price : b[0], 
                   quantity: typeof b === 'object' ? b.quantity : b[1] 
                 })) || []}
@@ -467,9 +475,7 @@ function TradingPairPageContent() {
                 quoteCurrency={pair.quoteAsset}
                 baseCurrency={pair.baseAsset}
                 onPriceClick={handlePriceClick}
-                marketPrice={marketPrice}
                 isLoading={!pair}
-                fillContainer
               />
             </div>
           </div>
