@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 interface OrderFormProProps {
@@ -27,6 +26,10 @@ interface OrderFormProProps {
   bestAsk?: number;
   selectedPrice?: number | null;
   compact?: boolean;
+  /** Order book asks for slippage estimation */
+  asks?: { price: number; quantity: number }[];
+  /** Order book bids for slippage estimation */
+  bids?: { price: number; quantity: number }[];
 }
 
 type OrderSide = 'buy' | 'sell';
@@ -47,8 +50,45 @@ const getSmartStep = (value: number): number => {
   return 0.00001;
 };
 
-/* ── Premium Exchange Input ── */
-const PremiumInput: React.FC<{
+/* ── Slippage calculator ── */
+const estimateSlippage = (
+  side: 'buy' | 'sell',
+  amount: number,
+  asks: { price: number; quantity: number }[],
+  bids: { price: number; quantity: number }[],
+  currentPrice: number
+): { avgPrice: number; slippagePct: number; levelsConsumed: number } => {
+  if (amount <= 0 || currentPrice <= 0) return { avgPrice: 0, slippagePct: 0, levelsConsumed: 0 };
+
+  const book = side === 'buy'
+    ? [...asks].sort((a, b) => a.price - b.price)
+    : [...bids].sort((a, b) => b.price - a.price);
+
+  let remaining = amount;
+  let totalCost = 0;
+  let levels = 0;
+
+  for (const level of book) {
+    if (remaining <= 0) break;
+    const fill = Math.min(remaining, level.quantity);
+    totalCost += fill * level.price;
+    remaining -= fill;
+    levels++;
+  }
+
+  if (remaining > 0) {
+    // Not enough liquidity
+    totalCost += remaining * currentPrice;
+  }
+
+  const avgPrice = amount > 0 ? totalCost / amount : currentPrice;
+  const slippagePct = currentPrice > 0 ? Math.abs((avgPrice - currentPrice) / currentPrice) * 100 : 0;
+
+  return { avgPrice, slippagePct, levelsConsumed: levels };
+};
+
+/* ── Compact Input ── */
+const CompactInput: React.FC<{
   label: string;
   value: string;
   onChange: (v: string) => void;
@@ -69,15 +109,15 @@ const PremiumInput: React.FC<{
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between px-0.5">
-        <span className="text-[10px] font-medium text-muted-foreground select-none">{label}</span>
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-medium text-muted-foreground select-none">{label}</span>
         {tag && tag.value > 0 && (
           <button
             type="button"
             onClick={() => onChange(formatNum(tag.value))}
             className={cn(
-              "text-[9px] font-bold px-2 py-[2px] rounded-md transition-all duration-150",
+              "text-[8px] font-bold px-1.5 py-[1px] rounded transition-all",
               tag.color === 'red'
                 ? "text-danger bg-danger/10 active:bg-danger/20"
                 : "text-success bg-success/10 active:bg-success/20"
@@ -88,16 +128,15 @@ const PremiumInput: React.FC<{
         )}
       </div>
       <div className={cn(
-        "bg-background border border-border rounded-[14px] h-[52px] flex items-center",
-        "transition-all duration-200",
-        "focus-within:border-accent/30 focus-within:shadow-[0_0_16px_hsl(var(--accent)/0.06)]",
-        "hover:border-border/80"
+        "bg-background border border-border/60 rounded-lg h-[38px] flex items-center",
+        "transition-all duration-150",
+        "focus-within:border-accent/30"
       )}>
         <button
           type="button"
           onClick={() => adjust(-1)}
           disabled={numVal <= min}
-          className="w-12 h-full flex items-center justify-center text-muted-foreground text-[18px] font-light active:bg-muted active:text-foreground disabled:opacity-20 select-none flex-shrink-0 rounded-l-[14px] transition-colors border-r border-border/60"
+          className="w-8 h-full flex items-center justify-center text-muted-foreground text-sm active:bg-muted disabled:opacity-20 select-none rounded-l-lg border-r border-border/40"
         >
           −
         </button>
@@ -107,14 +146,14 @@ const PremiumInput: React.FC<{
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 min-w-0 bg-transparent text-center px-4 text-[16px] font-mono font-semibold text-foreground outline-none leading-none tracking-tight placeholder:text-muted-foreground/30 overflow-hidden whitespace-nowrap"
+          className="flex-1 min-w-0 bg-transparent text-center px-2 text-[13px] font-mono font-semibold text-foreground outline-none tracking-tight placeholder:text-muted-foreground/30 overflow-hidden whitespace-nowrap"
           style={{ textOverflow: 'ellipsis' }}
         />
         <button
           type="button"
           onClick={() => adjust(1)}
           disabled={max !== undefined && numVal >= max}
-          className="w-12 h-full flex items-center justify-center text-muted-foreground text-[18px] font-light active:bg-muted active:text-foreground disabled:opacity-20 select-none flex-shrink-0 rounded-r-[14px] transition-colors border-l border-border/60"
+          className="w-8 h-full flex items-center justify-center text-muted-foreground text-sm active:bg-muted disabled:opacity-20 select-none rounded-r-lg border-l border-border/40"
         >
           +
         </button>
@@ -136,8 +175,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   bestBid = 0,
   bestAsk = 0,
   selectedPrice,
+  asks = [],
+  bids = [],
 }) => {
-  const navigate = useNavigate();
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('limit');
   const [price, setPrice] = useState(currentPrice.toFixed(2));
@@ -171,6 +211,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   const requiredAmount = isBuy ? total * 1.005 : numAmount;
   const hasInsufficientBalance = numAmount > 0 && requiredAmount > availableBalance;
+
+  // Slippage estimation for market orders
+  const slippage = useMemo(() => {
+    if (orderType !== 'market' || numAmount <= 0) return null;
+    return estimateSlippage(side, numAmount, asks, bids, currentPrice);
+  }, [orderType, numAmount, side, asks, bids, currentPrice]);
 
   const handleQuickPercent = (pct: number) => {
     setActivePercent(pct);
@@ -210,63 +256,41 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const estFee = total * 0.005;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2.5 h-full">
       {/* ── Buy / Sell Toggle ── */}
-      <div className="flex h-[40px] bg-muted rounded-lg overflow-hidden">
+      <div className="flex h-[34px] bg-muted/40 rounded-lg overflow-hidden">
         <button
           onClick={() => setSide('buy')}
-          className="flex-1 relative flex items-center justify-center"
-        >
-          <div className={cn(
-            "absolute inset-0 transition-all duration-200",
-            isBuy ? "bg-success" : "bg-transparent"
-          )} />
-          {isBuy && (
-            <div className="absolute right-0 top-0 h-full w-[14px] translate-x-[7px] z-[1]">
-              <svg viewBox="0 0 14 40" fill="none" className="h-full w-full" preserveAspectRatio="none">
-                <path d="M0 0L14 20L0 40V0Z" className="fill-success" />
-              </svg>
-            </div>
+          className={cn(
+            "flex-1 text-[11px] font-bold uppercase tracking-wider transition-all duration-150",
+            isBuy
+              ? "bg-success text-success-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground/70"
           )}
-          <span className={cn(
-            "relative z-[2] text-[12px] font-bold tracking-wider uppercase transition-colors duration-200",
-            isBuy ? "text-success-foreground" : "text-muted-foreground"
-          )}>
-            Buy
-          </span>
+        >
+          Buy
         </button>
         <button
           onClick={() => setSide('sell')}
-          className="flex-1 relative flex items-center justify-center"
-        >
-          <div className={cn(
-            "absolute inset-0 transition-all duration-200",
-            !isBuy ? "bg-danger" : "bg-transparent"
-          )} />
-          {!isBuy && (
-            <div className="absolute left-0 top-0 h-full w-[14px] -translate-x-[7px] z-[1]">
-              <svg viewBox="0 0 14 40" fill="none" className="h-full w-full" preserveAspectRatio="none">
-                <path d="M14 0L0 20L14 40V0Z" className="fill-danger" />
-              </svg>
-            </div>
+          className={cn(
+            "flex-1 text-[11px] font-bold uppercase tracking-wider transition-all duration-150",
+            !isBuy
+              ? "bg-danger text-danger-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground/70"
           )}
-          <span className={cn(
-            "relative z-[2] text-[12px] font-bold tracking-wider uppercase transition-colors duration-200",
-            !isBuy ? "text-danger-foreground" : "text-muted-foreground"
-          )}>
-            Sell
-          </span>
+        >
+          Sell
         </button>
       </div>
 
-      {/* ── Order Type tabs ── */}
-      <div className="flex items-center gap-6 h-[30px] px-1 border-b border-border/60">
+      {/* ── Order Type ── */}
+      <div className="flex items-center gap-4 h-[24px] px-0.5 border-b border-border/40">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setOrderType(t)}
             className={cn(
-              "text-[12px] font-semibold capitalize transition-all duration-200 pb-2",
+              "text-[10px] font-semibold capitalize transition-all pb-1.5",
               orderType === t
                 ? "text-foreground border-b-2 border-accent -mb-[1px]"
                 : "text-muted-foreground hover:text-foreground/70"
@@ -279,7 +303,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* ── Price Input ── */}
       {orderType !== 'market' && (
-        <PremiumInput
+        <CompactInput
           label={`Price (${quoteCurrency})`}
           value={price}
           onChange={setPrice}
@@ -294,7 +318,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       )}
 
       {/* ── Amount Input ── */}
-      <PremiumInput
+      <CompactInput
         label={`Amount (${baseCurrency})`}
         value={amount}
         onChange={handleAmountChange}
@@ -304,143 +328,89 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         placeholder="0.00000000"
       />
 
-      {/* ── Percentage Slider ── */}
-      <div className="px-3 space-y-2">
-        <div
-          className="relative h-[28px] flex items-center cursor-pointer touch-none"
-          onPointerDown={(e) => {
-            const track = e.currentTarget;
-            const rect = track.getBoundingClientRect();
-            const trackW = rect.width;
-            const calcPct = (clientX: number) => Math.round(Math.max(0, Math.min(100, ((clientX - rect.left) / trackW) * 100)));
-
-            const pct = calcPct(e.clientX);
-            if (pct === 0) { setActivePercent(null); setAmount(''); } else { handleQuickPercent(pct); }
-
-            const onMove = (ev: PointerEvent) => {
-              const p = calcPct(ev.clientX);
-              if (p === 0) { setActivePercent(null); setAmount(''); } else { handleQuickPercent(p); }
-            };
-            const onUp = () => {
-              document.removeEventListener('pointermove', onMove);
-              document.removeEventListener('pointerup', onUp);
-            };
-            document.addEventListener('pointermove', onMove);
-            document.addEventListener('pointerup', onUp);
-          }}
-        >
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[4px] bg-muted rounded-full" />
-          <div
+      {/* ── Quick Percent Buttons ── */}
+      <div className="grid grid-cols-4 gap-1">
+        {[25, 50, 75, 100].map((pct) => (
+          <button
+            key={pct}
+            onClick={() => handleQuickPercent(pct)}
             className={cn(
-              "absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full transition-[width] duration-75",
-              isBuy ? "bg-success" : "bg-danger"
+              "h-[22px] text-[9px] font-bold rounded transition-all",
+              activePercent === pct
+                ? isBuy ? "bg-success/20 text-success" : "bg-danger/20 text-danger"
+                : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
             )}
-            style={{ width: `${activePercent ?? 0}%` }}
-          />
-          {[0, 25, 50, 75, 100].map((pct) => {
-            const isActive = activePercent !== null && activePercent >= pct;
-            return (
-              <div
-                key={pct}
-                className="absolute -translate-x-1/2 z-10 w-5 h-5 flex items-center justify-center pointer-events-none"
-                style={{ left: `${pct}%` }}
-              >
-                <span className={cn(
-                  "w-[7px] h-[7px] rotate-45 transition-all duration-100 rounded-[1px]",
-                  isActive
-                    ? isBuy ? "bg-success" : "bg-danger"
-                    : "bg-background border border-border"
-                )} />
-              </div>
-            );
-          })}
-          {activePercent !== null && activePercent > 0 && (
-            <div className="absolute -translate-x-1/2 z-20 pointer-events-none" style={{ left: `${activePercent}%` }}>
-              <div className={cn(
-                "w-[14px] h-[14px] rounded-full border-2 transition-shadow duration-150",
-                isBuy
-                  ? "border-success bg-background shadow-[0_0_8px_hsl(var(--success)/0.35)]"
-                  : "border-danger bg-background shadow-[0_0_8px_hsl(var(--danger)/0.35)]"
-              )} />
-            </div>
-          )}
-        </div>
-        <div className="relative h-4">
-          {[0, 25, 50, 75, 100].map((pct, i, arr) => (
-            <button
-              key={pct}
-              onClick={() => { if (pct === 0) { setActivePercent(null); setAmount(''); } else handleQuickPercent(pct); }}
-              className={cn(
-                "absolute text-[10px] font-medium transition-colors",
-                i === 0 ? "left-0" : i === arr.length - 1 ? "right-0" : "-translate-x-1/2",
-                activePercent !== null && activePercent >= pct
-                  ? isBuy ? "text-success" : "text-danger"
-                  : "text-muted-foreground"
-              )}
-              style={i > 0 && i < arr.length - 1 ? { left: `${pct}%` } : undefined}
-            >
-              {pct}%
-            </button>
-          ))}
-        </div>
+          >
+            {pct}%
+          </button>
+        ))}
       </div>
 
-      {/* ── Total display ── */}
-      <div className="bg-card border border-border/60 rounded-xl h-[36px] flex items-center justify-between px-4">
-        <span className="text-[10px] text-muted-foreground font-medium">Total ({quoteCurrency})</span>
-        <span className="text-[13px] font-mono font-bold text-foreground">
+      {/* ── Total ── */}
+      <div className="bg-muted/20 border border-border/40 rounded-lg h-[28px] flex items-center justify-between px-3">
+        <span className="text-[9px] text-muted-foreground font-medium">Total ({quoteCurrency})</span>
+        <span className="text-[11px] font-mono font-bold text-foreground">
           {total > 0 ? total.toFixed(total >= 1 ? 2 : 6) : '--'}
         </span>
       </div>
 
+      {/* ── Slippage Warning (Market Orders) ── */}
+      {slippage && slippage.slippagePct > 0.5 && (
+        <div className={cn(
+          "flex items-start gap-1.5 p-2 rounded-lg text-[9px]",
+          slippage.slippagePct > 3
+            ? "bg-danger/10 text-danger border border-danger/20"
+            : "bg-warning/10 text-warning border border-warning/20"
+        )}>
+          <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          <div className="space-y-0.5">
+            <div className="font-bold">
+              Est. slippage: {slippage.slippagePct.toFixed(2)}%
+            </div>
+            <div className="text-muted-foreground">
+              Avg fill ~{slippage.avgPrice >= 1 ? slippage.avgPrice.toFixed(2) : slippage.avgPrice.toFixed(6)} • {slippage.levelsConsumed} level{slippage.levelsConsumed !== 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Info rows ── */}
-      <div className="flex flex-col gap-1 text-[10px] px-1">
+      <div className="flex flex-col gap-0.5 text-[9px]">
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Available</span>
-          <div className="flex items-center gap-1.5">
-            <span className={cn("font-mono tabular-nums", hasInsufficientBalance ? "text-danger" : "text-foreground")}>
-              {availableBalance.toFixed(4)}
-            </span>
-            <span className="text-muted-foreground">{balanceCurrency}</span>
-          </div>
+          <span className="text-muted-foreground">Avail</span>
+          <span className={cn("font-mono tabular-nums", hasInsufficientBalance ? "text-danger" : "text-foreground")}>
+            {availableBalance.toFixed(4)} {balanceCurrency}
+          </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Max {isBuy ? 'Buy' : 'Sell'}</span>
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono tabular-nums text-foreground">{maxBuyAmount.toFixed(4)}</span>
-            <span className="text-muted-foreground">{baseCurrency}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Est. Fee</span>
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono tabular-nums text-foreground">{total > 0 ? `~${estFee.toFixed(4)}` : '—'}</span>
-            <span className="text-muted-foreground">{quoteCurrency}</span>
-          </div>
+          <span className="text-muted-foreground">Fee</span>
+          <span className="font-mono tabular-nums text-foreground">
+            {total > 0 ? `~${estFee.toFixed(4)}` : '—'} {quoteCurrency}
+          </span>
         </div>
       </div>
 
       {/* ── Insufficient warning ── */}
       {hasInsufficientBalance && (
-        <div className="text-[10px] text-danger text-center bg-danger/5 rounded-lg py-1.5">
+        <div className="text-[9px] text-danger text-center bg-danger/5 rounded-lg py-1">
           ⚠ Insufficient {balanceCurrency}
         </div>
       )}
 
-      {/* ── Submit CTA ── */}
+      {/* ── Submit ── */}
       <button
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0}
         className={cn(
-          "w-full h-[40px] rounded-xl text-[13px] font-bold tracking-wide transition-all duration-200 active:scale-[0.98]",
+          "w-full h-[36px] rounded-lg text-[12px] font-bold tracking-wide transition-all duration-150 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed",
           hasInsufficientBalance
             ? "bg-muted text-muted-foreground"
             : numAmount <= 0
               ? "bg-muted text-muted-foreground/50"
               : isBuy
-                ? "bg-success text-success-foreground shadow-[0_4px_16px_hsl(var(--success)/0.2)] active:opacity-90"
-                : "bg-danger text-danger-foreground shadow-[0_4px_16px_hsl(var(--danger)/0.2)] active:opacity-90"
+                ? "bg-success text-success-foreground shadow-[0_2px_12px_hsl(var(--success)/0.2)]"
+                : "bg-danger text-danger-foreground shadow-[0_2px_12px_hsl(var(--danger)/0.2)]"
         )}
       >
         {isPlacingOrder ? (
