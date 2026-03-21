@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { ArrowLeft, ChevronDown, Search, Loader2, Star, Bell, X } from "lucide-react";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
-import { OrderBookPremium } from "@/components/trading/OrderBookPremium";
+import { OrderBookUnified } from "@/components/trading/OrderBookUnified";
 import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
 
 import { TradingHistoryTabs } from "@/components/trading/TradingHistoryTabs";
