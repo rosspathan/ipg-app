@@ -111,6 +111,14 @@ function TradingPairPageContent() {
     return b.volume24h - a.volume24h;
   });
 
+  const normalizeBook = useCallback((entries: any[]) => (entries || []).map((e: any) => ({
+    price: typeof e === 'object' && 'price' in e ? e.price : e[0],
+    quantity: typeof e === 'object' ? (e.quantity ?? e.remaining_amount ?? e[1]) : e[1],
+  })), []);
+
+  const bookAsks = useMemo(() => normalizeBook(orderBook?.asks?.slice(0, 30)), [orderBook?.asks, normalizeBook]);
+  const bookBids = useMemo(() => normalizeBook(orderBook?.bids?.slice(0, 30)), [orderBook?.bids, normalizeBook]);
+
   if (!pair) return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading…</div>;
 
   // ─── Derive last trade price (truthful) ───
@@ -120,14 +128,6 @@ function TradingPairPageContent() {
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
   const quoteBalance = { available: quoteBalanceData?.appAvailable ?? 0, locked: quoteBalanceData?.appLocked ?? 0 };
   const baseBalance = { available: baseBalanceData?.appAvailable ?? 0, locked: baseBalanceData?.appLocked ?? 0 };
-
-  const normalizeBook = (entries: any[]) => (entries || []).map((e: any) => ({
-    price: typeof e === 'object' && 'price' in e ? e.price : e[0],
-    quantity: typeof e === 'object' ? (e.quantity ?? e.remaining_amount ?? e[1]) : e[1],
-  }));
-
-  const bookAsks = useMemo(() => normalizeBook(orderBook?.asks?.slice(0, 30)), [orderBook?.asks]);
-  const bookBids = useMemo(() => normalizeBook(orderBook?.bids?.slice(0, 30)), [orderBook?.bids]);
 
   const bestBidPrice = bookBids[0]?.price || 0;
   const bestAskPrice = bookAsks[0]?.price || 0;
