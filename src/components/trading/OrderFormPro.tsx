@@ -132,7 +132,8 @@ const StepperInput: React.FC<{
           </button>
         )}
       </div>
-      <div className="flex items-center h-[42px] bg-[hsl(230,30%,8%)] border border-[hsl(230,20%,18%)]/40 rounded-xl overflow-hidden focus-within:border-accent/30 focus-within:shadow-[0_0_0_1px_hsl(186,100%,50%,0.1)] transition-all">
+      <div className="flex items-center h-[44px] bg-[hsl(230,30%,8%)] border border-[hsl(230,20%,18%)]/40 rounded-xl overflow-hidden focus-within:border-accent/30 focus-within:shadow-[0_0_0_1px_hsl(186,100%,50%,0.1)] transition-all">
+        {/* Minus - compact 34px */}
         <button
           type="button"
           onMouseDown={() => startLongPress(-1)}
@@ -141,21 +142,25 @@ const StepperInput: React.FC<{
           onTouchStart={() => startLongPress(-1)}
           onTouchEnd={stopLongPress}
           disabled={numVal <= min}
-          className="w-10 h-full flex items-center justify-center text-muted-foreground/60 text-base font-medium active:bg-[hsl(230,20%,14%)] active:text-foreground disabled:opacity-20 border-r border-[hsl(230,20%,15%)]/30 select-none touch-manipulation transition-colors"
+          className="w-[34px] flex-shrink-0 h-full flex items-center justify-center text-muted-foreground/50 text-sm font-medium active:bg-[hsl(230,20%,14%)] active:text-foreground disabled:opacity-20 border-r border-[hsl(230,20%,15%)]/30 select-none touch-manipulation transition-colors"
         >−</button>
-        <div className="flex-1 min-w-0 flex items-center px-2 overflow-hidden">
-          <input
-            ref={inputRef}
-            type="text"
-            inputMode="decimal"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            className="flex-1 min-w-0 bg-transparent text-center text-[14px] font-mono font-bold text-foreground outline-none tabular-nums placeholder:text-muted-foreground/15 overflow-x-auto"
-            style={{ textOverflow: 'clip' }}
-          />
-          {suffix && <span className="text-[10px] text-muted-foreground/40 font-bold ml-1.5 flex-shrink-0 uppercase">{suffix}</span>}
+        {/* Value zone - maximum width, scrollable */}
+        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+          <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="decimal"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={placeholder}
+              className="w-full min-w-[40px] bg-transparent text-left px-2 text-[15px] font-mono font-bold text-foreground outline-none tabular-nums placeholder:text-muted-foreground/15"
+              style={{ textOverflow: 'clip' }}
+            />
+          </div>
+          {suffix && <span className="text-[9px] text-muted-foreground/35 font-bold flex-shrink-0 pr-1 uppercase">{suffix}</span>}
         </div>
+        {/* Plus - compact 34px */}
         <button
           type="button"
           onMouseDown={() => startLongPress(1)}
@@ -164,7 +169,7 @@ const StepperInput: React.FC<{
           onTouchStart={() => startLongPress(1)}
           onTouchEnd={stopLongPress}
           disabled={max !== undefined && numVal >= max}
-          className="w-10 h-full flex items-center justify-center text-muted-foreground/60 text-base font-medium active:bg-[hsl(230,20%,14%)] active:text-foreground disabled:opacity-20 border-l border-[hsl(230,20%,15%)]/30 select-none touch-manipulation transition-colors"
+          className="w-[34px] flex-shrink-0 h-full flex items-center justify-center text-muted-foreground/50 text-sm font-medium active:bg-[hsl(230,20%,14%)] active:text-foreground disabled:opacity-20 border-l border-[hsl(230,20%,15%)]/30 select-none touch-manipulation transition-colors"
         >+</button>
       </div>
     </div>
