@@ -74,7 +74,7 @@ const getDustThreshold = (entries: OrderBookEntry[]) => {
   return median * 0.05;
 };
 
-const ROW_H = 24;
+const ROW_H = 22;
 
 const BookRow = memo(({
   price, quantity, cumulative, maxCum, side, precision, showCumulative, onClick, isDust,
