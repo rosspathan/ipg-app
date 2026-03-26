@@ -13903,6 +13903,7 @@ export type Database = {
         Args: { p_asset_symbol: string }
         Returns: Json
       }
+      check_stuck_transfers: { Args: never; Returns: Json }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_order_rate_limits: { Args: never; Returns: undefined }
       clone_program_module: {
@@ -14547,6 +14548,7 @@ export type Database = {
           wallet_total: number
         }[]
       }
+      run_full_reconciliation_check: { Args: never; Returns: Json }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
       settle_trade:
@@ -14639,15 +14641,24 @@ export type Database = {
         Returns: Json
       }
       validate_referral_code: { Args: { code: string }; Returns: boolean }
-      validate_withdrawal_full: {
-        Args: {
-          p_amount: number
-          p_asset_symbol: string
-          p_user_id: string
-          p_withdrawal_id: string
-        }
-        Returns: Json
-      }
+      validate_withdrawal_full:
+        | {
+            Args: {
+              p_amount: number
+              p_asset_symbol: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_asset_symbol: string
+              p_user_id: string
+              p_withdrawal_id: string
+            }
+            Returns: Json
+          }
       validate_withdrawal_request:
         | {
             Args: {
