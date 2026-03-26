@@ -294,9 +294,9 @@ function TradingPairPageContent() {
 
         {/* ═══ MAIN TRADING MODULE - Premium Parent Card ═══ */}
         <div className="mx-2 mt-2 rounded-2xl bg-[hsl(230,40%,6%)] border border-[hsl(230,25%,16%)]/25 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <div className="flex flex-row" style={{ minHeight: 420 }}>
-            {/* Order Form - 58% — dominant side */}
-            <div className="flex flex-col p-3 min-w-0" style={{ flex: '0 0 58%' }}>
+          <div className="flex flex-row" style={{ minHeight: 440 }}>
+            {/* Order Form - 65% — dominant side */}
+            <div className="flex flex-col p-3.5 min-w-0" style={{ flex: '0 0 65%' }}>
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
                 quoteCurrency={pair.quoteAsset}
@@ -314,7 +314,7 @@ function TradingPairPageContent() {
                 bids={bookBids}
               />
             </div>
-            {/* Order Book - 42% — compact side */}
+            {/* Order Book - 35% — compact side */}
             <div className="flex flex-col min-w-0 border-l border-[hsl(230,25%,16%)]/20" style={{ flex: '1 1 0%' }}>
               <OrderBookUnified
                 asks={bookAsks}

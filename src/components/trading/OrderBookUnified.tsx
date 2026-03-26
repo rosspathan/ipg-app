@@ -74,7 +74,7 @@ const getDustThreshold = (entries: OrderBookEntry[]) => {
   return median * 0.05;
 };
 
-const ROW_H = 24;
+const ROW_H = 22;
 
 const BookRow = memo(({
   price, quantity, cumulative, maxCum, side, precision, showCumulative, onClick, isDust,
@@ -103,15 +103,15 @@ const BookRow = memo(({
         style={{ width: `${depthPct}%` }}
       />
       <span className={cn(
-        "relative z-10 text-[11px] font-mono tabular-nums text-left leading-none font-semibold",
+        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none font-bold",
         isAsk ? "text-danger" : "text-success"
       )}>
         {fmtPrice(price, precision)}
       </span>
-      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/50 leading-none">
+      <span className="relative z-10 text-[9px] font-mono tabular-nums text-right text-foreground/45 leading-none">
         {fmtQty(quantity)}
       </span>
-      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/25 leading-none">
+      <span className="relative z-10 text-[8px] font-mono tabular-nums text-right text-foreground/20 leading-none">
         {showCumulative ? fmtQty(cumulative) : fmtQty(quantity * price)}
       </span>
     </div>
@@ -225,10 +225,10 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       </div>
 
       {/* Column Header */}
-      <div className="grid grid-cols-3 px-2 py-1 text-[8px] font-bold text-muted-foreground/35 uppercase tracking-widest">
+      <div className="grid grid-cols-3 px-2 py-0.5 text-[7px] font-bold text-muted-foreground/30 uppercase tracking-widest">
         <span>Price</span>
         <span className="text-right">Qty</span>
-        <span className="text-right">{showCumulative ? 'Cum' : 'Total'}</span>
+        <span className="text-right">{showCumulative ? 'Cum' : 'Tot'}</span>
       </div>
 
       {/* Asks */}
@@ -251,7 +251,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* ── Central Price ── */}
       <div
         className={cn(
-          "flex items-center justify-between px-2 h-[36px] border-y border-[hsl(230,20%,12%)]/40 transition-colors duration-700 cursor-pointer",
+          "flex items-center justify-between px-2 h-[30px] border-y border-[hsl(230,20%,12%)]/40 transition-colors duration-700 cursor-pointer",
           flashDir === 'up' && "bg-success/8",
           flashDir === 'down' && "bg-danger/8",
           !flashDir && "bg-[hsl(230,30%,6%)]"
@@ -263,7 +263,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
             ? <TrendingUp className="h-3.5 w-3.5 text-success" />
             : <TrendingDown className="h-3.5 w-3.5 text-danger" />
           }
-          <span className={cn("text-[15px] font-extrabold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
+          <span className={cn("text-[13px] font-extrabold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
             {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
           </span>
         </div>
