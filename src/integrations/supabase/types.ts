@@ -6396,10 +6396,13 @@ export type Database = {
           direction: string
           fee: number
           id: string
+          linked_deposit_id: string | null
+          linked_withdrawal_id: string | null
           net_amount: number
           notes: string | null
           reference_id: string | null
           status: string
+          status_detail: string | null
           tx_hash: string | null
           updated_at: string
           user_id: string
@@ -6413,10 +6416,13 @@ export type Database = {
           direction: string
           fee?: number
           id?: string
+          linked_deposit_id?: string | null
+          linked_withdrawal_id?: string | null
           net_amount: number
           notes?: string | null
           reference_id?: string | null
           status?: string
+          status_detail?: string | null
           tx_hash?: string | null
           updated_at?: string
           user_id: string
@@ -6430,10 +6436,13 @@ export type Database = {
           direction?: string
           fee?: number
           id?: string
+          linked_deposit_id?: string | null
+          linked_withdrawal_id?: string | null
           net_amount?: number
           notes?: string | null
           reference_id?: string | null
           status?: string
+          status_detail?: string | null
           tx_hash?: string | null
           updated_at?: string
           user_id?: string
@@ -14468,6 +14477,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      reconcile_transfer_statuses: { Args: never; Returns: Json }
       record_bsk_transaction: {
         Args: {
           p_amount_bsk: number

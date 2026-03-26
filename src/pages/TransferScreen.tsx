@@ -316,10 +316,13 @@ const TransferScreen = () => {
         fee: 0,
         net_amount: amountNum,
         status: transferStatus,
+        status_detail: transferStatus === 'success' 
+          ? 'Credited to trading balance' 
+          : 'Waiting for blockchain confirmation',
         tx_hash: result.txHash || null,
         reference_id: refId,
         balance_after: creditResult?.new_balance ?? null,
-      });
+      } as any);
 
       // SECURITY: custodial_deposits insertion is now BLOCKED at DB level.
       // The monitor-custodial-deposits server-side function handles all deposit
@@ -440,10 +443,12 @@ const TransferScreen = () => {
             fee: withdrawResult.fee || 0,
             net_amount: amountNum - (withdrawResult.fee || 0),
             status: 'pending',
+            status_detail: 'Queued for hot wallet processing',
+            linked_withdrawal_id: withdrawResult.withdrawal_id || null,
             reference_id: refId,
             notes: withdrawResult.withdrawal_id ? `withdrawal_id:${withdrawResult.withdrawal_id}` : undefined,
             balance_after: withdrawResult.new_balance ?? null,
-          });
+          } as any);
         }
         queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
 
