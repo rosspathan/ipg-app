@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface OrderBookEntry {
   price: number;
@@ -21,7 +21,6 @@ interface OrderBookUnifiedProps {
   onPriceClick?: (price: number) => void;
   isLoading?: boolean;
   maxRows?: number;
-  /** @deprecated use lastTradePrice instead */
   currentPrice?: number;
 }
 
@@ -36,9 +35,7 @@ const getPrecisionOptions = (price: number) => {
 const getDefaultPrecision = (price: number) => getPrecisionOptions(price)[0];
 
 const aggregateByPrecision = (
-  entries: OrderBookEntry[],
-  precision: number,
-  side: 'bid' | 'ask'
+  entries: OrderBookEntry[], precision: number, side: 'bid' | 'ask'
 ): (OrderBookEntry & { cumulative: number })[] => {
   const map = new Map<number, number>();
   entries.forEach(({ price, quantity }) => {
@@ -70,28 +67,21 @@ const fmtQty = (q: number) => {
   return q.toFixed(6);
 };
 
-/* Determine if a quantity is "dust" relative to the book */
 const getDustThreshold = (entries: OrderBookEntry[]) => {
   if (entries.length < 3) return 0;
   const quantities = entries.map(e => e.quantity).sort((a, b) => a - b);
   const median = quantities[Math.floor(quantities.length / 2)];
-  return median * 0.05; // below 5% of median = dust
+  return median * 0.05;
 };
 
-const ROW_H = 22;
+const ROW_H = 24;
 
 const BookRow = memo(({
   price, quantity, cumulative, maxCum, side, precision, showCumulative, onClick, isDust,
 }: {
-  price: number;
-  quantity: number;
-  cumulative: number;
-  maxCum: number;
-  side: 'ask' | 'bid';
-  precision: number;
-  showCumulative: boolean;
-  onClick?: (p: number) => void;
-  isDust: boolean;
+  price: number; quantity: number; cumulative: number; maxCum: number;
+  side: 'ask' | 'bid'; precision: number; showCumulative: boolean;
+  onClick?: (p: number) => void; isDust: boolean;
 }) => {
   const depthPct = maxCum > 0 ? Math.min((cumulative / maxCum) * 100, 100) : 0;
   const isAsk = side === 'ask';
@@ -100,8 +90,8 @@ const BookRow = memo(({
     <div
       onClick={() => onClick?.(price)}
       className={cn(
-        "relative grid grid-cols-3 items-center cursor-pointer active:bg-muted/40 transition-colors",
-        isDust && "opacity-35"
+        "relative grid grid-cols-3 items-center cursor-pointer active:bg-muted/30 transition-colors",
+        isDust && "opacity-30"
       )}
       style={{ height: ROW_H, padding: '0 8px' }}
     >
@@ -113,15 +103,15 @@ const BookRow = memo(({
         style={{ width: `${depthPct}%` }}
       />
       <span className={cn(
-        "relative z-10 text-[10.5px] font-mono tabular-nums text-left leading-none",
+        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none font-medium",
         isAsk ? "text-danger" : "text-success"
       )}>
         {fmtPrice(price, precision)}
       </span>
-      <span className="relative z-10 text-[10.5px] font-mono tabular-nums text-right text-foreground/70 leading-none">
+      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/60 leading-none">
         {fmtQty(quantity)}
       </span>
-      <span className="relative z-10 text-[10.5px] font-mono tabular-nums text-right text-foreground/40 leading-none">
+      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/30 leading-none">
         {showCumulative ? fmtQty(cumulative) : fmtQty(quantity * price)}
       </span>
     </div>
@@ -175,13 +165,11 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
   const spread = computedBestAsk > 0 && computedBestBid > 0 ? computedBestAsk - computedBestBid : 0;
   const spreadPct = computedBestBid > 0 ? (spread / computedBestBid) * 100 : 0;
 
-  // Liquidity assessment
   const band = effectivePrice * 0.02;
   const bidDepthValue = bids.filter(b => b.price >= effectivePrice - band).reduce((s, b) => s + b.quantity * b.price, 0);
   const askDepthValue = asks.filter(a => a.price <= effectivePrice + band).reduce((s, a) => s + a.quantity * a.price, 0);
   const totalDepthValue = bidDepthValue + askDepthValue;
-  const liquidityLevel = totalDepthValue > 10000 ? 'High' : totalDepthValue > 1000 ? 'Medium' : 'Low';
-  const isThinMarket = liquidityLevel === 'Low';
+  const isThinMarket = totalDepthValue < 1000;
 
   const totalBidQty = displayBids.reduce((s, b) => s + b.quantity, 0);
   const totalAskQty = displayAsks.reduce((s, a) => s + a.quantity, 0);
@@ -196,50 +184,48 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Controls */}
-      <div className="flex items-center justify-between px-2 py-1 border-b border-border/30">
-        <div className="flex items-center gap-0.5 bg-muted/30 rounded p-[2px]">
+      <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/20">
+        <div className="flex items-center gap-1 bg-muted/20 rounded-md p-[2px]">
           {([
-            { key: 'split', el: <><div className="h-[2px] w-2.5 bg-danger rounded-full" /><div className="h-[2px] w-2.5 bg-success rounded-full" /></> },
-            { key: 'bids', el: <div className="h-2.5 w-2.5 bg-success/30 border border-success/50 rounded-[1px]" /> },
-            { key: 'asks', el: <div className="h-2.5 w-2.5 bg-danger/30 border border-danger/50 rounded-[1px]" /> },
+            { key: 'split', el: <><div className="h-[3px] w-3 bg-danger/70 rounded-full" /><div className="h-[3px] w-3 bg-success/70 rounded-full" /></> },
+            { key: 'bids', el: <div className="h-3 w-3 bg-success/20 border border-success/40 rounded-[2px]" /> },
+            { key: 'asks', el: <div className="h-3 w-3 bg-danger/20 border border-danger/40 rounded-[2px]" /> },
           ] as const).map(({ key, el }) => (
             <button
               key={key}
               onClick={() => setMode(key as GroupMode)}
-              className={cn("p-[3px] rounded transition-colors", mode === key ? "bg-background shadow-sm" : "hover:bg-muted/50")}
+              className={cn("p-1 rounded-md transition-colors", mode === key ? "bg-card shadow-sm" : "hover:bg-muted/40")}
             >
-              <div className="flex flex-col gap-[1px]">{el}</div>
+              <div className="flex flex-col gap-[2px]">{el}</div>
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowCumulative(!showCumulative)}
             className={cn(
-              "text-[7px] font-bold px-1 py-[1px] rounded transition-colors",
-              showCumulative ? "bg-accent/15 text-accent" : "bg-muted/30 text-muted-foreground"
+              "text-[8px] font-bold w-5 h-5 rounded flex items-center justify-center transition-colors",
+              showCumulative ? "bg-accent/15 text-accent" : "bg-muted/20 text-muted-foreground/50"
             )}
-          >
-            Σ
-          </button>
+          >Σ</button>
           <select
             value={precision}
             onChange={(e) => setPrecision(parseFloat(e.target.value))}
-            className="h-4 text-[8px] font-mono bg-muted/30 border-none rounded px-1 text-foreground cursor-pointer focus:outline-none"
+            className="h-5 text-[8px] font-mono bg-muted/20 border-none rounded px-1.5 text-foreground cursor-pointer focus:outline-none appearance-none"
           >
             {precisionOptions.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
           {isThinMarket && (
-            <span className="text-[7px] font-bold uppercase tracking-wider text-warning bg-warning/10 px-1.5 py-[1px] rounded-full animate-pulse">
+            <span className="text-[7px] font-bold uppercase tracking-wider text-warning bg-warning/10 px-1.5 py-0.5 rounded-full animate-pulse">
               Thin
             </span>
           )}
         </div>
       </div>
 
-      {/* Header */}
-      <div className="grid grid-cols-3 px-2 py-[3px] text-[8px] font-semibold text-muted-foreground/70 uppercase tracking-wider border-b border-border/20">
+      {/* Column Header */}
+      <div className="grid grid-cols-3 px-2 py-1 text-[8px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
         <span>Price</span>
         <span className="text-right">Qty</span>
         <span className="text-right">{showCumulative ? 'Cum' : 'Total'}</span>
@@ -248,7 +234,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* Asks */}
       {mode !== 'bids' && (
         <div className="flex flex-col justify-end overflow-hidden min-h-0" style={{ flex: mode === 'split' ? '1 1 0%' : '1 1 auto' }}>
-          {displayAsks.length > 0 ? displayAsks.map((ask, i) => (
+          {displayAsks.length > 0 ? displayAsks.map((ask) => (
             <BookRow
               key={`a-${ask.price}`}
               price={ask.price} quantity={ask.quantity} cumulative={ask.cumulative}
@@ -257,31 +243,33 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
               isDust={ask.quantity <= askDust}
             />
           )) : (
-            <div className="flex items-center justify-center py-2 text-[9px] text-muted-foreground/30">No asks</div>
+            <div className="flex items-center justify-center py-3 text-[9px] text-muted-foreground/30">No asks</div>
           )}
         </div>
       )}
 
-      {/* ── Central Price Bar ── */}
+      {/* ── Central Price ── */}
       <div
         className={cn(
-          "flex items-center justify-between px-2 py-[5px] border-y border-border/30 transition-colors duration-700 cursor-pointer",
+          "flex items-center justify-between px-2 h-[32px] border-y border-border/20 transition-colors duration-700 cursor-pointer",
           flashDir === 'up' && "bg-success/8",
           flashDir === 'down' && "bg-danger/8",
-          !flashDir && "bg-muted/10"
+          !flashDir && "bg-muted/5"
         )}
         onClick={() => onPriceClick?.(effectivePrice)}
       >
-        <div className="flex items-center gap-1">
-          {isPositive ? <TrendingUp className="h-2.5 w-2.5 text-success" /> : <TrendingDown className="h-2.5 w-2.5 text-danger" />}
-          <span className={cn("text-[13px] font-bold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
+        <div className="flex items-center gap-1.5">
+          {isPositive
+            ? <TrendingUp className="h-3 w-3 text-success" />
+            : <TrendingDown className="h-3 w-3 text-danger" />
+          }
+          <span className={cn("text-[14px] font-bold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
             {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
           </span>
-          <span className="text-[7px] font-medium text-muted-foreground/50 uppercase ml-0.5">Last Trade</span>
         </div>
         {spread > 0 && (
-          <span className="text-[8px] font-mono text-muted-foreground/60">
-            Spd <span className="text-foreground/50">{spreadPct.toFixed(2)}%</span>
+          <span className="text-[8px] font-mono text-muted-foreground/50">
+            Spd {spreadPct.toFixed(2)}%
           </span>
         )}
       </div>
@@ -289,7 +277,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* Bids */}
       {mode !== 'asks' && (
         <div className="overflow-hidden min-h-0" style={{ flex: mode === 'split' ? '1 1 0%' : '1 1 auto' }}>
-          {displayBids.length > 0 ? displayBids.map((bid, i) => (
+          {displayBids.length > 0 ? displayBids.map((bid) => (
             <BookRow
               key={`b-${bid.price}`}
               price={bid.price} quantity={bid.quantity} cumulative={bid.cumulative}
@@ -298,20 +286,20 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
               isDust={bid.quantity <= bidDust}
             />
           )) : (
-            <div className="flex items-center justify-center py-2 text-[9px] text-muted-foreground/30">No bids</div>
+            <div className="flex items-center justify-center py-3 text-[9px] text-muted-foreground/30">No bids</div>
           )}
         </div>
       )}
 
       {/* Pressure bar */}
-      <div className="px-2 py-[4px] border-t border-border/20">
-        <div className="flex items-center gap-1">
-          <span className="text-[8px] font-mono tabular-nums text-success w-6">{bidPct.toFixed(0)}%</span>
-          <div className="flex-1 h-[2px] rounded-full overflow-hidden flex bg-muted/30">
-            <div className="bg-success/70 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
-            <div className="bg-danger/70 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
+      <div className="px-2 py-1.5 border-t border-border/20">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[8px] font-mono tabular-nums text-success w-7">{bidPct.toFixed(0)}%</span>
+          <div className="flex-1 h-[3px] rounded-full overflow-hidden flex bg-muted/20">
+            <div className="bg-success/60 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
+            <div className="bg-danger/60 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
           </div>
-          <span className="text-[8px] font-mono tabular-nums text-danger w-6 text-right">{(100 - bidPct).toFixed(0)}%</span>
+          <span className="text-[8px] font-mono tabular-nums text-danger w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
         </div>
       </div>
     </div>
