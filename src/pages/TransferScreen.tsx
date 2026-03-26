@@ -410,11 +410,21 @@ const TransferScreen = () => {
         await executeTransfer(privateKey);
 
       } else {
-        // === WITHDRAWAL REQUEST — routed through secure edge function ===
-        // SECURITY: All validation, address derivation, balance deduction, and withdrawal
-        // creation happen server-side in request-custodial-withdrawal (atomic RPC).
-        // The frontend does NOT specify to_address — the server derives it from the user's profile.
+        // === WITHDRAWAL REQUEST — with pre-flight solvency check ===
+        
+        // Step 1: Check circuit breaker status
+        const { data: cbData } = await supabase
+          .from('withdrawal_circuit_breaker')
+          .select('is_frozen, asset_symbol')
+          .eq('asset_symbol', selectedAsset)
+          .eq('is_frozen', true)
+          .maybeSingle();
 
+        if (cbData?.is_frozen) {
+          throw new Error(`Withdrawals for ${selectedAsset} are temporarily frozen for safety. Please try again later.`);
+        }
+
+        // Step 2: Submit withdrawal — server does final atomic validation
         const { data: withdrawResult, error: withdrawError } = await supabase.functions.invoke(
           'request-custodial-withdrawal',
           {
