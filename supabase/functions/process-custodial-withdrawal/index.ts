@@ -121,8 +121,7 @@ Deno.serve(async (req) => {
       console.log(`[process-custodial-withdrawal] Admin ${adminUser.email} initiating withdrawal processing`);
     }
 
-    const body: WithdrawalRequest = await req.json().catch(() => ({}));
-    const { withdrawal_id, process_pending = false } = body;
+    console.log('[process-custodial-withdrawal] Starting withdrawal processing...');
 
     console.log('[process-custodial-withdrawal] Starting withdrawal processing...');
 
