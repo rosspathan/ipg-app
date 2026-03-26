@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
           .from('custodial_withdrawals')
           .update({
             status: 'failed',
-            error_message: withdrawalError.message,
+            error_message: (withdrawalError as Error)?.message || String(withdrawalError),
             updated_at: new Date().toISOString()
           })
           .eq('id', withdrawal.id);
