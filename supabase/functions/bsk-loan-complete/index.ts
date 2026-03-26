@@ -63,16 +63,16 @@ serve(async (req: Request) => {
       );
     }
 
-    // Get loan details
+    // Get loan details - accept 'active' OR 'closed' (race condition: repay may close before complete runs)
     const { data: loan, error: loanError } = await supabase
       .from('bsk_loans')
       .select('*')
       .eq('id', loan_id)
-      .eq('status', 'active')
+      .in('status', ['active', 'closed'])
       .single();
 
     if (loanError || !loan) {
-      throw new Error('Loan not found or not in active status');
+      throw new Error('Loan not found or not in active/closed status');
     }
 
     // Verify all installments are paid

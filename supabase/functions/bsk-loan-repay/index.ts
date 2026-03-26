@@ -215,6 +215,9 @@ serve(async (req: Request) => {
     console.log(`[REPAY] ✅ Debited ${paymentAmountBsk.toFixed(4)} BSK (tx: ${debitResult})`);
 
     // DECIMAL-SAFE: Update loan paid amount and outstanding
+    // NOTE: Do NOT set status='closed' here — the bsk-loan-complete function handles
+    // closure + payout atomically. Setting closed here caused a race condition where
+    // the completion function would fail to find an 'active' loan and skip payout.
     const newPaidBsk = new Decimal(loan.paid_bsk || 0).plus(paymentAmountBsk);
     const newOutstandingBsk = new Decimal(loan.outstanding_bsk || 0).minus(paymentAmountBsk);
     const isLoanFullyPaid = newOutstandingBsk.lessThanOrEqualTo(new Decimal('0.01'));
@@ -224,8 +227,8 @@ serve(async (req: Request) => {
       .update({
         paid_bsk: newPaidBsk.toNumber(),
         outstanding_bsk: Decimal.max(newOutstandingBsk, new Decimal(0)).toNumber(),
-        status: isLoanFullyPaid ? 'closed' : 'active',
-        closed_at: isLoanFullyPaid ? new Date().toISOString() : null
+        // Do NOT change status here - bsk-loan-complete handles it after payout
+        ...(isLoanFullyPaid ? {} : {})
       })
       .eq('id', loan.id);
 
