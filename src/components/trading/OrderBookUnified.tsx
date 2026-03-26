@@ -103,15 +103,15 @@ const BookRow = memo(({
         style={{ width: `${depthPct}%` }}
       />
       <span className={cn(
-        "relative z-10 text-[11px] font-mono tabular-nums text-left leading-none font-semibold",
+        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none font-bold",
         isAsk ? "text-danger" : "text-success"
       )}>
         {fmtPrice(price, precision)}
       </span>
-      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/50 leading-none">
+      <span className="relative z-10 text-[9px] font-mono tabular-nums text-right text-foreground/45 leading-none">
         {fmtQty(quantity)}
       </span>
-      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/25 leading-none">
+      <span className="relative z-10 text-[8px] font-mono tabular-nums text-right text-foreground/20 leading-none">
         {showCumulative ? fmtQty(cumulative) : fmtQty(quantity * price)}
       </span>
     </div>
