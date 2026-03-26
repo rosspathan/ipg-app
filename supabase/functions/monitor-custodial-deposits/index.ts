@@ -720,37 +720,67 @@ Deno.serve(async (req) => {
 async function findUserByWallet(supabase: any, address: string): Promise<MatchedUser | null> {
   const norm = address.toLowerCase();
 
+  // ═══ AMBIGUITY PROTECTION ═══
+  // Check ALL sources for this address and ensure it maps to exactly ONE user.
+  const matchedUsers = new Map<string, { source: string; address: string }>();
+
   // profiles.wallet_address
-  const { data: p1 } = await supabase
+  const { data: p1All } = await supabase
     .from('profiles')
     .select('user_id, wallet_address')
-    .ilike('wallet_address', norm)
-    .maybeSingle();
-  if (p1 && p1.wallet_address?.toLowerCase() === norm) {
-    return { user_id: p1.user_id, matched_address: p1.wallet_address, match_source: 'profiles_wallet' };
+    .ilike('wallet_address', norm);
+  for (const p of (p1All || [])) {
+    if (p.wallet_address?.toLowerCase() === norm) {
+      matchedUsers.set(p.user_id, { source: 'profiles_wallet', address: p.wallet_address });
+    }
   }
 
   // profiles.bsc_wallet_address
-  const { data: p2 } = await supabase
+  const { data: p2All } = await supabase
     .from('profiles')
     .select('user_id, bsc_wallet_address')
-    .ilike('bsc_wallet_address', norm)
-    .maybeSingle();
-  if (p2 && p2.bsc_wallet_address?.toLowerCase() === norm) {
-    return { user_id: p2.user_id, matched_address: p2.bsc_wallet_address, match_source: 'profiles_bsc' };
+    .ilike('bsc_wallet_address', norm);
+  for (const p of (p2All || [])) {
+    if (p.bsc_wallet_address?.toLowerCase() === norm) {
+      matchedUsers.set(p.user_id, { source: 'profiles_bsc', address: p.bsc_wallet_address });
+    }
   }
 
   // wallets_user table
-  const { data: w } = await supabase
+  const { data: wAll } = await supabase
     .from('wallets_user')
     .select('user_id, address')
-    .ilike('address', norm)
-    .maybeSingle();
-  if (w && w.address?.toLowerCase() === norm) {
-    return { user_id: w.user_id, matched_address: w.address, match_source: 'wallets_user' };
+    .ilike('address', norm);
+  for (const w of (wAll || [])) {
+    if (w.address?.toLowerCase() === norm) {
+      matchedUsers.set(w.user_id, { source: 'wallets_user', address: w.address });
+    }
   }
 
-  return null;
+  // If zero matches, unknown sender
+  if (matchedUsers.size === 0) return null;
+
+  // If multiple distinct users share this address, flag for review
+  if (matchedUsers.size > 1) {
+    const userIds = Array.from(matchedUsers.keys());
+    console.error(`[monitor-custodial-deposits] ⚠️ AMBIGUOUS WALLET: ${norm} matches ${userIds.length} users: ${userIds.join(', ')}`);
+    await logAudit(supabase, 'AMBIGUOUS_WALLET', {
+      address: norm,
+      matched_user_ids: userIds,
+      match_count: userIds.length,
+      message: 'Deposit blocked: wallet address is linked to multiple users. Manual review required.',
+    });
+    // Return null to block auto-crediting — admin must resolve
+    return null;
+  }
+
+  // Exactly one user — safe to proceed
+  const [userId, match] = Array.from(matchedUsers.entries())[0];
+  return {
+    user_id: userId,
+    matched_address: match.address,
+    match_source: match.source as MatchedUser['match_source'],
+  };
 }
 
 async function logAudit(supabase: any, eventType: string, details: any) {
