@@ -53,8 +53,9 @@ const ERC20_ABI = [
 ] as const;
 
 interface WithdrawalRequest {
-  withdrawal_id?: string;  // Process specific withdrawal
-  process_pending?: boolean;  // Process all pending withdrawals
+  withdrawal_id?: string;
+  process_pending?: boolean;
+  scheduled_run?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -68,41 +69,60 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // P0 FIX: Enforce JWT authentication + admin role check
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authorization required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user: adminUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !adminUser) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify caller is admin using has_role RPC
-    const { data: isAdmin } = await supabaseAdmin.rpc('has_role', { 
-      _user_id: adminUser.id, 
-      _role: 'admin' 
-    });
-    if (!isAdmin) {
-      console.error(`[process-custodial-withdrawal] Non-admin user ${adminUser.email} attempted to process withdrawals`);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`[process-custodial-withdrawal] Admin ${adminUser.email} initiating withdrawal processing`);
-
     const body: WithdrawalRequest = await req.json().catch(() => ({}));
-    const { withdrawal_id, process_pending = false } = body;
+    const { withdrawal_id, process_pending = false, scheduled_run = false } = body;
+
+    // ═══════════════════════════════════════════════════
+    // AUTH: Support both admin JWT and cron scheduled runs
+    // ═══════════════════════════════════════════════════
+    const authHeader = req.headers.get('Authorization');
+
+    if (scheduled_run) {
+      // Cron invocations send the anon key — verify it matches our project's anon key
+      const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+      const providedToken = authHeader?.replace('Bearer ', '') ?? '';
+      
+      if (!providedToken || providedToken !== expectedAnonKey) {
+        console.error('[process-custodial-withdrawal] Scheduled run: invalid anon key');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid scheduled run credentials' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('[process-custodial-withdrawal] Authorized via scheduled_run (cron)');
+    } else {
+      // Manual invocations require admin JWT
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Authorization required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: adminUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (authError || !adminUser) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid authentication token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: isAdmin } = await supabaseAdmin.rpc('has_role', { 
+        _user_id: adminUser.id, 
+        _role: 'admin' 
+      });
+      if (!isAdmin) {
+        console.error(`[process-custodial-withdrawal] Non-admin user ${adminUser.email} attempted to process withdrawals`);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log(`[process-custodial-withdrawal] Admin ${adminUser.email} initiating withdrawal processing`);
+    }
+
+    console.log('[process-custodial-withdrawal] Starting withdrawal processing...');
 
     console.log('[process-custodial-withdrawal] Starting withdrawal processing...');
 
@@ -241,7 +261,7 @@ Deno.serve(async (req) => {
           throw new Error('Transaction failed on-chain');
         }
 
-      } catch (withdrawalError: any) {
+      } catch (withdrawalError) {
         console.error(`[process-custodial-withdrawal] Error processing ${withdrawal.id}:`, withdrawalError);
 
         // Mark as failed
@@ -249,7 +269,7 @@ Deno.serve(async (req) => {
           .from('custodial_withdrawals')
           .update({
             status: 'failed',
-            error_message: withdrawalError.message,
+            error_message: (withdrawalError as Error)?.message || String(withdrawalError),
             updated_at: new Date().toISOString()
           })
           .eq('id', withdrawal.id);
@@ -293,7 +313,7 @@ Deno.serve(async (req) => {
         results.push({
           withdrawal_id: withdrawal.id,
           status: 'failed',
-          error: withdrawalError.message,
+          error: (withdrawalError as Error)?.message || String(withdrawalError),
           refunded: true
         });
       }
@@ -313,10 +333,10 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('[process-custodial-withdrawal] Error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: (error as Error)?.message || String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
