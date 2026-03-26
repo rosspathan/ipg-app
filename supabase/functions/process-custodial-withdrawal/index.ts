@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
           throw new Error('Transaction failed on-chain');
         }
 
-      } catch (withdrawalError: any) {
+      } catch (withdrawalError) {
         console.error(`[process-custodial-withdrawal] Error processing ${withdrawal.id}:`, withdrawalError);
 
         // Mark as failed
