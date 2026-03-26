@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, RefreshCw, Copy, ExternalLink, Clock, CheckCircle2, XCircle, AlertTriangle, Radio, ShieldAlert, Hourglass } from 'lucide-react';
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, RefreshCw, Copy, ExternalLink, Clock, CheckCircle2, XCircle, AlertTriangle, Radio, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -52,12 +52,117 @@ function StatusIcon({ status, color }: { status: string; color: string }) {
   return <Clock className={cn(iconClass, 'text-amber-400 animate-pulse')} />;
 }
 
+/** Build a timeline of steps for a transfer based on direction, status, and status_detail */
+function getTimelineSteps(tx: InternalTransfer): { label: string; done: boolean; active: boolean }[] {
+  const isDeposit = tx.direction === 'to_trading';
+  const detail = (tx.status_detail || '').toLowerCase();
+
+  if (isDeposit) {
+    const steps = [
+      { label: 'Deposit detected', done: true, active: false },
+      { label: 'Confirming on-chain', done: false, active: false },
+      { label: 'Credited to trading', done: false, active: false },
+    ];
+    if (tx.status === 'success') {
+      steps[1].done = true;
+      steps[2].done = true;
+    } else if (tx.status === 'pending') {
+      steps[1].active = true;
+    }
+    if (tx.status === 'failed') {
+      steps[1].done = true;
+      steps[2] = { label: 'Failed', done: false, active: false };
+    }
+    return steps;
+  }
+
+  // Withdrawal
+  const steps = [
+    { label: 'Request created', done: true, active: false },
+    { label: 'Queued', done: false, active: false },
+    { label: 'Broadcasting', done: false, active: false },
+    { label: 'Confirming', done: false, active: false },
+    { label: 'Completed', done: false, active: false },
+  ];
+
+  if (tx.status === 'success') {
+    steps.forEach(s => s.done = true);
+    return steps;
+  }
+
+  if (tx.status === 'failed') {
+    steps[1].done = true;
+    const failLabel = detail.includes('refund') ? 'Refunded' : 'Failed';
+    steps[2] = { label: failLabel, done: false, active: false };
+    return steps.slice(0, 3);
+  }
+
+  // Pending — determine which step is active
+  if (detail.includes('liquidity') || detail.includes('solvency') || detail.includes('blocked')) {
+    steps[1] = { label: 'Awaiting liquidity', done: false, active: true };
+    return steps;
+  }
+  if (detail.includes('broadcast') || detail.includes('processing')) {
+    steps[1].done = true;
+    steps[2].active = true;
+    return steps;
+  }
+  if (detail.includes('confirm')) {
+    steps[1].done = true;
+    steps[2].done = true;
+    steps[3].active = true;
+    return steps;
+  }
+  if (detail.includes('review')) {
+    steps[1] = { label: 'Needs review', done: false, active: true };
+    return steps;
+  }
+
+  // Default: queued
+  steps[1].active = true;
+  return steps;
+}
+
+function Timeline({ steps }: { steps: { label: string; done: boolean; active: boolean }[] }) {
+  return (
+    <div className="flex items-center gap-0 py-2 overflow-x-auto">
+      {steps.map((step, i) => (
+        <div key={i} className="flex items-center">
+          {i > 0 && (
+            <div className={cn(
+              'w-4 h-0.5 shrink-0',
+              step.done ? 'bg-emerald-500/60' : 'bg-border/40'
+            )} />
+          )}
+          <div className="flex flex-col items-center gap-0.5 shrink-0">
+            <div className={cn(
+              'w-2.5 h-2.5 rounded-full border-2 shrink-0',
+              step.done ? 'bg-emerald-500 border-emerald-500' :
+              step.active ? 'bg-transparent border-amber-400 animate-pulse' :
+              'bg-transparent border-border/40'
+            )} />
+            <span className={cn(
+              'text-[9px] leading-tight text-center whitespace-nowrap',
+              step.done ? 'text-emerald-400' :
+              step.active ? 'text-amber-400' :
+              'text-muted-foreground/50'
+            )}>
+              {step.label}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TransferCard({ tx }: { tx: InternalTransfer }) {
   const [expanded, setExpanded] = useState(false);
   const { toast } = useToast();
   const isDeposit = tx.direction === 'to_trading';
   const display = getTransferDisplayStatus(tx);
   const colors = colorMap[display.color] || colorMap.amber;
+  const timelineSteps = getTimelineSteps(tx);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -109,6 +214,11 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
         <p className="text-[11px] text-muted-foreground italic">{display.message}</p>
       </div>
 
+      {/* Timeline */}
+      <div className="px-3.5 pb-1">
+        <Timeline steps={timelineSteps} />
+      </div>
+
       {/* Expanded details */}
       {expanded && (
         <div className="px-3.5 pb-3.5 pt-1 border-t border-border/30 space-y-2">
@@ -118,7 +228,6 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
             <DetailRow label="Balance After" value={`${Number(tx.balance_after).toFixed(6)} ${tx.asset_symbol}`} />
           )}
 
-          {/* TX Hash with explorer link */}
           {tx.tx_hash && (
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">TX Hash</span>
@@ -139,7 +248,6 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
             </div>
           )}
 
-          {/* Reference ID */}
           {tx.reference_id && (
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Ref ID</span>
@@ -152,24 +260,15 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
             </div>
           )}
 
-          {/* Timestamps */}
-          <DetailRow
-            label="Created"
-            value={format(new Date(tx.created_at), 'MMM d, yyyy HH:mm:ss')}
-          />
+          <DetailRow label="Created" value={format(new Date(tx.created_at), 'MMM d, yyyy HH:mm:ss')} />
           {tx.updated_at && tx.updated_at !== tx.created_at && (
-            <DetailRow
-              label="Last Updated"
-              value={format(new Date(tx.updated_at), 'MMM d, yyyy HH:mm:ss')}
-            />
+            <DetailRow label="Last Updated" value={format(new Date(tx.updated_at), 'MMM d, yyyy HH:mm:ss')} />
           )}
 
-          {/* Status detail — show raw for transparency */}
           {tx.status_detail && (
             <DetailRow label="Status Detail" value={tx.status_detail} />
           )}
 
-          {/* ID */}
           <div className="flex items-center justify-between pt-1 border-t border-border/20">
             <span className="text-[10px] text-muted-foreground">ID</span>
             <div className="flex items-center gap-1.5">
@@ -201,7 +300,6 @@ export default function InternalTransferHistoryPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
         <div className="flex items-center gap-3 px-4 py-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
@@ -222,7 +320,6 @@ export default function InternalTransferHistoryPage() {
         </p>
       </div>
 
-      {/* Content */}
       <div className="p-4 space-y-2">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">

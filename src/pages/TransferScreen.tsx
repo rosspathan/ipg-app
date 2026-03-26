@@ -440,10 +440,13 @@ const TransferScreen = () => {
           throw new Error(withdrawResult?.error || withdrawError?.message || "Withdrawal request failed");
         }
 
-        // Record in internal_balance_transfers for history
+        // Record in internal_balance_transfers for history with liquidity-aware status
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const refId = `IBT-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+          const liquidityStatus = withdrawResult.liquidity_status || 'unknown';
+          const ibtStatusDetail = withdrawResult.status_detail || 'Queued for hot wallet processing';
+
           await supabase.from('internal_balance_transfers').insert({
             user_id: user.id,
             asset_id: currentTradingAsset.assetId,
@@ -453,7 +456,7 @@ const TransferScreen = () => {
             fee: withdrawResult.fee || 0,
             net_amount: amountNum - (withdrawResult.fee || 0),
             status: 'pending',
-            status_detail: 'Queued for hot wallet processing',
+            status_detail: ibtStatusDetail,
             linked_withdrawal_id: withdrawResult.withdrawal_id || null,
             reference_id: refId,
             notes: withdrawResult.withdrawal_id ? `withdrawal_id:${withdrawResult.withdrawal_id}` : undefined,
@@ -463,8 +466,11 @@ const TransferScreen = () => {
         queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
 
         toast({
-          title: "Withdrawal Submitted",
+          title: withdrawResult.liquidity_status === 'awaiting_liquidity' 
+            ? "Withdrawal Queued" 
+            : "Withdrawal Submitted",
           description: withdrawResult.message || `${selectedAsset} will be sent to your wallet shortly.`,
+          variant: withdrawResult.liquidity_status === 'awaiting_liquidity' ? 'default' : 'default',
         });
 
         setShowSuccess(true);

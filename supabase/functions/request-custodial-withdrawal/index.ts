@@ -3,6 +3,8 @@
  * 
  * Called by users to request a withdrawal from their trading balance.
  * Uses atomic RPC with FOR UPDATE row locking to prevent race conditions.
+ * 
+ * NEW: On-chain hot wallet liquidity validation before accepting.
  * The actual on-chain transfer is handled by process-custodial-withdrawal.
  */
 
@@ -16,8 +18,53 @@ const corsHeaders = {
 interface WithdrawalRequest {
   asset_symbol: string;
   amount: number;
-  // SECURITY: to_address is intentionally NOT accepted from the request body.
-  // Destination is ALWAYS derived server-side from the user's registered wallet.
+}
+
+// BSC RPC endpoints for on-chain balance checks
+const BSC_RPC_URLS = [
+  'https://bsc-rpc.publicnode.com',
+  'https://bsc-dataseed1.binance.org',
+  'https://bsc-dataseed2.binance.org',
+];
+
+// ERC20 balanceOf(address) selector
+const BALANCE_OF_SELECTOR = '0x70a08231';
+
+// Minimum gas reserve to keep in hot wallet (BNB)
+const MIN_GAS_RESERVE_BNB = 0.01;
+
+async function rpcCall(url: string, method: string, params: any[]): Promise<any> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  if (!res.ok) throw new Error(`RPC ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.result;
+}
+
+async function tryRpc(method: string, params: any[]): Promise<any> {
+  for (const url of BSC_RPC_URLS) {
+    try { return await rpcCall(url, method, params); } catch { continue; }
+  }
+  throw new Error('All BSC RPC endpoints failed');
+}
+
+async function getOnChainTokenBalance(contractAddress: string, walletAddress: string): Promise<bigint> {
+  const paddedAddr = '0x000000000000000000000000' + walletAddress.slice(2).toLowerCase();
+  const data = BALANCE_OF_SELECTOR + paddedAddr.slice(2);
+  const result = await tryRpc('eth_call', [
+    { to: contractAddress, data },
+    'latest',
+  ]);
+  return BigInt(result || '0x0');
+}
+
+async function getBnbBalance(walletAddress: string): Promise<bigint> {
+  const result = await tryRpc('eth_getBalance', [walletAddress, 'latest']);
+  return BigInt(result || '0x0');
 }
 
 Deno.serve(async (req) => {
@@ -54,7 +101,6 @@ Deno.serve(async (req) => {
 
     const body: WithdrawalRequest = await req.json();
     const { asset_symbol, amount } = body;
-    // SECURITY: Ignore any to_address from the request body — always derive server-side
 
     console.log(`[request-custodial-withdrawal] User ${user.id} requesting ${amount} ${asset_symbol}`);
 
@@ -69,7 +115,7 @@ Deno.serve(async (req) => {
     // Get asset
     const { data: asset, error: assetError } = await adminClient
       .from('assets')
-      .select('id, symbol, withdraw_enabled, min_withdraw_amount, max_withdraw_amount, withdraw_fee')
+      .select('id, symbol, contract_address, decimals, withdraw_enabled, min_withdraw_amount, max_withdraw_amount, withdraw_fee')
       .eq('symbol', asset_symbol)
       .eq('is_active', true)
       .single();
@@ -100,6 +146,81 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: false, error: `Maximum withdrawal is ${asset.max_withdraw_amount} ${asset_symbol}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // ═══════════════════════════════════════════════════
+    // CIRCUIT BREAKER CHECK
+    // ═══════════════════════════════════════════════════
+    const { data: cbRow } = await adminClient
+      .from('withdrawal_circuit_breaker')
+      .select('is_frozen')
+      .eq('asset_symbol', asset_symbol)
+      .eq('is_frozen', true)
+      .maybeSingle();
+
+    if (cbRow?.is_frozen) {
+      console.warn(`[request-custodial-withdrawal] Circuit breaker FROZEN for ${asset_symbol}`);
+      return new Response(
+        JSON.stringify({ success: false, error: `Withdrawals for ${asset_symbol} are temporarily frozen for safety. Please try again later.` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    // ON-CHAIN HOT WALLET LIQUIDITY VALIDATION
+    // ═══════════════════════════════════════════════════
+    const { data: hotWallet } = await adminClient
+      .from('platform_hot_wallet')
+      .select('address')
+      .eq('is_active', true)
+      .eq('chain', 'BSC')
+      .eq('label', 'Trading Hot Wallet')
+      .maybeSingle();
+
+    let liquidityStatus: 'sufficient' | 'awaiting_liquidity' | 'unknown' = 'unknown';
+    let onChainBalance = 0;
+    let pendingOutbound = 0;
+    let availableLiquidity = 0;
+
+    if (hotWallet?.address && asset.contract_address) {
+      try {
+        // 1. Get real on-chain token balance
+        const rawBalance = await getOnChainTokenBalance(asset.contract_address, hotWallet.address);
+        const decimals = asset.decimals || 18;
+        onChainBalance = Number(rawBalance) / Math.pow(10, decimals);
+
+        // 2. Get pending outbound obligations
+        const { data: pendingData } = await adminClient
+          .from('custodial_withdrawals')
+          .select('amount')
+          .eq('status', 'pending')
+          .in('asset_id', [asset.id]);
+
+        pendingOutbound = (pendingData || []).reduce((sum: number, w: any) => sum + Number(w.amount || 0), 0);
+
+        // 3. Calculate available liquidity
+        availableLiquidity = onChainBalance - pendingOutbound;
+
+        // 4. Check BNB gas reserve
+        const bnbBalance = await getBnbBalance(hotWallet.address);
+        const bnbNum = Number(bnbBalance) / 1e18;
+        const hasGas = bnbNum >= MIN_GAS_RESERVE_BNB;
+
+        console.log(`[request-custodial-withdrawal] Liquidity check: on-chain=${onChainBalance.toFixed(4)} ${asset_symbol}, pending=${pendingOutbound.toFixed(4)}, available=${availableLiquidity.toFixed(4)}, gas=${bnbNum.toFixed(4)} BNB`);
+
+        if (!hasGas) {
+          liquidityStatus = 'awaiting_liquidity';
+          console.warn(`[request-custodial-withdrawal] Insufficient gas: ${bnbNum.toFixed(6)} BNB < ${MIN_GAS_RESERVE_BNB}`);
+        } else if (availableLiquidity < amount) {
+          liquidityStatus = 'awaiting_liquidity';
+          console.warn(`[request-custodial-withdrawal] Insufficient liquidity: ${availableLiquidity.toFixed(4)} < ${amount} ${asset_symbol}`);
+        } else {
+          liquidityStatus = 'sufficient';
+        }
+      } catch (rpcErr: any) {
+        console.warn(`[request-custodial-withdrawal] RPC liquidity check failed (proceeding with queue):`, rpcErr?.message);
+        liquidityStatus = 'unknown';
+      }
     }
 
     // SECURITY: Always derive destination from the user's registered wallet — never from request body
@@ -140,7 +261,7 @@ Deno.serve(async (req) => {
 
     console.log(`[request-custodial-withdrawal] Destination: ${destinationAddress}`);
 
-    // #8: Withdrawal Address Whitelist — check if address is allowlisted and activated
+    // Withdrawal Address Whitelist — check if address is allowlisted and activated
     const { data: allowlistEntries, error: allowlistError } = await adminClient
       .from('allowlist_addresses')
       .select('id, address, enabled, activated_at, activation_delay_hours, created_at')
@@ -152,7 +273,6 @@ Deno.serve(async (req) => {
       console.error('[request-custodial-withdrawal] Allowlist check error:', allowlistError);
     }
 
-    // If user has ANY allowlisted addresses, the withdrawal MUST go to one of them
     if (allowlistEntries && allowlistEntries.length > 0) {
       const matchedEntry = allowlistEntries.find(
         (e) => e.address.toLowerCase() === destinationAddress!.toLowerCase()
@@ -165,12 +285,10 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check 24-hour activation delay
       const activatedAt = matchedEntry.activated_at ? new Date(matchedEntry.activated_at) : null;
       const delayHours = matchedEntry.activation_delay_hours ?? 24;
 
       if (!activatedAt) {
-        // Address was added but not yet activated — set activated_at now and enforce delay
         await adminClient
           .from('allowlist_addresses')
           .update({ activated_at: new Date().toISOString() })
@@ -225,7 +343,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[request-custodial-withdrawal] ✓ Created withdrawal ${result.withdrawal_id}`);
+    console.log(`[request-custodial-withdrawal] ✓ Created withdrawal ${result.withdrawal_id} (liquidity: ${liquidityStatus})`);
+
+    // Determine user-facing status detail based on liquidity
+    let statusDetail = 'Queued for hot wallet processing';
+    let userMessage = 'Withdrawal request submitted. It will be processed shortly.';
+
+    if (liquidityStatus === 'awaiting_liquidity') {
+      statusDetail = 'Awaiting hot wallet liquidity';
+      userMessage = `Withdrawal accepted but temporarily queued — the hot wallet is being replenished for ${asset_symbol}. You will be notified when it is sent.`;
+    }
+
+    // Update the IBT status_detail if the withdrawal was created
+    if (result.withdrawal_id && liquidityStatus === 'awaiting_liquidity') {
+      // The IBT is created by the frontend, but we also update via trigger sync.
+      // Log this for admin visibility
+      await adminClient.from('admin_notifications').insert({
+        type: 'withdrawal_liquidity',
+        title: `Withdrawal queued: awaiting ${asset_symbol} liquidity`,
+        message: `User ${user.id} withdrawal of ${amount} ${asset_symbol} accepted but hot wallet has insufficient liquidity (available: ${availableLiquidity.toFixed(4)}, pending: ${pendingOutbound.toFixed(4)})`,
+        priority: 'high',
+        metadata: {
+          user_id: user.id,
+          withdrawal_id: result.withdrawal_id,
+          asset_symbol,
+          amount,
+          on_chain_balance: onChainBalance,
+          pending_outbound: pendingOutbound,
+          available_liquidity: availableLiquidity,
+        },
+        related_user_id: user.id,
+        related_resource_id: result.withdrawal_id,
+      });
+    }
 
     return new Response(
       JSON.stringify({
@@ -235,7 +385,9 @@ Deno.serve(async (req) => {
         fee: result.fee,
         to_address: destinationAddress,
         status: 'pending',
-        message: 'Withdrawal request submitted. It will be processed shortly.'
+        liquidity_status: liquidityStatus,
+        status_detail: statusDetail,
+        message: userMessage,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
