@@ -140,6 +140,7 @@ Deno.serve(async (req) => {
 
     // Execute atomic transfer with FOR UPDATE row locking
     // For to_trading: pass tx_hash for custodial_deposits verification
+    // For to_wallet: pass user wallet address so withdrawal record is created atomically
     const { data: result, error: rpcError } = await admin.rpc(
       "execute_internal_balance_transfer",
       {
@@ -148,6 +149,7 @@ Deno.serve(async (req) => {
         p_amount: safeAmount,
         p_direction: rpcDirection,
         p_tx_hash: direction === "to_trading" ? tx_hash.trim() : null,
+        p_to_address: direction === "to_wallet" ? userWalletAddress : null,
       }
     );
 
