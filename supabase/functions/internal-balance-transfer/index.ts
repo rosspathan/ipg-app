@@ -140,6 +140,7 @@ Deno.serve(async (req) => {
 
     // Execute atomic transfer with FOR UPDATE row locking
     // For to_trading: pass tx_hash for custodial_deposits verification
+    // For to_wallet: pass user wallet address so withdrawal record is created atomically
     const { data: result, error: rpcError } = await admin.rpc(
       "execute_internal_balance_transfer",
       {
@@ -148,6 +149,7 @@ Deno.serve(async (req) => {
         p_amount: safeAmount,
         p_direction: rpcDirection,
         p_tx_hash: direction === "to_trading" ? tx_hash.trim() : null,
+        p_to_address: direction === "to_wallet" ? userWalletAddress : null,
       }
     );
 
@@ -183,39 +185,10 @@ Deno.serve(async (req) => {
 
     console.log(`[internal-balance-transfer] ✓ ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}`);
 
-    // ── For "to_wallet": create a withdrawal record so process-pending-withdrawals sends tokens on-chain ──
-    if (direction === "to_wallet" && userWalletAddress) {
-      const { data: withdrawal, error: wdErr } = await admin
-        .from("withdrawals")
-        .insert({
-          user_id: user.id,
-          asset_id: asset_id,
-          amount: safeAmount,
-          fee: 0,
-          net_amount: safeAmount,
-          to_address: userWalletAddress,
-          network: "BEP20",
-          status: "processing",
-        })
-        .select("id")
-        .single();
-
-      if (wdErr) {
-        console.error("[internal-balance-transfer] WARNING: Failed to create withdrawal record:", wdErr);
-        await admin.from("admin_notifications").insert({
-          type: "withdrawal_creation_failed",
-          priority: "critical",
-          title: "Withdrawal Record Creation Failed",
-          message: `User ${user.id} transferred ${safeAmount} ${asset.symbol} to_wallet but withdrawal record failed: ${wdErr.message}. Manual intervention needed.`,
-        });
-      } else {
-        await admin
-          .from("internal_balance_transfers")
-          .update({ notes: `withdrawal_id:${withdrawal.id}` })
-          .eq("id", result.transfer_id);
-
-        console.log(`[internal-balance-transfer] ✓ Created withdrawal ${withdrawal.id} for on-chain processing`);
-      }
+    // ── Withdrawal record is now created atomically inside the RPC (Fix 3) ──
+    // No separate withdrawal insert needed here. The RPC returns withdrawal_id if created.
+    if (direction === "to_wallet" && result?.withdrawal_id) {
+      console.log(`[internal-balance-transfer] ✓ Atomic withdrawal ${result.withdrawal_id} created for on-chain processing`);
     }
 
     return new Response(

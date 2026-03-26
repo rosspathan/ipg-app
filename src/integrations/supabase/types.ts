@@ -13974,6 +13974,7 @@ export type Database = {
           p_amount: number
           p_asset_id: string
           p_direction: string
+          p_to_address?: string
           p_tx_hash?: string
           p_user_id: string
         }
