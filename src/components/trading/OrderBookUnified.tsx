@@ -225,10 +225,10 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       </div>
 
       {/* Column Header */}
-      <div className="grid grid-cols-3 px-2 py-1 text-[8px] font-bold text-muted-foreground/35 uppercase tracking-widest">
+      <div className="grid grid-cols-3 px-2 py-0.5 text-[7px] font-bold text-muted-foreground/30 uppercase tracking-widest">
         <span>Price</span>
         <span className="text-right">Qty</span>
-        <span className="text-right">{showCumulative ? 'Cum' : 'Total'}</span>
+        <span className="text-right">{showCumulative ? 'Cum' : 'Tot'}</span>
       </div>
 
       {/* Asks */}
