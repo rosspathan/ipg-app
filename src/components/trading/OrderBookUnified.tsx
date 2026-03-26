@@ -93,6 +93,9 @@ const BookRow = memo(({
         "relative grid grid-cols-3 items-center cursor-pointer active:bg-muted/30 transition-colors",
         isDust && "opacity-30"
       )}
+      style={{ height: ROW_H, padding: '0 6px' }}
+    >
+
       style={{ height: ROW_H, padding: '0 8px' }}
     >
       <div

@@ -294,8 +294,8 @@ function TradingPairPageContent() {
 
         {/* ═══ TRADE + ORDER BOOK ═══ */}
         <div className="flex flex-row" style={{ minHeight: 400 }}>
-          {/* Order Form - 52% */}
-          <div className="flex flex-col px-3 py-2 min-w-0" style={{ flex: '0 0 52%' }}>
+          {/* Order Form - 58% */}
+          <div className="flex flex-col px-3 py-2 min-w-0" style={{ flex: '0 0 58%' }}>
             <OrderFormPro
               baseCurrency={pair.baseAsset}
               quoteCurrency={pair.quoteAsset}
