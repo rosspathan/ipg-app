@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Search, Loader2, Star, Bell, X } from "lucide-react";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
+import { ArrowLeft, ChevronDown, Search, Loader2, Star, BarChart2 } from "lucide-react";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookUnified } from "@/components/trading/OrderBookUnified";
 import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
 import { TradingHistoryTabs } from "@/components/trading/TradingHistoryTabs";
-import { RecentTradesTicker } from "@/components/trading/RecentTradesTicker";
-import { useRecentTrades } from "@/hooks/useRecentTrades";
 import { OrderDetailsDrawer } from "@/components/trading/OrderDetailsDrawer";
 import { AdminMarketMakerControls } from "@/components/trading/AdminMarketMakerControls";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
@@ -21,18 +19,11 @@ import { GhostLockWarning } from "@/components/trading/GhostLockWarning";
 import { useToast } from "@/hooks/use-toast";
 import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
 import { useMarketStore } from "@/hooks/useMarketStore";
+import { useRecentTrades } from "@/hooks/useRecentTrades";
 import { cn } from "@/lib/utils";
-import { useOrientation } from "@/hooks/useOrientation";
-import { useWindowSize } from "@/hooks/useWindowSize";
 import { ComplianceGate } from "@/components/compliance/ComplianceGate";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
 export function TradingPairPage() {
@@ -121,7 +112,6 @@ function TradingPairPageContent() {
 
   if (!pair) return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading…</div>;
 
-  // ─── Derive last trade price (truthful) ───
   const lastTradePrice = recentTrades.length > 0 ? recentTrades[0].price : pair.price;
 
   const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
@@ -164,82 +154,137 @@ function TradingPairPageContent() {
   };
 
   const formatPrice = (p: number) => p >= 1 ? p.toFixed(2) : p.toFixed(6);
-  const formatVol = (v: number) => v >= 1e6 ? `${(v/1e6).toFixed(2)}M` : v >= 1e3 ? `${(v/1e3).toFixed(2)}K` : v.toFixed(2);
+  const formatVol = (v: number) => v >= 1e6 ? `${(v/1e6).toFixed(2)}M` : v >= 1e3 ? `${(v/1e3).toFixed(1)}K` : v.toFixed(2);
   const isPositive = pair.change24h >= 0;
+
+  const toggleFavorite = () => {
+    const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]');
+    const nf = isFavorite ? favs.filter((f: string) => f !== urlSymbol) : [...favs, urlSymbol];
+    localStorage.setItem('favorite-pairs', JSON.stringify(nf));
+    setIsFavorite(!isFavorite);
+  };
 
   return (
     <ComplianceGate requireAgeVerification requireTermsAcceptance requireRiskDisclosure>
       <div className="flex flex-col bg-background min-h-screen">
-        {/* ═══ Header ═══ */}
-        <div className="bg-background border-b border-border/30">
-          <div className="flex items-center h-[36px] px-2">
-            <button onClick={() => navigate("/app/trade")} className="p-1 -ml-0.5 mr-1 active:bg-muted rounded">
-              <ArrowLeft className="h-3.5 w-3.5 text-muted-foreground" />
+        {/* ═══ HEADER ═══ */}
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/20">
+          <div className="flex items-center h-11 px-3 gap-2">
+            {/* Back button - proper 44x44 touch target */}
+            <button
+              onClick={() => navigate("/app/trade")}
+              className="flex items-center justify-center w-9 h-9 -ml-1 rounded-lg active:bg-muted/60 transition-colors"
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-[18px] w-[18px] text-foreground" />
             </button>
 
-            <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-0.5 mr-2 active:bg-muted/40 rounded px-1 py-0.5">
-                  <span className="text-foreground font-bold text-[13px] tracking-tight">{pair.symbol}</span>
-                  <ChevronDown className={cn("h-2.5 w-2.5 text-muted-foreground/60", pairPickerOpen && "rotate-180")} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 bg-popover border-border p-1.5 shadow-2xl rounded-lg z-50">
-                <div className="relative mb-1.5">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                  <Input placeholder="Search…" value={pairSearch} onChange={(e) => setPairSearch(e.target.value)}
-                    className="pl-7 h-7 bg-background border-border text-foreground rounded text-[10px]" autoFocus />
-                </div>
-                <div className="max-h-56 overflow-y-auto space-y-0.5">
-                  {sortedPairs.map((p) => (
-                    <DropdownMenuItem key={p.symbol} onClick={() => { navigate(`/app/trade/${p.symbol.replace('/','-')}`); setPairPickerOpen(false); setPairSearch(""); }}
-                      className={cn("flex items-center justify-between px-2 py-1 rounded cursor-pointer text-[10px]", p.symbol === pair.symbol && "bg-muted/40")}>
-                      <span className="font-semibold text-foreground">{p.symbol}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-muted-foreground font-mono text-[9px]">{formatPrice(p.price)}</span>
-                        <span className={cn("text-[8px] font-medium px-1 rounded-sm", p.change24h >= 0 ? "text-success bg-success/8" : "text-danger bg-danger/8")}>
-                          {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Pair selector */}
+            <div className="relative">
+              <button
+                onClick={() => setPairPickerOpen(!pairPickerOpen)}
+                className="flex items-center gap-1 px-1.5 py-1 rounded-md active:bg-muted/40 transition-colors"
+              >
+                <span className="text-[15px] font-bold text-foreground tracking-tight">{pair.baseAsset}<span className="text-muted-foreground/60">/{pair.quoteAsset}</span></span>
+                <ChevronDown className={cn("h-3 w-3 text-muted-foreground/50 transition-transform", pairPickerOpen && "rotate-180")} />
+              </button>
 
-            <div className="flex items-baseline gap-1 flex-1 min-w-0">
-              <span className={cn("text-[14px] font-bold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
+              {/* Pair picker dropdown */}
+              {pairPickerOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setPairPickerOpen(false)} />
+                  <div className="absolute left-0 top-full mt-1 w-72 bg-card border border-border/40 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="p-2 border-b border-border/20">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                        <Input
+                          placeholder="Search pairs…"
+                          value={pairSearch}
+                          onChange={(e) => setPairSearch(e.target.value)}
+                          className="pl-8 h-8 bg-muted/30 border-border/30 text-sm rounded-lg"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto py-1">
+                      {sortedPairs.map((p) => (
+                        <button
+                          key={p.symbol}
+                          onClick={() => { navigate(`/app/trade/${p.symbol.replace('/', '-')}`); setPairPickerOpen(false); setPairSearch(""); }}
+                          className={cn(
+                            "w-full flex items-center justify-between px-3 py-2 text-left transition-colors",
+                            p.symbol === pair.symbol ? "bg-accent/5" : "hover:bg-muted/30 active:bg-muted/50"
+                          )}
+                        >
+                          <span className="text-[13px] font-semibold text-foreground">{p.symbol}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[12px] font-mono tabular-nums text-muted-foreground">{formatPrice(p.price)}</span>
+                            <span className={cn(
+                              "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                              p.change24h >= 0 ? "text-success bg-success/10" : "text-danger bg-danger/10"
+                            )}>
+                              {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Price + change */}
+            <div className="flex items-baseline gap-1.5 mr-1">
+              <span className={cn("text-[15px] font-bold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
                 {formatPrice(lastTradePrice)}
               </span>
-              <span className={cn("text-[9px] font-semibold px-1 py-[0.5px] rounded-sm", isPositive ? "text-success bg-success/8" : "text-danger bg-danger/8")}>
+              <span className={cn(
+                "text-[10px] font-semibold px-1 py-[1px] rounded",
+                isPositive ? "text-success bg-success/10" : "text-danger bg-danger/10"
+              )}>
                 {isPositive ? "+" : ""}{pair.change24h.toFixed(2)}%
               </span>
             </div>
 
-            <div className="flex items-center gap-0">
-              <button onClick={() => { const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]'); const nf = isFavorite ? favs.filter((f:string) => f !== urlSymbol) : [...favs, urlSymbol]; localStorage.setItem('favorite-pairs', JSON.stringify(nf)); setIsFavorite(!isFavorite); }}
-                className="p-1 active:bg-muted rounded">
-                <Star className={cn("h-3 w-3", isFavorite ? "fill-warning text-warning" : "text-muted-foreground/40")} />
-              </button>
-              <AdminMarketMakerControls isAdmin={isAdmin} />
-            </div>
+            {/* Actions */}
+            <button onClick={toggleFavorite} className="flex items-center justify-center w-8 h-8 rounded-lg active:bg-muted/60">
+              <Star className={cn("h-4 w-4", isFavorite ? "fill-warning text-warning" : "text-muted-foreground/40")} />
+            </button>
+            <AdminMarketMakerControls isAdmin={isAdmin} />
           </div>
 
-          {/* Mini stats */}
-          <div className="flex items-center gap-3 px-2 pb-1 text-[8px]">
-            <div><span className="text-muted-foreground/50">H </span><span className="font-mono tabular-nums text-foreground/60">{formatPrice(pair.high24h || 0)}</span></div>
-            <div><span className="text-muted-foreground/50">L </span><span className="font-mono tabular-nums text-foreground/60">{formatPrice(pair.low24h || 0)}</span></div>
-            <div><span className="text-muted-foreground/50">Vol </span><span className="font-mono tabular-nums text-foreground/60">{formatVol(pair.volume24h || 0)}</span></div>
-            <div><span className="text-muted-foreground/50">Bid </span><span className="font-mono tabular-nums text-success/70">{formatPrice(bestBidPrice)}</span></div>
-            <div><span className="text-muted-foreground/50">Ask </span><span className="font-mono tabular-nums text-danger/70">{formatPrice(bestAskPrice)}</span></div>
+          {/* Stats strip */}
+          <div className="flex items-center gap-4 px-3 pb-1.5 overflow-x-auto no-scrollbar">
+            {[
+              { label: "24h High", value: formatPrice(pair.high24h || 0) },
+              { label: "24h Low", value: formatPrice(pair.low24h || 0) },
+              { label: "Vol", value: formatVol(pair.volume24h || 0) },
+              { label: "Bid", value: formatPrice(bestBidPrice), color: "text-success/70" },
+              { label: "Ask", value: formatPrice(bestAskPrice), color: "text-danger/70" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="flex items-center gap-1 whitespace-nowrap">
+                <span className="text-[9px] text-muted-foreground/50 font-medium">{label}</span>
+                <span className={cn("text-[10px] font-mono tabular-nums", color || "text-foreground/60")}>{value}</span>
+              </div>
+            ))}
           </div>
-        </div>
+        </header>
 
         {/* Chart toggle */}
-        <button onClick={() => setChartOpen(!chartOpen)}
-          className="flex items-center gap-1 text-[9px] text-muted-foreground/50 px-2 py-[3px] active:text-foreground/60 border-b border-border/20">
-          <span className="font-medium">Chart</span>
-          <ChevronDown className={cn("h-2 w-2 transition-transform", chartOpen && "rotate-180")} />
+        <button
+          onClick={() => setChartOpen(!chartOpen)}
+          className={cn(
+            "flex items-center justify-center gap-1.5 h-7 text-[10px] font-medium border-b border-border/20 transition-colors",
+            chartOpen ? "text-accent bg-accent/5" : "text-muted-foreground/50 active:text-foreground/60"
+          )}
+        >
+          <BarChart2 className="h-3 w-3" />
+          <span>Chart</span>
+          <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", chartOpen && "rotate-180")} />
         </button>
         {chartOpen && (
           <div className="px-1.5 pb-1.5 border-b border-border/20">
@@ -247,10 +292,10 @@ function TradingPairPageContent() {
           </div>
         )}
 
-        {/* ═══ Trade + Order Book ═══ */}
-        <div className="flex flex-row gap-0" style={{ minHeight: 380 }}>
-          {/* Order Form */}
-          <div className="flex flex-col px-2 py-1.5 min-w-0" style={{ flex: '0 0 50%' }}>
+        {/* ═══ TRADE + ORDER BOOK ═══ */}
+        <div className="flex flex-row" style={{ minHeight: 400 }}>
+          {/* Order Form - 52% */}
+          <div className="flex flex-col px-3 py-2 min-w-0" style={{ flex: '0 0 52%' }}>
             <OrderFormPro
               baseCurrency={pair.baseAsset}
               quoteCurrency={pair.quoteAsset}
@@ -268,8 +313,8 @@ function TradingPairPageContent() {
               bids={bookBids}
             />
           </div>
-          {/* Order Book */}
-          <div className="flex flex-col min-w-0 py-1 pr-1" style={{ flex: '1 1 0%' }}>
+          {/* Order Book - 48% */}
+          <div className="flex flex-col min-w-0 py-1 pr-1.5 border-l border-border/20" style={{ flex: '1 1 0%' }}>
             <OrderBookUnified
               asks={bookAsks}
               bids={bookBids}
@@ -288,8 +333,8 @@ function TradingPairPageContent() {
 
         <GhostLockWarning />
 
-        {/* History */}
-        <div className="mt-1 px-1.5 pb-[max(env(safe-area-inset-bottom,0px),12px)]">
+        {/* History Tabs */}
+        <div className="mt-0.5 px-2 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
           <TradingHistoryTabs
             symbol={urlSymbol}
             onOrderDetails={setSelectedOrderId}
