@@ -244,7 +244,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const estFee = total * 0.005;
 
   return (
-    <div className="flex flex-col gap-3 h-full">
+    <div className="flex flex-col gap-3.5 h-full">
       {/* ── Buy / Sell Toggle ── */}
       <div className="flex h-[38px] rounded-xl overflow-hidden bg-[hsl(230,20%,10%)] p-[3px]">
         <button

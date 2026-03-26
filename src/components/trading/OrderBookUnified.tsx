@@ -251,7 +251,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* ── Central Price ── */}
       <div
         className={cn(
-          "flex items-center justify-between px-2 h-[36px] border-y border-[hsl(230,20%,12%)]/40 transition-colors duration-700 cursor-pointer",
+          "flex items-center justify-between px-2 h-[30px] border-y border-[hsl(230,20%,12%)]/40 transition-colors duration-700 cursor-pointer",
           flashDir === 'up' && "bg-success/8",
           flashDir === 'down' && "bg-danger/8",
           !flashDir && "bg-[hsl(230,30%,6%)]"
