@@ -218,8 +218,17 @@ Deno.serve(async (req) => {
           liquidityStatus = 'sufficient';
         }
       } catch (rpcErr: any) {
-        console.warn(`[request-custodial-withdrawal] RPC liquidity check failed (proceeding with queue):`, rpcErr?.message);
-        liquidityStatus = 'unknown';
+        console.error(`[request-custodial-withdrawal] RPC liquidity check FAILED — blocking submission:`, rpcErr?.message);
+        // HARDENED: Do NOT allow withdrawal when on-chain balance cannot be verified.
+        // This prevents misleading confidence during RPC outages.
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Unable to verify hot wallet liquidity for ${asset_symbol}. Please try again in a few minutes.`,
+            reason: 'rpc_unavailable'
+          }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
 
