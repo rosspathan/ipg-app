@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('[process-custodial-withdrawal] Error:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
