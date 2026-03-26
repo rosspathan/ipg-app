@@ -13195,6 +13195,48 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_circuit_breaker: {
+        Row: {
+          asset_symbol: string
+          created_at: string
+          drift_amount: number | null
+          drift_percent: number | null
+          frozen_at: string | null
+          frozen_reason: string | null
+          id: string
+          is_frozen: boolean
+          unfrozen_at: string | null
+          unfrozen_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_symbol: string
+          created_at?: string
+          drift_amount?: number | null
+          drift_percent?: number | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          id?: string
+          is_frozen?: boolean
+          unfrozen_at?: string | null
+          unfrozen_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_symbol?: string
+          created_at?: string
+          drift_amount?: number | null
+          drift_percent?: number | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          id?: string
+          is_frozen?: boolean
+          unfrozen_at?: string | null
+          unfrozen_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       withdrawal_rate_limits: {
         Row: {
           amount_usd: number
@@ -14544,6 +14586,10 @@ export type Database = {
       system_update_bonus_balance: {
         Args: { p_asset_id: string; p_balance_delta: number; p_user_id: string }
         Returns: boolean
+      }
+      unfreeze_withdrawals: {
+        Args: { p_admin_user_id: string; p_asset_symbol: string }
+        Returns: Json
       }
       unlock_balance_for_order:
         | {
