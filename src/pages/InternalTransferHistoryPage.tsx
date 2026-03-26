@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, RefreshCw, Copy, ExternalLink, Clock, CheckCircle2, XCircle, AlertTriangle, Radio } from 'lucide-react';
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, RefreshCw, Copy, ExternalLink, Clock, CheckCircle2, XCircle, AlertTriangle, Radio, ShieldAlert, Hourglass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-const colorMap = {
+const colorMap: Record<string, { badge: string; icon: string; iconColor: string }> = {
   emerald: {
     badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     icon: 'bg-emerald-500/15',
@@ -35,6 +35,11 @@ const colorMap = {
     icon: 'bg-purple-500/15',
     iconColor: 'text-purple-400',
   },
+  orange: {
+    badge: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+    icon: 'bg-orange-500/15',
+    iconColor: 'text-orange-400',
+  },
 };
 
 function StatusIcon({ status, color }: { status: string; color: string }) {
@@ -43,6 +48,7 @@ function StatusIcon({ status, color }: { status: string; color: string }) {
   if (status === 'failed') return <XCircle className={cn(iconClass, 'text-rose-400')} />;
   if (color === 'blue') return <Radio className={cn(iconClass, 'text-blue-400 animate-pulse')} />;
   if (color === 'purple') return <AlertTriangle className={cn(iconClass, 'text-purple-400')} />;
+  if (color === 'orange') return <ShieldAlert className={cn(iconClass, 'text-orange-400')} />;
   return <Clock className={cn(iconClass, 'text-amber-400 animate-pulse')} />;
 }
 
@@ -51,7 +57,7 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
   const { toast } = useToast();
   const isDeposit = tx.direction === 'to_trading';
   const display = getTransferDisplayStatus(tx);
-  const colors = colorMap[display.color];
+  const colors = colorMap[display.color] || colorMap.amber;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -59,15 +65,12 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
   };
 
   return (
-    <div
-      className="bg-muted/30 rounded-xl border border-border/50 overflow-hidden transition-all"
-    >
-      {/* Main row — always visible */}
+    <div className="bg-muted/30 rounded-xl border border-border/50 overflow-hidden transition-all">
+      {/* Main row */}
       <button
         className="w-full p-3.5 flex items-center gap-3 text-left"
         onClick={() => setExpanded(!expanded)}
       >
-        {/* Direction icon */}
         <div className={cn('p-2 rounded-full shrink-0', isDeposit ? 'bg-emerald-500/15' : 'bg-blue-500/15')}>
           {isDeposit
             ? <ArrowDownToLine className="h-4 w-4 text-emerald-400" />
@@ -75,7 +78,6 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
           }
         </div>
 
-        {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-medium truncate">
@@ -91,7 +93,6 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
           </div>
         </div>
 
-        {/* Amount + Status */}
         <div className="text-right shrink-0">
           <div className="font-mono text-sm font-semibold">
             {isDeposit ? '+' : '-'}{Number(tx.amount).toFixed(4)}
@@ -111,14 +112,13 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
       {/* Expanded details */}
       {expanded && (
         <div className="px-3.5 pb-3.5 pt-1 border-t border-border/30 space-y-2">
-          {/* Amount details */}
           <DetailRow label="Amount" value={`${Number(tx.amount).toFixed(6)} ${tx.asset_symbol}`} />
           {tx.fee > 0 && <DetailRow label="Fee" value={`${Number(tx.fee).toFixed(6)} ${tx.asset_symbol}`} />}
           {tx.balance_after != null && (
             <DetailRow label="Balance After" value={`${Number(tx.balance_after).toFixed(6)} ${tx.asset_symbol}`} />
           )}
 
-          {/* TX Hash */}
+          {/* TX Hash with explorer link */}
           {tx.tx_hash && (
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">TX Hash</span>
@@ -159,9 +159,14 @@ function TransferCard({ tx }: { tx: InternalTransfer }) {
           />
           {tx.updated_at && tx.updated_at !== tx.created_at && (
             <DetailRow
-              label="Updated"
+              label="Last Updated"
               value={format(new Date(tx.updated_at), 'MMM d, yyyy HH:mm:ss')}
             />
+          )}
+
+          {/* Status detail — show raw for transparency */}
+          {tx.status_detail && (
+            <DetailRow label="Status Detail" value={tx.status_detail} />
           )}
 
           {/* ID */}
@@ -184,7 +189,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="font-mono text-xs text-foreground">{value}</span>
+      <span className="font-mono text-xs text-foreground text-right max-w-[60%] break-words">{value}</span>
     </div>
   );
 }

@@ -24,11 +24,12 @@ export interface InternalTransfer {
 /** Derive a user-friendly label from direction + status + status_detail */
 export function getTransferDisplayStatus(tx: InternalTransfer): {
   label: string;
-  color: 'emerald' | 'amber' | 'rose' | 'blue' | 'purple';
+  color: 'emerald' | 'amber' | 'rose' | 'blue' | 'purple' | 'orange';
   message: string;
 } {
   const isDeposit = tx.direction === 'to_trading';
 
+  // ── SUCCESS ──
   if (tx.status === 'success') {
     return {
       label: isDeposit ? 'Credited' : 'Completed',
@@ -39,17 +40,20 @@ export function getTransferDisplayStatus(tx: InternalTransfer): {
     };
   }
 
+  // ── FAILED ──
   if (tx.status === 'failed') {
+    const detail = tx.status_detail?.toLowerCase() || '';
+    const isRefunded = detail.includes('refund');
     return {
-      label: 'Failed',
+      label: isRefunded ? 'Refunded' : 'Failed',
       color: 'rose',
       message: tx.status_detail || (isDeposit ? 'Deposit failed' : 'Withdrawal failed — funds refunded'),
     };
   }
 
-  // Pending — use status_detail for granularity
+  // ── PENDING DEPOSITS ──
   if (isDeposit) {
-    if (tx.status_detail?.includes('review')) {
+    if (tx.status_detail?.includes('review') || tx.status_detail?.includes('monitoring')) {
       return { label: 'Needs Review', color: 'purple', message: tx.status_detail };
     }
     return {
@@ -59,17 +63,46 @@ export function getTransferDisplayStatus(tx: InternalTransfer): {
     };
   }
 
-  // Withdrawal pending
+  // ── PENDING WITHDRAWALS — granular classification ──
   const detail = tx.status_detail?.toLowerCase() || '';
-  if (detail.includes('broadcasting') || detail.includes('processing')) {
-    return { label: 'Broadcasting', color: 'blue', message: tx.status_detail || 'Broadcasting on-chain' };
+
+  // Needs admin review (stale)
+  if (detail.includes('needs admin review') || detail.includes('review')) {
+    return {
+      label: 'Needs Review',
+      color: 'purple',
+      message: tx.status_detail || 'Pending admin review',
+    };
   }
-  if (detail.includes('review')) {
-    return { label: 'Needs Review', color: 'purple', message: tx.status_detail || 'Needs admin review' };
-  }
+
+  // Awaiting liquidity / solvency blocked
   if (detail.includes('liquidity') || detail.includes('solvency') || detail.includes('blocked')) {
-    return { label: 'Queued', color: 'amber', message: tx.status_detail || 'Queued — awaiting liquidity' };
+    return {
+      label: 'Awaiting Liquidity',
+      color: 'orange',
+      message: tx.status_detail || 'Temporarily awaiting hot wallet liquidity',
+    };
   }
+
+  // Broadcasting on-chain
+  if (detail.includes('broadcasting') || detail.includes('processing') || detail.includes('broadcast')) {
+    return {
+      label: 'Broadcasting',
+      color: 'blue',
+      message: tx.status_detail || 'Broadcasting on-chain',
+    };
+  }
+
+  // Confirming on-chain
+  if (detail.includes('confirming') || detail.includes('confirmation')) {
+    return {
+      label: 'Confirming',
+      color: 'blue',
+      message: tx.status_detail || 'Waiting for blockchain confirmation',
+    };
+  }
+
+  // Default: genuinely queued
   return {
     label: 'Queued',
     color: 'amber',
