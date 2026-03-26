@@ -31,10 +31,10 @@
        setCancellingId(null);
      }
    };
- 
+
   if (orders.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[32px] text-[11px] text-[#6B7280]">
+      <div className="flex items-center justify-center h-[40px] text-[11px] text-muted-foreground/40 font-medium">
         No open orders{currentSymbol ? ` for ${currentSymbol}` : ''}
       </div>
     );
@@ -42,118 +42,114 @@
  
    return (
      <div className="space-y-2">
-       {/* Pair indicator */}
        {currentSymbol && (
-         <div className="text-xs text-muted-foreground pb-1 border-b border-border/30">
-           Showing orders for <span className="font-medium text-foreground">{currentSymbol}</span>
+         <div className="text-[10px] text-muted-foreground/50 pb-1.5 border-b border-[hsl(230,20%,12%)]/30 font-medium">
+           Showing orders for <span className="font-semibold text-foreground/70">{currentSymbol}</span>
          </div>
        )}
- 
-       {/* Orders list */}
-       <div className="space-y-1.5">
+
+       <div className="space-y-2">
          {orders.map((order) => {
            const filledPercent = Number(order.amount) > 0 
              ? new BigNumber(order.filled_amount || 0).dividedBy(order.amount).times(100).toNumber()
              : 0;
            const remaining = new BigNumber(order.amount).minus(order.filled_amount || 0).toNumber();
            const [base, quote] = order.symbol.split('/');
- 
+
            return (
              <div
                key={order.id}
-               className="bg-card rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+               className="bg-[hsl(230,30%,8%)] rounded-xl border border-[hsl(230,20%,16%)]/30 p-3 transition-colors"
              >
                {/* Header row */}
                <div className="flex items-center justify-between mb-2">
                  <div className="flex items-center gap-2">
                    <span className={cn(
-                     "text-[11px] font-bold uppercase px-2 py-0.5 rounded",
+                     "text-[10px] font-bold uppercase px-2 py-0.5 rounded-md",
                      order.side === 'buy' 
-                       ? "bg-emerald-500/20 text-emerald-400" 
-                       : "bg-rose-500/20 text-rose-400"
+                       ? "bg-success/12 text-success" 
+                       : "bg-danger/12 text-danger"
                    )}>
                      {order.side}
                    </span>
-                   <span className="text-sm font-semibold text-foreground">{order.symbol}</span>
-                   <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground capitalize">
+                   <span className="text-[13px] font-bold text-foreground">{order.symbol}</span>
+                   <span className="text-[9px] px-1.5 py-0.5 bg-[hsl(230,20%,12%)] rounded-md text-muted-foreground/60 font-semibold capitalize">
                      {order.order_type}
                    </span>
                  </div>
-                 <div className="flex items-center gap-1">
-                   <Button
-                     variant="ghost"
-                     size="sm"
-                     onClick={() => handleCancel(order.id)}
-                     disabled={isCancelling && cancellingId === order.id}
-                     className="h-7 px-2 text-xs hover:bg-rose-500/20 hover:text-rose-400 text-muted-foreground"
-                   >
-                     {isCancelling && cancellingId === order.id ? (
-                       <span className="text-[10px]">...</span>
-                     ) : (
-                       <>
-                         <X className="h-3.5 w-3.5 mr-1" />
-                         Cancel
-                       </>
-                     )}
-                   </Button>
-                 </div>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={() => handleCancel(order.id)}
+                   disabled={isCancelling && cancellingId === order.id}
+                   className="h-7 px-2 text-[10px] font-bold hover:bg-danger/10 hover:text-danger text-muted-foreground/50 rounded-lg"
+                 >
+                   {isCancelling && cancellingId === order.id ? (
+                     <span className="text-[10px]">...</span>
+                   ) : (
+                     <>
+                       <X className="h-3 w-3 mr-1" />
+                       Cancel
+                     </>
+                   )}
+                 </Button>
                </div>
  
-               {/* Data grid - improved layout */}
+               {/* Data grid */}
                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                  <div>
-                   <div className="text-muted-foreground text-[10px]">Price</div>
-                   <div className="font-mono text-foreground font-medium">
-                     {order.price ? `$${Number(order.price).toFixed(4)}` : 'Market'}
+                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Price</div>
+                   <div className="font-mono text-foreground/80 font-bold text-[12px] tabular-nums">
+                     {order.price ? `${Number(order.price).toFixed(4)}` : 'Market'}
                    </div>
                  </div>
                  <div>
-                   <div className="text-muted-foreground text-[10px]">Amount ({base})</div>
-                   <div className="font-mono text-foreground">{Number(order.amount).toFixed(4)} {base}</div>
+                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Amount</div>
+                   <div className="font-mono text-foreground/70 text-[11px] tabular-nums">{Number(order.amount).toFixed(4)}</div>
                  </div>
                  <div>
-                   <div className="text-muted-foreground text-[10px]">Filled</div>
+                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Filled</div>
                    <div className={cn(
-                     "font-mono",
-                     filledPercent > 0 ? "text-amber-400" : "text-muted-foreground"
+                     "font-mono text-[11px] tabular-nums font-semibold",
+                     filledPercent > 0 ? "text-warning" : "text-muted-foreground/40"
                    )}>
                      {filledPercent.toFixed(1)}%
                    </div>
                  </div>
                  <div>
-                   <div className="text-muted-foreground text-[10px]">Remaining</div>
-                   <div className="font-mono text-foreground">{remaining.toFixed(4)} {base}</div>
+                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Remaining</div>
+                   <div className="font-mono text-foreground/60 text-[11px] tabular-nums">{remaining.toFixed(4)}</div>
                  </div>
                </div>
- 
-               {/* Locked amount indicator */}
+
+               {/* Locked amount */}
                {order.locked_amount && Number(order.locked_amount) > 0 && (
-                 <div className="mt-2 px-2 py-1.5 bg-muted/50 rounded text-xs flex items-center justify-between">
-                   <span className="text-muted-foreground">Locked:</span>
-                   <span className="font-mono font-medium text-amber-400">
+                 <div className="mt-2 px-2.5 py-1.5 bg-[hsl(230,20%,10%)] rounded-lg text-[10px] flex items-center justify-between">
+                   <span className="text-muted-foreground/50 font-medium">Locked</span>
+                   <span className="font-mono font-bold text-warning tabular-nums">
                      {Number(order.locked_amount).toFixed(4)} {order.locked_asset_symbol || quote}
                    </span>
                  </div>
                )}
- 
+
                {/* Progress bar */}
-               <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+               <div className="mt-2 h-1 bg-[hsl(230,20%,10%)] rounded-full overflow-hidden">
                  <div 
                    className={cn(
                      "h-full rounded-full transition-all",
-                     order.side === 'buy' ? "bg-emerald-500" : "bg-rose-500"
+                     order.side === 'buy' ? "bg-success/60" : "bg-danger/60"
                    )}
                    style={{ width: `${filledPercent}%` }}
                  />
                </div>
- 
+
                {/* Footer */}
-               <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-                 <span>{format(new Date(order.created_at), 'MMM d, HH:mm:ss')}</span>
+               <div className="mt-2 flex items-center justify-between text-[9px] text-muted-foreground/40">
+                 <span className="font-medium">{format(new Date(order.created_at), 'MMM d, HH:mm:ss')}</span>
                  {onDetails && (
                    <button 
                      onClick={() => onDetails(order.id)}
-                     className="flex items-center gap-0.5 hover:text-foreground transition-colors"
+                     className="flex items-center gap-0.5 hover:text-foreground/60 transition-colors font-semibold"
                    >
                      Details <ChevronRight className="h-3 w-3" />
                    </button>
