@@ -67,39 +67,58 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  try {
-    // P0 FIX: Enforce JWT authentication + admin role check
+    const body: WithdrawalRequest = await req.json().catch(() => ({}));
+    const { withdrawal_id, process_pending = false, scheduled_run = false } = body;
+
+    // ═══════════════════════════════════════════════════
+    // AUTH: Support both admin JWT and cron scheduled runs
+    // ═══════════════════════════════════════════════════
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authorization required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user: adminUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !adminUser) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    if (scheduled_run) {
+      // Cron invocations send the anon key — verify it matches our project's anon key
+      const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+      const providedToken = authHeader?.replace('Bearer ', '') ?? '';
+      
+      if (!providedToken || providedToken !== expectedAnonKey) {
+        console.error('[process-custodial-withdrawal] Scheduled run: invalid anon key');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid scheduled run credentials' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('[process-custodial-withdrawal] Authorized via scheduled_run (cron)');
+    } else {
+      // Manual invocations require admin JWT
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Authorization required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    // Verify caller is admin using has_role RPC
-    const { data: isAdmin } = await supabaseAdmin.rpc('has_role', { 
-      _user_id: adminUser.id, 
-      _role: 'admin' 
-    });
-    if (!isAdmin) {
-      console.error(`[process-custodial-withdrawal] Non-admin user ${adminUser.email} attempted to process withdrawals`);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: adminUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (authError || !adminUser) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid authentication token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    console.log(`[process-custodial-withdrawal] Admin ${adminUser.email} initiating withdrawal processing`);
+      const { data: isAdmin } = await supabaseAdmin.rpc('has_role', { 
+        _user_id: adminUser.id, 
+        _role: 'admin' 
+      });
+      if (!isAdmin) {
+        console.error(`[process-custodial-withdrawal] Non-admin user ${adminUser.email} attempted to process withdrawals`);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log(`[process-custodial-withdrawal] Admin ${adminUser.email} initiating withdrawal processing`);
+    }
 
     const body: WithdrawalRequest = await req.json().catch(() => ({}));
     const { withdrawal_id, process_pending = false } = body;
