@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
         results.push({
           withdrawal_id: withdrawal.id,
           status: 'failed',
-          error: withdrawalError.message,
+          error: (withdrawalError as Error)?.message || String(withdrawalError),
           refunded: true
         });
       }
