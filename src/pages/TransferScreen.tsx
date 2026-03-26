@@ -443,10 +443,12 @@ const TransferScreen = () => {
             fee: withdrawResult.fee || 0,
             net_amount: amountNum - (withdrawResult.fee || 0),
             status: 'pending',
+            status_detail: 'Queued for hot wallet processing',
+            linked_withdrawal_id: withdrawResult.withdrawal_id || null,
             reference_id: refId,
             notes: withdrawResult.withdrawal_id ? `withdrawal_id:${withdrawResult.withdrawal_id}` : undefined,
             balance_after: withdrawResult.new_balance ?? null,
-          });
+          } as any);
         }
         queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
 
