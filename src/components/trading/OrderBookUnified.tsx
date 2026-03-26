@@ -74,7 +74,7 @@ const getDustThreshold = (entries: OrderBookEntry[]) => {
   return median * 0.05;
 };
 
-const ROW_H = 24;
+const ROW_H = 22;
 
 const BookRow = memo(({
   price, quantity, cumulative, maxCum, side, precision, showCumulative, onClick, isDust,
@@ -93,7 +93,7 @@ const BookRow = memo(({
         "relative grid grid-cols-3 items-center cursor-pointer active:bg-muted/30 transition-colors",
         isDust && "opacity-30"
       )}
-      style={{ height: ROW_H, padding: '0 8px' }}
+      style={{ height: ROW_H, padding: '0 6px' }}
     >
       <div
         className={cn(
