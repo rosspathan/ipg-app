@@ -74,7 +74,7 @@ const getDustThreshold = (entries: OrderBookEntry[]) => {
   return median * 0.05;
 };
 
-const ROW_H = 22;
+const ROW_H = 24;
 
 const BookRow = memo(({
   price, quantity, cumulative, maxCum, side, precision, showCumulative, onClick, isDust,
@@ -90,28 +90,28 @@ const BookRow = memo(({
     <div
       onClick={() => onClick?.(price)}
       className={cn(
-        "relative grid grid-cols-3 items-center cursor-pointer active:bg-muted/30 transition-colors",
-        isDust && "opacity-30"
+        "relative grid grid-cols-3 items-center cursor-pointer active:bg-[hsl(230,20%,14%)] transition-colors",
+        isDust && "opacity-25"
       )}
-      style={{ height: ROW_H, padding: '0 6px' }}
+      style={{ height: ROW_H, padding: '0 8px' }}
     >
       <div
         className={cn(
           "absolute top-0 bottom-0 right-0 pointer-events-none transition-[width] duration-300",
-          isAsk ? "bg-danger/[0.06]" : "bg-success/[0.06]"
+          isAsk ? "bg-danger/[0.07]" : "bg-success/[0.07]"
         )}
         style={{ width: `${depthPct}%` }}
       />
       <span className={cn(
-        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none font-medium",
+        "relative z-10 text-[11px] font-mono tabular-nums text-left leading-none font-semibold",
         isAsk ? "text-danger" : "text-success"
       )}>
         {fmtPrice(price, precision)}
       </span>
-      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/60 leading-none">
+      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/50 leading-none">
         {fmtQty(quantity)}
       </span>
-      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/30 leading-none">
+      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-foreground/25 leading-none">
         {showCumulative ? fmtQty(cumulative) : fmtQty(quantity * price)}
       </span>
     </div>
@@ -184,17 +184,17 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Controls */}
-      <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/20">
-        <div className="flex items-center gap-1 bg-muted/20 rounded-md p-[2px]">
+      <div className="flex items-center justify-between px-2 py-1.5 border-b border-[hsl(230,20%,12%)]/40">
+        <div className="flex items-center gap-1 bg-[hsl(230,20%,10%)] rounded-md p-[2px]">
           {([
             { key: 'split', el: <><div className="h-[3px] w-3 bg-danger/70 rounded-full" /><div className="h-[3px] w-3 bg-success/70 rounded-full" /></> },
-            { key: 'bids', el: <div className="h-3 w-3 bg-success/20 border border-success/40 rounded-[2px]" /> },
-            { key: 'asks', el: <div className="h-3 w-3 bg-danger/20 border border-danger/40 rounded-[2px]" /> },
+            { key: 'bids', el: <div className="h-3 w-3 bg-success/15 border border-success/30 rounded-[2px]" /> },
+            { key: 'asks', el: <div className="h-3 w-3 bg-danger/15 border border-danger/30 rounded-[2px]" /> },
           ] as const).map(({ key, el }) => (
             <button
               key={key}
               onClick={() => setMode(key as GroupMode)}
-              className={cn("p-1 rounded-md transition-colors", mode === key ? "bg-card shadow-sm" : "hover:bg-muted/40")}
+              className={cn("p-1 rounded-md transition-colors", mode === key ? "bg-[hsl(230,25%,16%)] shadow-sm" : "hover:bg-[hsl(230,20%,14%)]")}
             >
               <div className="flex flex-col gap-[2px]">{el}</div>
             </button>
@@ -206,13 +206,13 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
             onClick={() => setShowCumulative(!showCumulative)}
             className={cn(
               "text-[8px] font-bold w-5 h-5 rounded flex items-center justify-center transition-colors",
-              showCumulative ? "bg-accent/15 text-accent" : "bg-muted/20 text-muted-foreground/50"
+              showCumulative ? "bg-accent/15 text-accent" : "bg-[hsl(230,20%,10%)] text-muted-foreground/40"
             )}
           >Σ</button>
           <select
             value={precision}
             onChange={(e) => setPrecision(parseFloat(e.target.value))}
-            className="h-5 text-[8px] font-mono bg-muted/20 border-none rounded px-1.5 text-foreground cursor-pointer focus:outline-none appearance-none"
+            className="h-5 text-[8px] font-mono bg-[hsl(230,20%,10%)] border-none rounded px-1.5 text-foreground/70 cursor-pointer focus:outline-none appearance-none"
           >
             {precisionOptions.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -225,7 +225,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       </div>
 
       {/* Column Header */}
-      <div className="grid grid-cols-3 px-2 py-1 text-[8px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
+      <div className="grid grid-cols-3 px-2 py-1 text-[8px] font-bold text-muted-foreground/35 uppercase tracking-widest">
         <span>Price</span>
         <span className="text-right">Qty</span>
         <span className="text-right">{showCumulative ? 'Cum' : 'Total'}</span>
@@ -243,7 +243,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
               isDust={ask.quantity <= askDust}
             />
           )) : (
-            <div className="flex items-center justify-center py-3 text-[9px] text-muted-foreground/30">No asks</div>
+            <div className="flex items-center justify-center py-3 text-[9px] text-muted-foreground/20">No asks</div>
           )}
         </div>
       )}
@@ -251,25 +251,25 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* ── Central Price ── */}
       <div
         className={cn(
-          "flex items-center justify-between px-2 h-[32px] border-y border-border/20 transition-colors duration-700 cursor-pointer",
+          "flex items-center justify-between px-2 h-[36px] border-y border-[hsl(230,20%,12%)]/40 transition-colors duration-700 cursor-pointer",
           flashDir === 'up' && "bg-success/8",
           flashDir === 'down' && "bg-danger/8",
-          !flashDir && "bg-muted/5"
+          !flashDir && "bg-[hsl(230,30%,6%)]"
         )}
         onClick={() => onPriceClick?.(effectivePrice)}
       >
         <div className="flex items-center gap-1.5">
           {isPositive
-            ? <TrendingUp className="h-3 w-3 text-success" />
-            : <TrendingDown className="h-3 w-3 text-danger" />
+            ? <TrendingUp className="h-3.5 w-3.5 text-success" />
+            : <TrendingDown className="h-3.5 w-3.5 text-danger" />
           }
-          <span className={cn("text-[14px] font-bold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
+          <span className={cn("text-[15px] font-extrabold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
             {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
           </span>
         </div>
         {spread > 0 && (
-          <span className="text-[8px] font-mono text-muted-foreground/50">
-            Spd {spreadPct.toFixed(2)}%
+          <span className="text-[8px] font-mono text-muted-foreground/40 font-semibold">
+            {spreadPct.toFixed(2)}%
           </span>
         )}
       </div>
@@ -286,20 +286,20 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
               isDust={bid.quantity <= bidDust}
             />
           )) : (
-            <div className="flex items-center justify-center py-3 text-[9px] text-muted-foreground/30">No bids</div>
+            <div className="flex items-center justify-center py-3 text-[9px] text-muted-foreground/20">No bids</div>
           )}
         </div>
       )}
 
       {/* Pressure bar */}
-      <div className="px-2 py-1.5 border-t border-border/20">
+      <div className="px-2 py-2 border-t border-[hsl(230,20%,12%)]/40">
         <div className="flex items-center gap-1.5">
-          <span className="text-[8px] font-mono tabular-nums text-success w-7">{bidPct.toFixed(0)}%</span>
-          <div className="flex-1 h-[3px] rounded-full overflow-hidden flex bg-muted/20">
-            <div className="bg-success/60 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
-            <div className="bg-danger/60 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
+          <span className="text-[9px] font-mono tabular-nums text-success font-bold w-7">{bidPct.toFixed(0)}%</span>
+          <div className="flex-1 h-[4px] rounded-full overflow-hidden flex bg-[hsl(230,20%,10%)]">
+            <div className="bg-success/50 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
+            <div className="bg-danger/50 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
           </div>
-          <span className="text-[8px] font-mono tabular-nums text-danger w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
+          <span className="text-[9px] font-mono tabular-nums text-danger font-bold w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
         </div>
       </div>
     </div>
