@@ -95,9 +95,6 @@ const BookRow = memo(({
       )}
       style={{ height: ROW_H, padding: '0 6px' }}
     >
-
-      style={{ height: ROW_H, padding: '0 8px' }}
-    >
       <div
         className={cn(
           "absolute top-0 bottom-0 right-0 pointer-events-none transition-[width] duration-300",
