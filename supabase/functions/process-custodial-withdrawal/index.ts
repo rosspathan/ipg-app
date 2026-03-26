@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
+  try {
     const body: WithdrawalRequest = await req.json().catch(() => ({}));
     const { withdrawal_id, process_pending = false, scheduled_run = false } = body;
 
