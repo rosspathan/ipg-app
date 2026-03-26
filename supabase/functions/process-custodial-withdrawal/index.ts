@@ -53,8 +53,9 @@ const ERC20_ABI = [
 ] as const;
 
 interface WithdrawalRequest {
-  withdrawal_id?: string;  // Process specific withdrawal
-  process_pending?: boolean;  // Process all pending withdrawals
+  withdrawal_id?: string;
+  process_pending?: boolean;
+  scheduled_run?: boolean;
 }
 
 Deno.serve(async (req) => {
