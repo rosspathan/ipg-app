@@ -424,12 +424,7 @@ const TransferScreen = () => {
           throw new Error(`Withdrawals for ${selectedAsset} are temporarily frozen for safety. Please try again later.`);
         }
 
-        // Step 2: Check pending outbound obligations for this asset
-        const { data: pendingSum } = await supabase
-          .rpc('get_pending_withdrawal_sum', { p_asset_symbol: selectedAsset })
-          .single();
-        
-        // Step 3: Submit withdrawal — server does final atomic validation
+        // Step 2: Submit withdrawal — server does final atomic validation
         const { data: withdrawResult, error: withdrawError } = await supabase.functions.invoke(
           'request-custodial-withdrawal',
           {
