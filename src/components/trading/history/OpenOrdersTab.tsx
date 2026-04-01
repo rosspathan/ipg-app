@@ -97,18 +97,18 @@
  
                {/* Data grid */}
                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Price</div>
-                   <div className="font-mono text-foreground/80 font-bold text-[12px] tabular-nums">
-                     {order.price ? `${Number(order.price).toFixed(4)}` : 'Market'}
-                   </div>
-                 </div>
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Amount</div>
-                   <div className="font-mono text-foreground/70 text-[11px] tabular-nums">{Number(order.amount).toFixed(4)}</div>
-                 </div>
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Filled</div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Price</div>
+                    <div className="font-mono text-[#FFFFFF] font-bold text-[12px] tabular-nums">
+                      {order.price ? `${Number(order.price).toFixed(4)}` : 'Market'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Amount</div>
+                    <div className="font-mono text-[#B0B7C3] text-[11px] tabular-nums">{Number(order.amount).toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Filled</div>
                    <div className={cn(
                      "font-mono text-[11px] tabular-nums font-semibold",
                      filledPercent > 0 ? "text-warning" : "text-muted-foreground/40"
