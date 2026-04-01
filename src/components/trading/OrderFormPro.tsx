@@ -246,14 +246,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   return (
     <div className="flex flex-col gap-3.5 h-full">
       {/* ── Buy / Sell Toggle ── */}
-      <div className="flex h-[38px] rounded-xl overflow-hidden bg-[hsl(230,20%,10%)] p-[3px]">
+      <div className="flex h-[38px] rounded-xl overflow-hidden bg-[#060D18] p-[3px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
             "flex-1 rounded-[10px] text-[12px] font-bold uppercase tracking-wider transition-all duration-200",
             isBuy
-              ? "bg-success text-success-foreground shadow-[0_2px_12px_hsl(var(--success)/0.35)]"
-              : "text-muted-foreground/50 hover:text-muted-foreground"
+              ? "bg-[#00E676] text-[#020617] shadow-[0_2px_12px_rgba(0,230,118,0.35)]"
+              : "text-[#6B7280] hover:text-[#B0B7C3]"
           )}
         >Buy</button>
         <button
@@ -261,8 +261,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           className={cn(
             "flex-1 rounded-[10px] text-[12px] font-bold uppercase tracking-wider transition-all duration-200",
             !isBuy
-              ? "bg-danger text-danger-foreground shadow-[0_2px_12px_hsl(var(--danger)/0.35)]"
-              : "text-muted-foreground/50 hover:text-muted-foreground"
+              ? "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_2px_12px_rgba(255,77,79,0.35)]"
+              : "text-[#6B7280] hover:text-[#B0B7C3]"
           )}
         >Sell</button>
       </div>
