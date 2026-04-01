@@ -337,9 +337,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Total ── */}
-      <div className="flex items-center justify-between h-[32px] px-3 bg-[hsl(230,30%,8%)]/60 border border-[hsl(230,20%,18%)]/20 rounded-lg">
-        <span className="text-[10px] text-muted-foreground/50 font-semibold">Total</span>
-        <span className="text-[12px] font-mono font-bold text-foreground tabular-nums">
+      <div className="flex items-center justify-between h-[32px] px-3 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-lg">
+        <span className="text-[10px] text-[#6B7280] font-semibold">Total</span>
+        <span className="text-[12px] font-mono font-bold text-[#FFFFFF] tabular-nums">
           {total > 0 ? `${total >= 1 ? total.toFixed(2) : total.toFixed(6)} ${quoteCurrency}` : '—'}
         </span>
       </div>
