@@ -268,7 +268,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Order Type Tabs ── */}
-      <div className="flex items-center gap-1 bg-[hsl(230,20%,10%)] rounded-lg p-[3px]">
+      <div className="flex items-center gap-1 bg-[#060D18] rounded-lg p-[3px]">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
@@ -276,8 +276,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             className={cn(
               "flex-1 text-[10px] font-bold capitalize py-1.5 rounded-md transition-all",
               orderType === t
-                ? "bg-[hsl(230,25%,16%)] text-foreground shadow-sm"
-                : "text-muted-foreground/40 hover:text-muted-foreground/60"
+                ? "bg-[hsl(230,25%,18%)] text-[#FFFFFF] shadow-sm"
+                : "text-[#6B7280] hover:text-[#B0B7C3]"
             )}
           >{t}</button>
         ))}
