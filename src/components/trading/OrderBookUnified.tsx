@@ -98,20 +98,20 @@ const BookRow = memo(({
       <div
         className={cn(
           "absolute top-0 bottom-0 right-0 pointer-events-none transition-[width] duration-300",
-          isAsk ? "bg-danger/[0.07]" : "bg-success/[0.07]"
+          isAsk ? "bg-[#FF4D4F]/[0.10]" : "bg-[#00E676]/[0.10]"
         )}
         style={{ width: `${depthPct}%` }}
       />
       <span className={cn(
-        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none font-bold",
-        isAsk ? "text-danger" : "text-success"
-      )}>
+        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none font-semibold",
+        isAsk ? "text-[#FF4D4F]" : "text-[#00E676]"
+      )} style={{ fontWeight: 600 }}>
         {fmtPrice(price, precision)}
       </span>
-      <span className="relative z-10 text-[9px] font-mono tabular-nums text-right text-foreground/45 leading-none">
+      <span className="relative z-10 text-[9px] font-mono tabular-nums text-right text-[#B0B7C3] leading-none" style={{ fontWeight: 500 }}>
         {fmtQty(quantity)}
       </span>
-      <span className="relative z-10 text-[8px] font-mono tabular-nums text-right text-foreground/20 leading-none">
+      <span className="relative z-10 text-[8px] font-mono tabular-nums text-right text-[#6B7280] leading-none" style={{ fontWeight: 500 }}>
         {showCumulative ? fmtQty(cumulative) : fmtQty(quantity * price)}
       </span>
     </div>
@@ -225,7 +225,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       </div>
 
       {/* Column Header */}
-      <div className="grid grid-cols-3 px-2 py-0.5 text-[7px] font-bold text-muted-foreground/30 uppercase tracking-widest">
+      <div className="grid grid-cols-3 px-2 py-0.5 text-[7px] font-bold text-[#6B7280] uppercase tracking-widest">
         <span>Price</span>
         <span className="text-right">Qty</span>
         <span className="text-right">{showCumulative ? 'Cum' : 'Tot'}</span>
@@ -263,12 +263,12 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
             ? <TrendingUp className="h-3.5 w-3.5 text-success" />
             : <TrendingDown className="h-3.5 w-3.5 text-danger" />
           }
-          <span className={cn("text-[13px] font-extrabold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
+          <span className={cn("text-[13px] font-extrabold font-mono tabular-nums", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
             {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
           </span>
         </div>
         {spread > 0 && (
-          <span className="text-[8px] font-mono text-muted-foreground/40 font-semibold">
+          <span className="text-[8px] font-mono text-[#6B7280] font-semibold">
             {spreadPct.toFixed(2)}%
           </span>
         )}
@@ -294,12 +294,12 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* Pressure bar */}
       <div className="px-2 py-2 border-t border-[hsl(230,20%,12%)]/40">
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-mono tabular-nums text-success font-bold w-7">{bidPct.toFixed(0)}%</span>
-          <div className="flex-1 h-[4px] rounded-full overflow-hidden flex bg-[hsl(230,20%,10%)]">
-            <div className="bg-success/50 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
-            <div className="bg-danger/50 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
+          <span className="text-[9px] font-mono tabular-nums text-[#00E676] font-bold w-7">{bidPct.toFixed(0)}%</span>
+          <div className="flex-1 h-[4px] rounded-full overflow-hidden flex bg-[#060D18]">
+            <div className="bg-[#00E676]/60 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
+            <div className="bg-[#FF4D4F]/60 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
           </div>
-          <span className="text-[9px] font-mono tabular-nums text-danger font-bold w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
+          <span className="text-[9px] font-mono tabular-nums text-[#FF4D4F] font-bold w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
         </div>
       </div>
     </div>

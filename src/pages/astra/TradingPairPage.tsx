@@ -166,9 +166,9 @@ function TradingPairPageContent() {
 
   return (
     <ComplianceGate requireAgeVerification requireTermsAcceptance requireRiskDisclosure>
-      <div className="flex flex-col bg-[hsl(230,80%,3%)] min-h-screen">
+      <div className="flex flex-col bg-[#020617] min-h-screen">
         {/* ═══ PREMIUM HEADER ═══ */}
-        <header className="sticky top-0 z-50 bg-[hsl(230,50%,5%)]/98 backdrop-blur-xl border-b border-[hsl(230,30%,18%)]/30">
+        <header className="sticky top-0 z-50 bg-[#020617]/98 backdrop-blur-xl border-b border-[hsl(230,20%,20%)]/40">
           <div className="flex items-center h-12 px-3 gap-2">
             {/* Back - 44x44 touch target */}
             <button
@@ -185,7 +185,7 @@ function TradingPairPageContent() {
                 onClick={() => setPairPickerOpen(!pairPickerOpen)}
                 className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg active:bg-[hsl(230,30%,12%)] transition-colors"
               >
-                <span className="text-base font-bold text-foreground tracking-tight">{pair.baseAsset}<span className="text-muted-foreground/50">/{pair.quoteAsset}</span></span>
+                <span className="text-base font-bold text-[#FFFFFF] tracking-tight">{pair.baseAsset}<span className="text-[#B0B7C3]">/{pair.quoteAsset}</span></span>
                 <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground/40 transition-transform", pairPickerOpen && "rotate-180")} />
               </button>
 
@@ -193,15 +193,15 @@ function TradingPairPageContent() {
               {pairPickerOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setPairPickerOpen(false)} />
-                  <div className="absolute left-0 top-full mt-1 w-72 bg-[hsl(230,40%,8%)] border border-[hsl(230,20%,20%)]/40 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div className="p-2 border-b border-[hsl(230,20%,15%)]/30">
+              <div className="absolute left-0 top-full mt-1 w-72 bg-[#0B1220] border border-[hsl(230,20%,22%)]/50 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="p-2 border-b border-[hsl(230,20%,18%)]/40">
                       <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#6B7280]" />
                         <Input
                           placeholder="Search pairs…"
                           value={pairSearch}
                           onChange={(e) => setPairSearch(e.target.value)}
-                          className="pl-8 h-8 bg-[hsl(230,30%,10%)] border-[hsl(230,20%,18%)]/30 text-sm rounded-lg"
+                          className="pl-8 h-8 bg-[#060D18] border-[hsl(230,20%,20%)]/40 text-sm text-[#FFFFFF] rounded-lg"
                           autoFocus
                         />
                       </div>
@@ -216,7 +216,7 @@ function TradingPairPageContent() {
                             p.symbol === pair.symbol ? "bg-accent/5" : "hover:bg-[hsl(230,20%,12%)] active:bg-[hsl(230,20%,15%)]"
                           )}
                         >
-                          <span className="text-[13px] font-semibold text-foreground">{p.symbol}</span>
+                          <span className="text-[13px] font-semibold text-[#FFFFFF]">{p.symbol}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-[12px] font-mono tabular-nums text-muted-foreground">{formatPrice(p.price)}</span>
                             <span className={cn(
@@ -262,12 +262,12 @@ function TradingPairPageContent() {
               { label: "24h High", value: formatPrice(pair.high24h || 0) },
               { label: "24h Low", value: formatPrice(pair.low24h || 0) },
               { label: "Vol", value: formatVol(pair.volume24h || 0) },
-              { label: "Bid", value: formatPrice(bestBidPrice), color: "text-success/80" },
-              { label: "Ask", value: formatPrice(bestAskPrice), color: "text-danger/80" },
+              { label: "Bid", value: formatPrice(bestBidPrice), color: "text-[#00E676]" },
+              { label: "Ask", value: formatPrice(bestAskPrice), color: "text-[#FF4D4F]" },
             ].map(({ label, value, color }) => (
               <div key={label} className="flex flex-col whitespace-nowrap">
-                <span className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-widest">{label}</span>
-                <span className={cn("text-[11px] font-mono tabular-nums font-semibold", color || "text-foreground/70")}>{value}</span>
+                <span className="text-[9px] text-[#6B7280] font-semibold uppercase tracking-widest">{label}</span>
+                <span className={cn("text-[11px] font-mono tabular-nums font-semibold", color || "text-[#B0B7C3]")}>{value}</span>
               </div>
             ))}
           </div>
@@ -293,7 +293,7 @@ function TradingPairPageContent() {
         )}
 
         {/* ═══ MAIN TRADING MODULE - Premium Parent Card ═══ */}
-        <div className="mx-2 mt-2 rounded-2xl bg-[hsl(230,40%,6%)] border border-[hsl(230,25%,16%)]/25 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="mx-2 mt-2 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
           <div className="flex flex-row" style={{ minHeight: 440 }}>
             {/* Order Form - 65% — dominant side */}
             <div className="flex flex-col p-3.5 min-w-0" style={{ flex: '0 0 65%' }}>
@@ -315,7 +315,7 @@ function TradingPairPageContent() {
               />
             </div>
             {/* Order Book - 35% — compact side */}
-            <div className="flex flex-col min-w-0 border-l border-[hsl(230,25%,16%)]/20" style={{ flex: '1 1 0%' }}>
+            <div className="flex flex-col min-w-0 border-l border-[hsl(230,20%,20%)]/30" style={{ flex: '1 1 0%' }}>
               <OrderBookUnified
                 asks={bookAsks}
                 bids={bookBids}
@@ -336,7 +336,7 @@ function TradingPairPageContent() {
         <GhostLockWarning />
 
         {/* ═══ HISTORY TABS - Premium Card ═══ */}
-        <div className="mx-2 mt-2 mb-2 rounded-2xl bg-[hsl(230,40%,6%)] border border-[hsl(230,25%,16%)]/25 shadow-[0_4px_24px_rgba(0,0,0,0.4)] pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+        <div className="mx-2 mt-2 mb-2 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)] pb-[max(env(safe-area-inset-bottom,0px),16px)]">
           <TradingHistoryTabs
             symbol={urlSymbol}
             onOrderDetails={setSelectedOrderId}

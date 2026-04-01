@@ -72,8 +72,8 @@
                    )}>
                      {order.side}
                    </span>
-                   <span className="text-[13px] font-bold text-foreground">{order.symbol}</span>
-                   <span className="text-[9px] px-1.5 py-0.5 bg-[hsl(230,20%,12%)] rounded-md text-muted-foreground/60 font-semibold capitalize">
+                   <span className="text-[13px] font-bold text-[#FFFFFF]">{order.symbol}</span>
+                   <span className="text-[9px] px-1.5 py-0.5 bg-[hsl(230,20%,14%)] rounded-md text-[#B0B7C3] font-semibold capitalize">
                      {order.order_type}
                    </span>
                  </div>
@@ -97,18 +97,18 @@
  
                {/* Data grid */}
                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Price</div>
-                   <div className="font-mono text-foreground/80 font-bold text-[12px] tabular-nums">
-                     {order.price ? `${Number(order.price).toFixed(4)}` : 'Market'}
-                   </div>
-                 </div>
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Amount</div>
-                   <div className="font-mono text-foreground/70 text-[11px] tabular-nums">{Number(order.amount).toFixed(4)}</div>
-                 </div>
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Filled</div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Price</div>
+                    <div className="font-mono text-[#FFFFFF] font-bold text-[12px] tabular-nums">
+                      {order.price ? `${Number(order.price).toFixed(4)}` : 'Market'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Amount</div>
+                    <div className="font-mono text-[#B0B7C3] text-[11px] tabular-nums">{Number(order.amount).toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Filled</div>
                    <div className={cn(
                      "font-mono text-[11px] tabular-nums font-semibold",
                      filledPercent > 0 ? "text-warning" : "text-muted-foreground/40"
@@ -116,9 +116,9 @@
                      {filledPercent.toFixed(1)}%
                    </div>
                  </div>
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Remaining</div>
-                   <div className="font-mono text-foreground/60 text-[11px] tabular-nums">{remaining.toFixed(4)}</div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Remaining</div>
+                    <div className="font-mono text-[#B0B7C3] text-[11px] tabular-nums">{remaining.toFixed(4)}</div>
                  </div>
                </div>
 
@@ -144,7 +144,7 @@
                </div>
 
                {/* Footer */}
-               <div className="mt-2 flex items-center justify-between text-[9px] text-muted-foreground/40">
+               <div className="mt-2 flex items-center justify-between text-[9px] text-[#6B7280]">
                  <span className="font-medium">{format(new Date(order.created_at), 'MMM d, HH:mm:ss')}</span>
                  {onDetails && (
                    <button 

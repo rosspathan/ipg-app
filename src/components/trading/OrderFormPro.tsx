@@ -118,7 +118,7 @@ const StepperInput: React.FC<{
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between px-0.5">
-        <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">{label}</span>
         {tag && tag.value > 0 && (
           <button
             type="button"
@@ -132,7 +132,7 @@ const StepperInput: React.FC<{
           </button>
         )}
       </div>
-      <div className="flex items-center h-[44px] bg-[hsl(230,30%,8%)] border border-[hsl(230,20%,18%)]/40 rounded-xl overflow-hidden focus-within:border-accent/30 focus-within:shadow-[0_0_0_1px_hsl(186,100%,50%,0.1)] transition-all">
+      <div className="flex items-center h-[44px] bg-[#060D18] border border-[hsl(230,20%,22%)]/50 rounded-xl overflow-hidden focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_hsl(186,100%,50%,0.15)] transition-all">
         {/* Minus - compact 34px */}
         <button
           type="button"
@@ -142,7 +142,7 @@ const StepperInput: React.FC<{
           onTouchStart={() => startLongPress(-1)}
           onTouchEnd={stopLongPress}
           disabled={numVal <= min}
-          className="w-[34px] flex-shrink-0 h-full flex items-center justify-center text-muted-foreground/50 text-sm font-medium active:bg-[hsl(230,20%,14%)] active:text-foreground disabled:opacity-20 border-r border-[hsl(230,20%,15%)]/30 select-none touch-manipulation transition-colors"
+          className="w-[34px] flex-shrink-0 h-full flex items-center justify-center text-[#B0B7C3] text-sm font-medium active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-r border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors"
         >−</button>
         {/* Value zone - maximum width, scrollable */}
         <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
@@ -154,11 +154,11 @@ const StepperInput: React.FC<{
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
-              className="w-full min-w-[40px] bg-transparent text-left px-2 text-[15px] font-mono font-bold text-foreground outline-none tabular-nums placeholder:text-muted-foreground/15"
+              className="w-full min-w-[40px] bg-transparent text-left px-2 text-[15px] font-mono font-bold text-[#FFFFFF] outline-none tabular-nums placeholder:text-[#6B7280]/40"
               style={{ textOverflow: 'clip' }}
             />
           </div>
-          {suffix && <span className="text-[9px] text-muted-foreground/35 font-bold flex-shrink-0 pr-1 uppercase">{suffix}</span>}
+          {suffix && <span className="text-[9px] text-[#6B7280] font-bold flex-shrink-0 pr-1 uppercase">{suffix}</span>}
         </div>
         {/* Plus - compact 34px */}
         <button
@@ -169,7 +169,7 @@ const StepperInput: React.FC<{
           onTouchStart={() => startLongPress(1)}
           onTouchEnd={stopLongPress}
           disabled={max !== undefined && numVal >= max}
-          className="w-[34px] flex-shrink-0 h-full flex items-center justify-center text-muted-foreground/50 text-sm font-medium active:bg-[hsl(230,20%,14%)] active:text-foreground disabled:opacity-20 border-l border-[hsl(230,20%,15%)]/30 select-none touch-manipulation transition-colors"
+          className="w-[34px] flex-shrink-0 h-full flex items-center justify-center text-[#B0B7C3] text-sm font-medium active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-l border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors"
         >+</button>
       </div>
     </div>
@@ -246,14 +246,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   return (
     <div className="flex flex-col gap-3.5 h-full">
       {/* ── Buy / Sell Toggle ── */}
-      <div className="flex h-[38px] rounded-xl overflow-hidden bg-[hsl(230,20%,10%)] p-[3px]">
+      <div className="flex h-[38px] rounded-xl overflow-hidden bg-[#060D18] p-[3px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
             "flex-1 rounded-[10px] text-[12px] font-bold uppercase tracking-wider transition-all duration-200",
             isBuy
-              ? "bg-success text-success-foreground shadow-[0_2px_12px_hsl(var(--success)/0.35)]"
-              : "text-muted-foreground/50 hover:text-muted-foreground"
+              ? "bg-[#00E676] text-[#020617] shadow-[0_2px_12px_rgba(0,230,118,0.35)]"
+              : "text-[#6B7280] hover:text-[#B0B7C3]"
           )}
         >Buy</button>
         <button
@@ -261,14 +261,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           className={cn(
             "flex-1 rounded-[10px] text-[12px] font-bold uppercase tracking-wider transition-all duration-200",
             !isBuy
-              ? "bg-danger text-danger-foreground shadow-[0_2px_12px_hsl(var(--danger)/0.35)]"
-              : "text-muted-foreground/50 hover:text-muted-foreground"
+              ? "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_2px_12px_rgba(255,77,79,0.35)]"
+              : "text-[#6B7280] hover:text-[#B0B7C3]"
           )}
         >Sell</button>
       </div>
 
       {/* ── Order Type Tabs ── */}
-      <div className="flex items-center gap-1 bg-[hsl(230,20%,10%)] rounded-lg p-[3px]">
+      <div className="flex items-center gap-1 bg-[#060D18] rounded-lg p-[3px]">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
@@ -276,8 +276,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             className={cn(
               "flex-1 text-[10px] font-bold capitalize py-1.5 rounded-md transition-all",
               orderType === t
-                ? "bg-[hsl(230,25%,16%)] text-foreground shadow-sm"
-                : "text-muted-foreground/40 hover:text-muted-foreground/60"
+                ? "bg-[hsl(230,25%,18%)] text-[#FFFFFF] shadow-sm"
+                : "text-[#6B7280] hover:text-[#B0B7C3]"
             )}
           >{t}</button>
         ))}
@@ -301,9 +301,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* Market price display */}
       {orderType === 'market' && (
-        <div className="flex items-center justify-between h-[42px] px-3 bg-[hsl(230,30%,8%)] border border-[hsl(230,20%,18%)]/30 rounded-xl">
-          <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold">Market</span>
-          <span className="text-[14px] font-bold font-mono tabular-nums text-foreground">{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
+        <div className="flex items-center justify-between h-[42px] px-3 bg-[#060D18] border border-[hsl(230,20%,22%)]/40 rounded-xl">
+          <span className="text-[10px] text-[#6B7280] uppercase tracking-wider font-semibold">Market</span>
+          <span className="text-[14px] font-bold font-mono tabular-nums text-[#FFFFFF]">{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
         </div>
       )}
 
@@ -328,18 +328,18 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               "h-[28px] text-[10px] font-bold rounded-lg transition-all border",
               activePercent === pct
                 ? isBuy
-                  ? "bg-success/12 text-success border-success/25 shadow-[0_0_8px_hsl(var(--success)/0.15)]"
-                  : "bg-danger/12 text-danger border-danger/25 shadow-[0_0_8px_hsl(var(--danger)/0.15)]"
-                : "bg-[hsl(230,20%,10%)] text-muted-foreground/50 border-[hsl(230,20%,15%)]/30 hover:bg-[hsl(230,20%,13%)] active:bg-[hsl(230,20%,16%)]"
+                  ? "bg-[#00E676]/12 text-[#00E676] border-[#00E676]/25 shadow-[0_0_8px_rgba(0,230,118,0.15)]"
+                  : "bg-[#FF4D4F]/12 text-[#FF4D4F] border-[#FF4D4F]/25 shadow-[0_0_8px_rgba(255,77,79,0.15)]"
+                : "bg-[#060D18] text-[#B0B7C3] border-[hsl(230,20%,18%)]/40 hover:bg-[hsl(230,20%,13%)] active:bg-[hsl(230,20%,16%)]"
             )}
           >{pct}%</button>
         ))}
       </div>
 
       {/* ── Total ── */}
-      <div className="flex items-center justify-between h-[32px] px-3 bg-[hsl(230,30%,8%)]/60 border border-[hsl(230,20%,18%)]/20 rounded-lg">
-        <span className="text-[10px] text-muted-foreground/50 font-semibold">Total</span>
-        <span className="text-[12px] font-mono font-bold text-foreground tabular-nums">
+      <div className="flex items-center justify-between h-[32px] px-3 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-lg">
+        <span className="text-[10px] text-[#6B7280] font-semibold">Total</span>
+        <span className="text-[12px] font-mono font-bold text-[#FFFFFF] tabular-nums">
           {total > 0 ? `${total >= 1 ? total.toFixed(2) : total.toFixed(6)} ${quoteCurrency}` : '—'}
         </span>
       </div>
@@ -367,14 +367,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* ── Balance + Fee ── */}
       <div className="flex flex-col gap-1 text-[10px] px-1">
         <div className="flex justify-between">
-          <span className="text-muted-foreground/40 font-medium">Avail</span>
-          <span className={cn("font-mono tabular-nums font-semibold", hasInsufficientBalance ? "text-danger" : "text-foreground/60")}>
+          <span className="text-[#6B7280] font-medium">Avail</span>
+          <span className={cn("font-mono tabular-nums font-semibold", hasInsufficientBalance ? "text-[#FF4D4F]" : "text-[#B0B7C3]")}>
             {availableBalance.toFixed(4)} {balanceCurrency}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground/40 font-medium">Est Fee</span>
-          <span className="font-mono tabular-nums text-foreground/40 font-medium">
+          <span className="text-[#6B7280] font-medium">Est Fee</span>
+          <span className="font-mono tabular-nums text-[#B0B7C3] font-medium">
             {total > 0 ? `~${estFee.toFixed(4)}` : '—'} {quoteCurrency}
           </span>
         </div>
@@ -393,11 +393,11 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         className={cn(
           "w-full h-[44px] rounded-xl text-[13px] font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
-          hasInsufficientBalance ? "bg-muted/30 text-muted-foreground/40" :
-          numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-muted-foreground/20" :
+          hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
+          numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
-            ? "bg-success text-success-foreground shadow-[0_4px_20px_hsl(var(--success)/0.35)]"
-            : "bg-danger text-danger-foreground shadow-[0_4px_20px_hsl(var(--danger)/0.35)]"
+            ? "bg-[#00E676] text-[#020617] shadow-[0_4px_20px_rgba(0,230,118,0.35)]"
+            : "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_4px_20px_rgba(255,77,79,0.35)]"
         )}
       >
         {isPlacingOrder ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
