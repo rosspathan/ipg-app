@@ -268,7 +268,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
           </span>
         </div>
         {spread > 0 && (
-          <span className="text-[8px] font-mono text-muted-foreground/40 font-semibold">
+          <span className="text-[8px] font-mono text-[#6B7280] font-semibold">
             {spreadPct.toFixed(2)}%
           </span>
         )}

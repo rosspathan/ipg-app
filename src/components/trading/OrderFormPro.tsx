@@ -393,11 +393,11 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         className={cn(
           "w-full h-[44px] rounded-xl text-[13px] font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
-          hasInsufficientBalance ? "bg-muted/30 text-muted-foreground/40" :
-          numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-muted-foreground/20" :
+          hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
+          numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
-            ? "bg-success text-success-foreground shadow-[0_4px_20px_hsl(var(--success)/0.35)]"
-            : "bg-danger text-danger-foreground shadow-[0_4px_20px_hsl(var(--danger)/0.35)]"
+            ? "bg-[#00E676] text-[#020617] shadow-[0_4px_20px_rgba(0,230,118,0.35)]"
+            : "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_4px_20px_rgba(255,77,79,0.35)]"
         )}
       >
         {isPlacingOrder ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}

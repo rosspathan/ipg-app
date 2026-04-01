@@ -144,7 +144,7 @@
                </div>
 
                {/* Footer */}
-               <div className="mt-2 flex items-center justify-between text-[9px] text-muted-foreground/40">
+               <div className="mt-2 flex items-center justify-between text-[9px] text-[#6B7280]">
                  <span className="font-medium">{format(new Date(order.created_at), 'MMM d, HH:mm:ss')}</span>
                  {onDetails && (
                    <button 

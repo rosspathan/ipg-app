@@ -336,7 +336,7 @@ function TradingPairPageContent() {
         <GhostLockWarning />
 
         {/* ═══ HISTORY TABS - Premium Card ═══ */}
-        <div className="mx-2 mt-2 mb-2 rounded-2xl bg-[hsl(230,40%,6%)] border border-[hsl(230,25%,16%)]/25 shadow-[0_4px_24px_rgba(0,0,0,0.4)] pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+        <div className="mx-2 mt-2 mb-2 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)] pb-[max(env(safe-area-inset-bottom,0px),16px)]">
           <TradingHistoryTabs
             symbol={urlSymbol}
             onOrderDetails={setSelectedOrderId}
