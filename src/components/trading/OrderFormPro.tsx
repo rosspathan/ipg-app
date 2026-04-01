@@ -142,7 +142,7 @@ const StepperInput: React.FC<{
           onTouchStart={() => startLongPress(-1)}
           onTouchEnd={stopLongPress}
           disabled={numVal <= min}
-          className="w-[34px] flex-shrink-0 h-full flex items-center justify-center text-[#B0B7C3] text-sm font-medium active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-r border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors"
+          className="w-[38px] flex-shrink-0 h-full flex items-center justify-center text-[#C7D2E0] text-base font-bold active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-r border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors"
         >−</button>
         {/* Value zone - maximum width, scrollable */}
         <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
