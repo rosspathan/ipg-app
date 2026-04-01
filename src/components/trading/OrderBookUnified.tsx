@@ -294,12 +294,12 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* Pressure bar */}
       <div className="px-2 py-2 border-t border-[hsl(230,20%,12%)]/40">
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-mono tabular-nums text-success font-bold w-7">{bidPct.toFixed(0)}%</span>
-          <div className="flex-1 h-[4px] rounded-full overflow-hidden flex bg-[hsl(230,20%,10%)]">
-            <div className="bg-success/50 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
-            <div className="bg-danger/50 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
+          <span className="text-[9px] font-mono tabular-nums text-[#00E676] font-bold w-7">{bidPct.toFixed(0)}%</span>
+          <div className="flex-1 h-[4px] rounded-full overflow-hidden flex bg-[#060D18]">
+            <div className="bg-[#00E676]/60 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
+            <div className="bg-[#FF4D4F]/60 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
           </div>
-          <span className="text-[9px] font-mono tabular-nums text-danger font-bold w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
+          <span className="text-[9px] font-mono tabular-nums text-[#FF4D4F] font-bold w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
         </div>
       </div>
     </div>
