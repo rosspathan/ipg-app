@@ -257,7 +257,7 @@ function TradingPairPageContent() {
           </div>
 
           {/* ═══ STATS STRIP ═══ */}
-          <div className="flex items-center gap-5 px-3 pb-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-5 px-3 pb-2.5 overflow-x-auto no-scrollbar">
             {[
               { label: "24h High", value: formatPrice(pair.high24h || 0) },
               { label: "24h Low", value: formatPrice(pair.low24h || 0) },
@@ -266,8 +266,8 @@ function TradingPairPageContent() {
               { label: "Ask", value: formatPrice(bestAskPrice), color: "text-[#FF4D4F]" },
             ].map(({ label, value, color }) => (
               <div key={label} className="flex flex-col whitespace-nowrap">
-                <span className="text-[9px] text-[#6B7280] font-semibold uppercase tracking-widest">{label}</span>
-                <span className={cn("text-[11px] font-mono tabular-nums font-semibold", color || "text-[#B0B7C3]")}>{value}</span>
+                <span className="text-[10px] text-[#94A3B8] font-semibold uppercase tracking-wider">{label}</span>
+                <span className={cn("text-[12px] font-mono tabular-nums font-semibold", color || "text-[#C7D2E0]")}>{value}</span>
               </div>
             ))}
           </div>
@@ -277,14 +277,14 @@ function TradingPairPageContent() {
         <button
           onClick={() => setChartOpen(!chartOpen)}
           className={cn(
-            "flex items-center justify-center gap-1.5 h-8 text-[10px] font-semibold transition-colors",
-            "border-b border-[hsl(230,20%,12%)]/40",
-            chartOpen ? "text-accent bg-accent/5" : "text-muted-foreground/40 active:text-foreground/60"
+            "flex items-center justify-center gap-2 h-10 text-[13px] font-semibold transition-colors",
+            "border-b border-[hsl(230,20%,18%)]/50",
+            chartOpen ? "text-[#FFFFFF] bg-[hsl(186,100%,50%)]/8" : "text-[#94A3B8] active:text-[#C7D2E0]"
           )}
         >
-          <BarChart2 className="h-3 w-3" />
+          <BarChart2 className="h-4 w-4" />
           <span>Chart</span>
-          <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", chartOpen && "rotate-180")} />
+          <ChevronDown className={cn("h-3 w-3 transition-transform", chartOpen && "rotate-180")} />
         </button>
         {chartOpen && (
           <div className="px-1.5 pb-1.5 border-b border-[hsl(230,20%,12%)]/40">

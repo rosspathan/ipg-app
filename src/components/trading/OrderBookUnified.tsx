@@ -74,7 +74,7 @@ const getDustThreshold = (entries: OrderBookEntry[]) => {
   return median * 0.05;
 };
 
-const ROW_H = 22;
+const ROW_H = 28;
 
 const BookRow = memo(({
   price, quantity, cumulative, maxCum, side, precision, showCumulative, onClick, isDust,
@@ -103,15 +103,15 @@ const BookRow = memo(({
         style={{ width: `${depthPct}%` }}
       />
       <span className={cn(
-        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none font-semibold",
+        "relative z-10 text-[13px] font-mono tabular-nums text-left leading-none",
         isAsk ? "text-[#FF4D4F]" : "text-[#00E676]"
       )} style={{ fontWeight: 600 }}>
         {fmtPrice(price, precision)}
       </span>
-      <span className="relative z-10 text-[9px] font-mono tabular-nums text-right text-[#B0B7C3] leading-none" style={{ fontWeight: 500 }}>
+      <span className="relative z-10 text-[11px] font-mono tabular-nums text-right text-[#C7D2E0] leading-none" style={{ fontWeight: 500 }}>
         {fmtQty(quantity)}
       </span>
-      <span className="relative z-10 text-[8px] font-mono tabular-nums text-right text-[#6B7280] leading-none" style={{ fontWeight: 500 }}>
+      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-[#94A3B8] leading-none" style={{ fontWeight: 500 }}>
         {showCumulative ? fmtQty(cumulative) : fmtQty(quantity * price)}
       </span>
     </div>
@@ -205,14 +205,14 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
           <button
             onClick={() => setShowCumulative(!showCumulative)}
             className={cn(
-              "text-[8px] font-bold w-5 h-5 rounded flex items-center justify-center transition-colors",
-              showCumulative ? "bg-accent/15 text-accent" : "bg-[hsl(230,20%,10%)] text-muted-foreground/40"
+              "text-[10px] font-bold w-6 h-6 rounded flex items-center justify-center transition-colors",
+              showCumulative ? "bg-[hsl(186,100%,50%)]/15 text-[hsl(186,100%,50%)]" : "bg-[hsl(230,20%,10%)] text-[#94A3B8]"
             )}
           >Σ</button>
           <select
             value={precision}
             onChange={(e) => setPrecision(parseFloat(e.target.value))}
-            className="h-5 text-[8px] font-mono bg-[hsl(230,20%,10%)] border-none rounded px-1.5 text-foreground/70 cursor-pointer focus:outline-none appearance-none"
+            className="h-6 text-[10px] font-mono bg-[hsl(230,20%,10%)] border-none rounded px-1.5 text-[#C7D2E0] cursor-pointer focus:outline-none appearance-none"
           >
             {precisionOptions.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -225,7 +225,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       </div>
 
       {/* Column Header */}
-      <div className="grid grid-cols-3 px-2 py-0.5 text-[7px] font-bold text-[#6B7280] uppercase tracking-widest">
+      <div className="grid grid-cols-3 px-2 py-1 text-[9px] font-bold text-[#94A3B8] uppercase tracking-wider">
         <span>Price</span>
         <span className="text-right">Qty</span>
         <span className="text-right">{showCumulative ? 'Cum' : 'Tot'}</span>
@@ -251,24 +251,24 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* ── Central Price ── */}
       <div
         className={cn(
-          "flex items-center justify-between px-2 h-[30px] border-y border-[hsl(230,20%,12%)]/40 transition-colors duration-700 cursor-pointer",
-          flashDir === 'up' && "bg-success/8",
-          flashDir === 'down' && "bg-danger/8",
+          "flex items-center justify-between px-2 h-[36px] border-y border-[hsl(230,20%,18%)]/50 transition-colors duration-700 cursor-pointer",
+          flashDir === 'up' && "bg-[#00E676]/8",
+          flashDir === 'down' && "bg-[#FF4D4F]/8",
           !flashDir && "bg-[hsl(230,30%,6%)]"
         )}
         onClick={() => onPriceClick?.(effectivePrice)}
       >
         <div className="flex items-center gap-1.5">
           {isPositive
-            ? <TrendingUp className="h-3.5 w-3.5 text-success" />
-            : <TrendingDown className="h-3.5 w-3.5 text-danger" />
+            ? <TrendingUp className="h-4 w-4 text-[#00E676]" />
+            : <TrendingDown className="h-4 w-4 text-[#FF4D4F]" />
           }
-          <span className={cn("text-[13px] font-extrabold font-mono tabular-nums", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
+          <span className={cn("text-[15px] font-extrabold font-mono tabular-nums", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
             {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
           </span>
         </div>
         {spread > 0 && (
-          <span className="text-[8px] font-mono text-[#6B7280] font-semibold">
+          <span className="text-[9px] font-mono text-[#94A3B8] font-semibold">
             {spreadPct.toFixed(2)}%
           </span>
         )}
@@ -292,14 +292,14 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       )}
 
       {/* Pressure bar */}
-      <div className="px-2 py-2 border-t border-[hsl(230,20%,12%)]/40">
+      <div className="px-2 py-2 border-t border-[hsl(230,20%,18%)]/50">
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-mono tabular-nums text-[#00E676] font-bold w-7">{bidPct.toFixed(0)}%</span>
-          <div className="flex-1 h-[4px] rounded-full overflow-hidden flex bg-[#060D18]">
+          <span className="text-[10px] font-mono tabular-nums text-[#00E676] font-bold w-8">{bidPct.toFixed(0)}%</span>
+          <div className="flex-1 h-[5px] rounded-full overflow-hidden flex bg-[#060D18]">
             <div className="bg-[#00E676]/60 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
             <div className="bg-[#FF4D4F]/60 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
           </div>
-          <span className="text-[9px] font-mono tabular-nums text-[#FF4D4F] font-bold w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
+          <span className="text-[10px] font-mono tabular-nums text-[#FF4D4F] font-bold w-8 text-right">{(100 - bidPct).toFixed(0)}%</span>
         </div>
       </div>
     </div>
