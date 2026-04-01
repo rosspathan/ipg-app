@@ -293,10 +293,10 @@ function TradingPairPageContent() {
         )}
 
         {/* ═══ MAIN TRADING MODULE - Premium Parent Card ═══ */}
-        <div className="mx-2 mt-2 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-          <div className="flex flex-row" style={{ minHeight: 440 }}>
-            {/* Order Form - 65% — dominant side */}
-            <div className="flex flex-col p-3.5 min-w-0" style={{ flex: '0 0 65%' }}>
+        <div className="mx-1.5 mt-1.5 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+          <div className="flex flex-row" style={{ minHeight: 420 }}>
+            {/* Order Form - 52% */}
+            <div className="flex flex-col p-2.5 min-w-0" style={{ flex: '0 0 52%' }}>
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
                 quoteCurrency={pair.quoteAsset}
@@ -312,9 +312,10 @@ function TradingPairPageContent() {
                 selectedPrice={selectedPrice}
                 asks={bookAsks}
                 bids={bookBids}
+                compact
               />
             </div>
-            {/* Order Book - 35% — compact side */}
+            {/* Order Book - 48% */}
             <div className="flex flex-col min-w-0 border-l border-[hsl(230,20%,20%)]/30" style={{ flex: '1 1 0%' }}>
               <OrderBookUnified
                 asks={bookAsks}
@@ -327,7 +328,7 @@ function TradingPairPageContent() {
                 baseCurrency={pair.baseAsset}
                 onPriceClick={handlePriceClick}
                 isLoading={!pair}
-                maxRows={8}
+                maxRows={7}
               />
             </div>
           </div>
