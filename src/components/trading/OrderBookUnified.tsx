@@ -251,24 +251,24 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* ── Central Price ── */}
       <div
         className={cn(
-          "flex items-center justify-between px-2 h-[30px] border-y border-[hsl(230,20%,12%)]/40 transition-colors duration-700 cursor-pointer",
-          flashDir === 'up' && "bg-success/8",
-          flashDir === 'down' && "bg-danger/8",
+          "flex items-center justify-between px-2 h-[36px] border-y border-[hsl(230,20%,18%)]/50 transition-colors duration-700 cursor-pointer",
+          flashDir === 'up' && "bg-[#00E676]/8",
+          flashDir === 'down' && "bg-[#FF4D4F]/8",
           !flashDir && "bg-[hsl(230,30%,6%)]"
         )}
         onClick={() => onPriceClick?.(effectivePrice)}
       >
         <div className="flex items-center gap-1.5">
           {isPositive
-            ? <TrendingUp className="h-3.5 w-3.5 text-success" />
-            : <TrendingDown className="h-3.5 w-3.5 text-danger" />
+            ? <TrendingUp className="h-4 w-4 text-[#00E676]" />
+            : <TrendingDown className="h-4 w-4 text-[#FF4D4F]" />
           }
-          <span className={cn("text-[13px] font-extrabold font-mono tabular-nums", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
+          <span className={cn("text-[15px] font-extrabold font-mono tabular-nums", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
             {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
           </span>
         </div>
         {spread > 0 && (
-          <span className="text-[8px] font-mono text-[#6B7280] font-semibold">
+          <span className="text-[9px] font-mono text-[#94A3B8] font-semibold">
             {spreadPct.toFixed(2)}%
           </span>
         )}
