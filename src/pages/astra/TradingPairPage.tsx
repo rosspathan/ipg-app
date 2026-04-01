@@ -315,7 +315,7 @@ function TradingPairPageContent() {
               />
             </div>
             {/* Order Book - 35% — compact side */}
-            <div className="flex flex-col min-w-0 border-l border-[hsl(230,25%,16%)]/20" style={{ flex: '1 1 0%' }}>
+            <div className="flex flex-col min-w-0 border-l border-[hsl(230,20%,20%)]/30" style={{ flex: '1 1 0%' }}>
               <OrderBookUnified
                 asks={bookAsks}
                 bids={bookBids}
