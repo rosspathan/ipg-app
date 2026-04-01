@@ -277,14 +277,14 @@ function TradingPairPageContent() {
         <button
           onClick={() => setChartOpen(!chartOpen)}
           className={cn(
-            "flex items-center justify-center gap-1.5 h-8 text-[10px] font-semibold transition-colors",
-            "border-b border-[hsl(230,20%,12%)]/40",
-            chartOpen ? "text-accent bg-accent/5" : "text-muted-foreground/40 active:text-foreground/60"
+            "flex items-center justify-center gap-2 h-10 text-[13px] font-semibold transition-colors",
+            "border-b border-[hsl(230,20%,18%)]/50",
+            chartOpen ? "text-[#FFFFFF] bg-[hsl(186,100%,50%)]/8" : "text-[#94A3B8] active:text-[#C7D2E0]"
           )}
         >
-          <BarChart2 className="h-3 w-3" />
+          <BarChart2 className="h-4 w-4" />
           <span>Chart</span>
-          <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", chartOpen && "rotate-180")} />
+          <ChevronDown className={cn("h-3 w-3 transition-transform", chartOpen && "rotate-180")} />
         </button>
         {chartOpen && (
           <div className="px-1.5 pb-1.5 border-b border-[hsl(230,20%,12%)]/40">
