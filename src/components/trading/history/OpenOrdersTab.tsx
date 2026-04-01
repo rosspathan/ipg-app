@@ -116,9 +116,9 @@
                      {filledPercent.toFixed(1)}%
                    </div>
                  </div>
-                 <div>
-                   <div className="text-muted-foreground/40 text-[9px] font-semibold uppercase">Remaining</div>
-                   <div className="font-mono text-foreground/60 text-[11px] tabular-nums">{remaining.toFixed(4)}</div>
+                  <div>
+                    <div className="text-[#6B7280] text-[9px] font-semibold uppercase">Remaining</div>
+                    <div className="font-mono text-[#B0B7C3] text-[11px] tabular-nums">{remaining.toFixed(4)}</div>
                  </div>
                </div>
 
