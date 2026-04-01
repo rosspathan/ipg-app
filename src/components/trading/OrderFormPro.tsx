@@ -325,12 +325,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             key={pct}
             onClick={() => handleQuickPercent(pct)}
             className={cn(
-              "h-[28px] text-[10px] font-bold rounded-lg transition-all border",
+              "h-[32px] text-[11px] font-bold rounded-lg transition-all border",
               activePercent === pct
                 ? isBuy
                   ? "bg-[#00E676]/12 text-[#00E676] border-[#00E676]/25 shadow-[0_0_8px_rgba(0,230,118,0.15)]"
                   : "bg-[#FF4D4F]/12 text-[#FF4D4F] border-[#FF4D4F]/25 shadow-[0_0_8px_rgba(255,77,79,0.15)]"
-                : "bg-[#060D18] text-[#B0B7C3] border-[hsl(230,20%,18%)]/40 hover:bg-[hsl(230,20%,13%)] active:bg-[hsl(230,20%,16%)]"
+                : "bg-[#060D18] text-[#C7D2E0] border-[hsl(230,20%,18%)]/40 hover:bg-[hsl(230,20%,13%)] active:bg-[hsl(230,20%,16%)]"
             )}
           >{pct}%</button>
         ))}
