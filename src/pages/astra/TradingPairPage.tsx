@@ -262,12 +262,12 @@ function TradingPairPageContent() {
               { label: "24h High", value: formatPrice(pair.high24h || 0) },
               { label: "24h Low", value: formatPrice(pair.low24h || 0) },
               { label: "Vol", value: formatVol(pair.volume24h || 0) },
-              { label: "Bid", value: formatPrice(bestBidPrice), color: "text-success/80" },
-              { label: "Ask", value: formatPrice(bestAskPrice), color: "text-danger/80" },
+              { label: "Bid", value: formatPrice(bestBidPrice), color: "text-[#00E676]" },
+              { label: "Ask", value: formatPrice(bestAskPrice), color: "text-[#FF4D4F]" },
             ].map(({ label, value, color }) => (
               <div key={label} className="flex flex-col whitespace-nowrap">
-                <span className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-widest">{label}</span>
-                <span className={cn("text-[11px] font-mono tabular-nums font-semibold", color || "text-foreground/70")}>{value}</span>
+                <span className="text-[9px] text-[#6B7280] font-semibold uppercase tracking-widest">{label}</span>
+                <span className={cn("text-[11px] font-mono tabular-nums font-semibold", color || "text-[#B0B7C3]")}>{value}</span>
               </div>
             ))}
           </div>
