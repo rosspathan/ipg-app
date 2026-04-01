@@ -367,14 +367,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* ── Balance + Fee ── */}
       <div className="flex flex-col gap-1 text-[10px] px-1">
         <div className="flex justify-between">
-          <span className="text-muted-foreground/40 font-medium">Avail</span>
-          <span className={cn("font-mono tabular-nums font-semibold", hasInsufficientBalance ? "text-danger" : "text-foreground/60")}>
+          <span className="text-[#6B7280] font-medium">Avail</span>
+          <span className={cn("font-mono tabular-nums font-semibold", hasInsufficientBalance ? "text-[#FF4D4F]" : "text-[#B0B7C3]")}>
             {availableBalance.toFixed(4)} {balanceCurrency}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground/40 font-medium">Est Fee</span>
-          <span className="font-mono tabular-nums text-foreground/40 font-medium">
+          <span className="text-[#6B7280] font-medium">Est Fee</span>
+          <span className="font-mono tabular-nums text-[#B0B7C3] font-medium">
             {total > 0 ? `~${estFee.toFixed(4)}` : '—'} {quoteCurrency}
           </span>
         </div>
