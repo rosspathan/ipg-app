@@ -132,7 +132,7 @@ const StepperInput: React.FC<{
           </button>
         )}
       </div>
-      <div className="flex items-center h-[44px] bg-[hsl(230,30%,8%)] border border-[hsl(230,20%,18%)]/40 rounded-xl overflow-hidden focus-within:border-accent/30 focus-within:shadow-[0_0_0_1px_hsl(186,100%,50%,0.1)] transition-all">
+      <div className="flex items-center h-[44px] bg-[#060D18] border border-[hsl(230,20%,22%)]/50 rounded-xl overflow-hidden focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_hsl(186,100%,50%,0.15)] transition-all">
         {/* Minus - compact 34px */}
         <button
           type="button"
