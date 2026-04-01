@@ -166,9 +166,9 @@ function TradingPairPageContent() {
 
   return (
     <ComplianceGate requireAgeVerification requireTermsAcceptance requireRiskDisclosure>
-      <div className="flex flex-col bg-[hsl(230,80%,3%)] min-h-screen">
+      <div className="flex flex-col bg-[#020617] min-h-screen">
         {/* ═══ PREMIUM HEADER ═══ */}
-        <header className="sticky top-0 z-50 bg-[hsl(230,50%,5%)]/98 backdrop-blur-xl border-b border-[hsl(230,30%,18%)]/30">
+        <header className="sticky top-0 z-50 bg-[#020617]/98 backdrop-blur-xl border-b border-[hsl(230,20%,20%)]/40">
           <div className="flex items-center h-12 px-3 gap-2">
             {/* Back - 44x44 touch target */}
             <button
