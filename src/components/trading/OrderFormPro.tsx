@@ -301,9 +301,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* Market price display */}
       {orderType === 'market' && (
-        <div className="flex items-center justify-between h-[42px] px-3 bg-[hsl(230,30%,8%)] border border-[hsl(230,20%,18%)]/30 rounded-xl">
-          <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold">Market</span>
-          <span className="text-[14px] font-bold font-mono tabular-nums text-foreground">{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
+        <div className="flex items-center justify-between h-[42px] px-3 bg-[#060D18] border border-[hsl(230,20%,22%)]/40 rounded-xl">
+          <span className="text-[10px] text-[#6B7280] uppercase tracking-wider font-semibold">Market</span>
+          <span className="text-[14px] font-bold font-mono tabular-nums text-[#FFFFFF]">{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
         </div>
       )}
 
