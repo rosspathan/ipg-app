@@ -193,15 +193,15 @@ function TradingPairPageContent() {
               {pairPickerOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setPairPickerOpen(false)} />
-                  <div className="absolute left-0 top-full mt-1 w-72 bg-[hsl(230,40%,8%)] border border-[hsl(230,20%,20%)]/40 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div className="p-2 border-b border-[hsl(230,20%,15%)]/30">
+              <div className="absolute left-0 top-full mt-1 w-72 bg-[#0B1220] border border-[hsl(230,20%,22%)]/50 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="p-2 border-b border-[hsl(230,20%,18%)]/40">
                       <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#6B7280]" />
                         <Input
                           placeholder="Search pairs…"
                           value={pairSearch}
                           onChange={(e) => setPairSearch(e.target.value)}
-                          className="pl-8 h-8 bg-[hsl(230,30%,10%)] border-[hsl(230,20%,18%)]/30 text-sm rounded-lg"
+                          className="pl-8 h-8 bg-[#060D18] border-[hsl(230,20%,20%)]/40 text-sm text-[#FFFFFF] rounded-lg"
                           autoFocus
                         />
                       </div>
