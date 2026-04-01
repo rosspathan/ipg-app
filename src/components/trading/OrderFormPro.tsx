@@ -76,7 +76,7 @@ const estimateSlippage = (
   return { avgPrice, slippagePct, levelsConsumed: levels, fillable: filled };
 };
 
-/* ─── Premium Stepper Input ─── */
+/* ─── Compact Stepper Input for mobile split ─── */
 const StepperInput: React.FC<{
   label: string;
   value: string;
@@ -86,8 +86,9 @@ const StepperInput: React.FC<{
   max?: number;
   placeholder?: string;
   suffix?: string;
+  compact?: boolean;
   tag?: { label: string; value: number; color: 'green' | 'red' };
-}> = ({ label, value, onChange, step, min = 0, max, placeholder = '0.00', suffix, tag }) => {
+}> = ({ label, value, onChange, step, min = 0, max, placeholder = '0.00', suffix, compact, tag }) => {
   const numVal = parseFloat(value) || 0;
   const effectiveStep = step ?? getSmartStep(numVal);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -115,25 +116,28 @@ const StepperInput: React.FC<{
 
   useEffect(() => () => stopLongPress(), []);
 
+  const h = compact ? 'h-[38px]' : 'h-[44px]';
+  const btnW = compact ? 'w-[30px]' : 'w-[38px]';
+  const fontSize = compact ? 'text-[13px]' : 'text-[15px]';
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       <div className="flex items-center justify-between px-0.5">
-        <span className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider">{label}</span>
         {tag && tag.value > 0 && (
           <button
             type="button"
             onClick={() => onChange(formatNum(tag.value))}
             className={cn(
-              "text-[9px] font-bold px-2 py-0.5 rounded-md transition-all",
-              tag.color === 'red' ? "text-danger bg-danger/10 active:bg-danger/20" : "text-success bg-success/10 active:bg-success/20"
+              "text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-all",
+              tag.color === 'red' ? "text-[#FF4D4F] bg-[#FF4D4F]/10 active:bg-[#FF4D4F]/20" : "text-[#00E676] bg-[#00E676]/10 active:bg-[#00E676]/20"
             )}
           >
             {tag.label}
           </button>
         )}
       </div>
-      <div className="flex items-center h-[44px] bg-[#060D18] border border-[hsl(230,20%,22%)]/50 rounded-xl overflow-hidden focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_hsl(186,100%,50%,0.15)] transition-all">
-        {/* Minus - compact 34px */}
+      <div className={cn("flex items-center bg-[#060D18] border border-[hsl(230,20%,22%)]/50 rounded-lg overflow-hidden focus-within:border-[hsl(186,100%,50%)]/40 transition-all", h)}>
         <button
           type="button"
           onMouseDown={() => startLongPress(-1)}
@@ -142,10 +146,9 @@ const StepperInput: React.FC<{
           onTouchStart={() => startLongPress(-1)}
           onTouchEnd={stopLongPress}
           disabled={numVal <= min}
-          className="w-[38px] flex-shrink-0 h-full flex items-center justify-center text-[#C7D2E0] text-base font-bold active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-r border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors"
+          className={cn(btnW, "flex-shrink-0 h-full flex items-center justify-center text-[#C7D2E0] text-sm font-bold active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-r border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors")}
         >−</button>
-        {/* Value zone - maximum width, scrollable */}
-        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+        <div className="flex-1 min-w-0 flex items-center gap-0.5 overflow-hidden">
           <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
             <input
               ref={inputRef}
@@ -154,13 +157,12 @@ const StepperInput: React.FC<{
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
-              className="w-full min-w-[40px] bg-transparent text-left px-2 text-[15px] font-mono font-bold text-[#FFFFFF] outline-none tabular-nums placeholder:text-[#6B7280]/40"
+              className={cn("w-full min-w-[30px] bg-transparent text-left px-1.5 font-mono font-bold text-[#FFFFFF] outline-none tabular-nums placeholder:text-[#6B7280]/40", fontSize)}
               style={{ textOverflow: 'clip' }}
             />
           </div>
-          {suffix && <span className="text-[10px] text-[#94A3B8] font-bold flex-shrink-0 pr-1.5 uppercase">{suffix}</span>}
+          {suffix && <span className="text-[8px] text-[#94A3B8] font-bold flex-shrink-0 pr-1 uppercase">{suffix}</span>}
         </div>
-        {/* Plus - compact 34px */}
         <button
           type="button"
           onMouseDown={() => startLongPress(1)}
@@ -169,7 +171,7 @@ const StepperInput: React.FC<{
           onTouchStart={() => startLongPress(1)}
           onTouchEnd={stopLongPress}
           disabled={max !== undefined && numVal >= max}
-          className="w-[38px] flex-shrink-0 h-full flex items-center justify-center text-[#C7D2E0] text-base font-bold active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-l border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors"
+          className={cn(btnW, "flex-shrink-0 h-full flex items-center justify-center text-[#C7D2E0] text-sm font-bold active:bg-[hsl(230,20%,14%)] active:text-[#FFFFFF] disabled:opacity-20 border-l border-[hsl(230,20%,18%)]/40 select-none touch-manipulation transition-colors")}
         >+</button>
       </div>
     </div>
@@ -179,7 +181,7 @@ const StepperInput: React.FC<{
 export const OrderFormPro: React.FC<OrderFormProProps> = ({
   baseCurrency, quoteCurrency, availableBase, availableQuote, currentPrice, lastTradePrice,
   tickSize = 0.00000001, lotSize = 0.0001, onPlaceOrder, isPlacingOrder = false,
-  bestBid = 0, bestAsk = 0, selectedPrice, asks = [], bids = [],
+  bestBid = 0, bestAsk = 0, selectedPrice, compact = false, asks = [], bids = [],
 }) => {
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('limit');
@@ -242,15 +244,17 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   const estFee = total * 0.005;
+  const gap = compact ? 'gap-2.5' : 'gap-3.5';
 
   return (
-    <div className="flex flex-col gap-3.5 h-full">
+    <div className={cn("flex flex-col h-full", gap)}>
       {/* ── Buy / Sell Toggle ── */}
-      <div className="flex h-[42px] rounded-xl overflow-hidden bg-[#060D18] p-[3px]">
+      <div className={cn("flex rounded-xl overflow-hidden bg-[#060D18] p-[2px]", compact ? "h-[36px]" : "h-[42px]")}>
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 rounded-[10px] text-[13px] font-bold uppercase tracking-wider transition-all duration-200",
+            "flex-1 rounded-[10px] font-bold uppercase tracking-wider transition-all duration-200",
+            compact ? "text-[11px]" : "text-[13px]",
             isBuy
               ? "bg-[#00E676] text-[#020617] shadow-[0_2px_12px_rgba(0,230,118,0.35)]"
               : "text-[#94A3B8] hover:text-[#C7D2E0]"
@@ -259,7 +263,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 rounded-[10px] text-[13px] font-bold uppercase tracking-wider transition-all duration-200",
+            "flex-1 rounded-[10px] font-bold uppercase tracking-wider transition-all duration-200",
+            compact ? "text-[11px]" : "text-[13px]",
             !isBuy
               ? "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_2px_12px_rgba(255,77,79,0.35)]"
               : "text-[#94A3B8] hover:text-[#C7D2E0]"
@@ -268,13 +273,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Order Type Tabs ── */}
-      <div className="flex items-center gap-1 bg-[#060D18] rounded-lg p-[3px]">
+      <div className="flex items-center gap-0.5 bg-[#060D18] rounded-lg p-[2px]">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setOrderType(t)}
             className={cn(
-              "flex-1 text-[12px] font-bold capitalize py-2 rounded-md transition-all",
+              "flex-1 font-bold capitalize rounded-md transition-all",
+              compact ? "text-[10px] py-1.5" : "text-[12px] py-2",
               orderType === t
                 ? "bg-[hsl(230,25%,18%)] text-[#FFFFFF] shadow-sm"
                 : "text-[#94A3B8] hover:text-[#C7D2E0]"
@@ -292,18 +298,19 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           step={tickSize}
           min={0}
           suffix={quoteCurrency}
+          compact={compact}
           tag={isBuy
-            ? { label: 'BBO Ask', value: bestAsk, color: 'red' }
-            : { label: 'BBO Bid', value: bestBid, color: 'green' }
+            ? { label: 'BBO', value: bestAsk, color: 'red' }
+            : { label: 'BBO', value: bestBid, color: 'green' }
           }
         />
       )}
 
       {/* Market price display */}
       {orderType === 'market' && (
-        <div className="flex items-center justify-between h-[42px] px-3 bg-[#060D18] border border-[hsl(230,20%,22%)]/40 rounded-xl">
-          <span className="text-[10px] text-[#6B7280] uppercase tracking-wider font-semibold">Market</span>
-          <span className="text-[14px] font-bold font-mono tabular-nums text-[#FFFFFF]">{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
+        <div className={cn("flex items-center justify-between px-2.5 bg-[#060D18] border border-[hsl(230,20%,22%)]/40 rounded-lg", compact ? "h-[36px]" : "h-[42px]")}>
+          <span className="text-[9px] text-[#94A3B8] uppercase tracking-wider font-semibold">Mkt</span>
+          <span className={cn("font-bold font-mono tabular-nums text-[#FFFFFF]", compact ? "text-[12px]" : "text-[14px]")}>{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
         </div>
       )}
 
@@ -316,72 +323,74 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         min={0}
         max={!isBuy ? availableBase : undefined}
         suffix={baseCurrency}
+        compact={compact}
       />
 
       {/* ── Percentage Chips ── */}
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 gap-1">
         {[25, 50, 75, 100].map((pct) => (
           <button
             key={pct}
             onClick={() => handleQuickPercent(pct)}
             className={cn(
-              "h-[32px] text-[11px] font-bold rounded-lg transition-all border",
+              "font-bold rounded-md transition-all border",
+              compact ? "h-[26px] text-[9px]" : "h-[32px] text-[11px]",
               activePercent === pct
                 ? isBuy
-                  ? "bg-[#00E676]/12 text-[#00E676] border-[#00E676]/25 shadow-[0_0_8px_rgba(0,230,118,0.15)]"
-                  : "bg-[#FF4D4F]/12 text-[#FF4D4F] border-[#FF4D4F]/25 shadow-[0_0_8px_rgba(255,77,79,0.15)]"
-                : "bg-[#060D18] text-[#C7D2E0] border-[hsl(230,20%,18%)]/40 hover:bg-[hsl(230,20%,13%)] active:bg-[hsl(230,20%,16%)]"
+                  ? "bg-[#00E676]/12 text-[#00E676] border-[#00E676]/25"
+                  : "bg-[#FF4D4F]/12 text-[#FF4D4F] border-[#FF4D4F]/25"
+                : "bg-[#060D18] text-[#C7D2E0] border-[hsl(230,20%,18%)]/40 active:bg-[hsl(230,20%,16%)]"
             )}
           >{pct}%</button>
         ))}
       </div>
 
       {/* ── Total ── */}
-      <div className="flex items-center justify-between h-[36px] px-3 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-lg">
-        <span className="text-[11px] text-[#94A3B8] font-semibold">Total</span>
-        <span className="text-[13px] font-mono font-bold text-[#FFFFFF] tabular-nums">
-          {total > 0 ? `${total >= 1 ? total.toFixed(2) : total.toFixed(6)} ${quoteCurrency}` : '—'}
+      <div className={cn("flex items-center justify-between px-2 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-md", compact ? "h-[30px]" : "h-[36px]")}>
+        <span className={cn("text-[#94A3B8] font-semibold", compact ? "text-[9px]" : "text-[11px]")}>Total</span>
+        <span className={cn("font-mono font-bold text-[#FFFFFF] tabular-nums", compact ? "text-[11px]" : "text-[13px]")}>
+          {total > 0 ? `${total >= 1 ? total.toFixed(2) : total.toFixed(4)} ${quoteCurrency}` : '—'}
         </span>
       </div>
 
-      {/* Slippage preview */}
-      {slippage && numAmount > 0 && (
+      {/* Slippage preview — only in non-compact or if significant */}
+      {slippage && numAmount > 0 && slippage.slippagePct > 0.1 && (
         <div className={cn(
-          "px-3 py-2 rounded-lg text-[10px] space-y-1 border",
-          slippage.slippagePct > 3 ? "bg-danger/5 border-danger/15 text-danger" :
+          "px-2 py-1.5 rounded-md text-[9px] space-y-0.5 border",
+          slippage.slippagePct > 3 ? "bg-[#FF4D4F]/5 border-[#FF4D4F]/15 text-[#FF4D4F]" :
           slippage.slippagePct > 0.5 ? "bg-warning/5 border-warning/15 text-warning" :
-          "bg-[hsl(230,30%,8%)]/60 border-[hsl(230,20%,18%)]/20 text-muted-foreground"
+          "bg-[hsl(230,30%,8%)]/60 border-[hsl(230,20%,18%)]/20 text-[#94A3B8]"
         )}>
-          <div className="flex justify-between"><span>Avg fill</span><span className="font-mono tabular-nums font-semibold">{slippage.avgPrice >= 1 ? slippage.avgPrice.toFixed(2) : slippage.avgPrice.toFixed(6)}</span></div>
-          <div className="flex justify-between"><span>Slippage</span><span className="font-mono tabular-nums font-semibold">{slippage.slippagePct.toFixed(2)}%</span></div>
-          <div className="flex justify-between"><span>Levels</span><span className="font-mono tabular-nums font-semibold">{slippage.levelsConsumed}</span></div>
+          <div className="flex justify-between"><span>Slip</span><span className="font-mono tabular-nums font-semibold">{slippage.slippagePct.toFixed(2)}%</span></div>
           {slippage.fillable < numAmount && (
-            <div className="flex items-center gap-1 text-danger pt-0.5">
+            <div className="flex items-center gap-1 text-[#FF4D4F]">
               <AlertTriangle className="h-2.5 w-2.5" />
-              <span>Only {slippage.fillable.toFixed(4)} fillable</span>
+              <span>Partial fill</span>
             </div>
           )}
         </div>
       )}
 
       {/* ── Balance + Fee ── */}
-      <div className="flex flex-col gap-1.5 text-[11px] px-1">
+      <div className={cn("flex flex-col gap-1 px-0.5", compact ? "text-[9px]" : "text-[11px]")}>
         <div className="flex justify-between">
           <span className="text-[#94A3B8] font-medium">Avail</span>
           <span className={cn("font-mono tabular-nums font-semibold", hasInsufficientBalance ? "text-[#FF4D4F]" : "text-[#C7D2E0]")}>
-            {availableBalance.toFixed(4)} {balanceCurrency}
+            {availableBalance.toFixed(compact ? 2 : 4)} {balanceCurrency}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-[#94A3B8] font-medium">Est Fee</span>
-          <span className="font-mono tabular-nums text-[#C7D2E0] font-medium">
-            {total > 0 ? `~${estFee.toFixed(4)}` : '—'} {quoteCurrency}
-          </span>
-        </div>
+        {!compact && (
+          <div className="flex justify-between">
+            <span className="text-[#94A3B8] font-medium">Est Fee</span>
+            <span className="font-mono tabular-nums text-[#C7D2E0] font-medium">
+              {total > 0 ? `~${estFee.toFixed(4)}` : '—'} {quoteCurrency}
+            </span>
+          </div>
+        )}
       </div>
 
       {hasInsufficientBalance && (
-        <div className="text-[10px] text-danger text-center bg-danger/8 rounded-lg py-1.5 font-bold">
+        <div className={cn("text-[#FF4D4F] text-center bg-[#FF4D4F]/8 rounded-md font-bold", compact ? "text-[9px] py-1" : "text-[10px] py-1.5")}>
           Insufficient {balanceCurrency}
         </div>
       )}
@@ -391,8 +400,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0}
         className={cn(
-          "w-full h-[44px] rounded-xl text-[13px] font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
+          "w-full rounded-xl font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
+          compact ? "h-[38px] text-[11px]" : "h-[44px] text-[13px]",
           hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
