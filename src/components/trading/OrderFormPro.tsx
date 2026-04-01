@@ -274,10 +274,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             key={t}
             onClick={() => setOrderType(t)}
             className={cn(
-              "flex-1 text-[10px] font-bold capitalize py-1.5 rounded-md transition-all",
+              "flex-1 text-[12px] font-bold capitalize py-2 rounded-md transition-all",
               orderType === t
                 ? "bg-[hsl(230,25%,18%)] text-[#FFFFFF] shadow-sm"
-                : "text-[#6B7280] hover:text-[#B0B7C3]"
+                : "text-[#94A3B8] hover:text-[#C7D2E0]"
             )}
           >{t}</button>
         ))}
