@@ -328,9 +328,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               "h-[28px] text-[10px] font-bold rounded-lg transition-all border",
               activePercent === pct
                 ? isBuy
-                  ? "bg-success/12 text-success border-success/25 shadow-[0_0_8px_hsl(var(--success)/0.15)]"
-                  : "bg-danger/12 text-danger border-danger/25 shadow-[0_0_8px_hsl(var(--danger)/0.15)]"
-                : "bg-[hsl(230,20%,10%)] text-muted-foreground/50 border-[hsl(230,20%,15%)]/30 hover:bg-[hsl(230,20%,13%)] active:bg-[hsl(230,20%,16%)]"
+                  ? "bg-[#00E676]/12 text-[#00E676] border-[#00E676]/25 shadow-[0_0_8px_rgba(0,230,118,0.15)]"
+                  : "bg-[#FF4D4F]/12 text-[#FF4D4F] border-[#FF4D4F]/25 shadow-[0_0_8px_rgba(255,77,79,0.15)]"
+                : "bg-[#060D18] text-[#B0B7C3] border-[hsl(230,20%,18%)]/40 hover:bg-[hsl(230,20%,13%)] active:bg-[hsl(230,20%,16%)]"
             )}
           >{pct}%</button>
         ))}
