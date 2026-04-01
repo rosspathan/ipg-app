@@ -98,7 +98,7 @@ const BookRow = memo(({
       <div
         className={cn(
           "absolute top-0 bottom-0 right-0 pointer-events-none transition-[width] duration-300",
-          isAsk ? "bg-danger/[0.07]" : "bg-success/[0.07]"
+          isAsk ? "bg-[#FF4D4F]/[0.10]" : "bg-[#00E676]/[0.10]"
         )}
         style={{ width: `${depthPct}%` }}
       />
