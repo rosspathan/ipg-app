@@ -73,7 +73,7 @@
                      {order.side}
                    </span>
                    <span className="text-[13px] font-bold text-[#FFFFFF]">{order.symbol}</span>
-                   <span className="text-[9px] px-1.5 py-0.5 bg-[hsl(230,20%,12%)] rounded-md text-muted-foreground/60 font-semibold capitalize">
+                   <span className="text-[9px] px-1.5 py-0.5 bg-[hsl(230,20%,14%)] rounded-md text-[#B0B7C3] font-semibold capitalize">
                      {order.order_type}
                    </span>
                  </div>
