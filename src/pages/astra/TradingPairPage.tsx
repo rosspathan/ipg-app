@@ -216,7 +216,7 @@ function TradingPairPageContent() {
                             p.symbol === pair.symbol ? "bg-accent/5" : "hover:bg-[hsl(230,20%,12%)] active:bg-[hsl(230,20%,15%)]"
                           )}
                         >
-                          <span className="text-[13px] font-semibold text-foreground">{p.symbol}</span>
+                          <span className="text-[13px] font-semibold text-[#FFFFFF]">{p.symbol}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-[12px] font-mono tabular-nums text-muted-foreground">{formatPrice(p.price)}</span>
                             <span className={cn(
