@@ -185,7 +185,7 @@ function TradingPairPageContent() {
                 onClick={() => setPairPickerOpen(!pairPickerOpen)}
                 className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg active:bg-[hsl(230,30%,12%)] transition-colors"
               >
-                <span className="text-base font-bold text-foreground tracking-tight">{pair.baseAsset}<span className="text-muted-foreground/50">/{pair.quoteAsset}</span></span>
+                <span className="text-base font-bold text-[#FFFFFF] tracking-tight">{pair.baseAsset}<span className="text-[#B0B7C3]">/{pair.quoteAsset}</span></span>
                 <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground/40 transition-transform", pairPickerOpen && "rotate-180")} />
               </button>
 
