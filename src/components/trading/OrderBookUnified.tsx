@@ -205,14 +205,14 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
           <button
             onClick={() => setShowCumulative(!showCumulative)}
             className={cn(
-              "text-[8px] font-bold w-5 h-5 rounded flex items-center justify-center transition-colors",
-              showCumulative ? "bg-accent/15 text-accent" : "bg-[hsl(230,20%,10%)] text-muted-foreground/40"
+              "text-[10px] font-bold w-6 h-6 rounded flex items-center justify-center transition-colors",
+              showCumulative ? "bg-[hsl(186,100%,50%)]/15 text-[hsl(186,100%,50%)]" : "bg-[hsl(230,20%,10%)] text-[#94A3B8]"
             )}
           >Σ</button>
           <select
             value={precision}
             onChange={(e) => setPrecision(parseFloat(e.target.value))}
-            className="h-5 text-[8px] font-mono bg-[hsl(230,20%,10%)] border-none rounded px-1.5 text-foreground/70 cursor-pointer focus:outline-none appearance-none"
+            className="h-6 text-[10px] font-mono bg-[hsl(230,20%,10%)] border-none rounded px-1.5 text-[#C7D2E0] cursor-pointer focus:outline-none appearance-none"
           >
             {precisionOptions.map(p => <option key={p} value={p}>{p}</option>)}
           </select>

@@ -158,7 +158,7 @@ const StepperInput: React.FC<{
               style={{ textOverflow: 'clip' }}
             />
           </div>
-          {suffix && <span className="text-[9px] text-[#6B7280] font-bold flex-shrink-0 pr-1 uppercase">{suffix}</span>}
+          {suffix && <span className="text-[10px] text-[#94A3B8] font-bold flex-shrink-0 pr-1.5 uppercase">{suffix}</span>}
         </div>
         {/* Plus - compact 34px */}
         <button

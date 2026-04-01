@@ -43,16 +43,16 @@ export function TradingHistoryTabs({
   return (
     <div>
       {/* Premium tab bar */}
-      <div className="flex items-stretch border-b border-[hsl(230,20%,20%)]/40">
+      <div className="flex items-stretch border-b border-[hsl(230,20%,18%)]/50">
         {tabs.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
             className={cn(
-              "flex-1 flex items-center justify-center gap-1 h-[40px] text-[11px] font-bold uppercase tracking-wider transition-all relative",
+              "flex-1 flex items-center justify-center gap-1 h-[44px] text-[12px] font-bold uppercase tracking-wider transition-all relative",
               activeTab === key
                 ? "text-[#FFFFFF]"
-                : "text-[#6B7280] hover:text-[#B0B7C3]"
+                : "text-[#94A3B8] hover:text-[#C7D2E0]"
             )}
           >
             {label}
