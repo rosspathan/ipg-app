@@ -154,7 +154,7 @@ const StepperInput: React.FC<{
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
-              className="w-full min-w-[40px] bg-transparent text-left px-2 text-[15px] font-mono font-bold text-foreground outline-none tabular-nums placeholder:text-muted-foreground/15"
+              className="w-full min-w-[40px] bg-transparent text-left px-2 text-[15px] font-mono font-bold text-[#FFFFFF] outline-none tabular-nums placeholder:text-[#6B7280]/40"
               style={{ textOverflow: 'clip' }}
             />
           </div>
