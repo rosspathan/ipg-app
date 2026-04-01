@@ -118,7 +118,7 @@ const StepperInput: React.FC<{
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between px-0.5">
-        <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">{label}</span>
         {tag && tag.value > 0 && (
           <button
             type="button"
