@@ -263,7 +263,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
             ? <TrendingUp className="h-3.5 w-3.5 text-success" />
             : <TrendingDown className="h-3.5 w-3.5 text-danger" />
           }
-          <span className={cn("text-[13px] font-extrabold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
+          <span className={cn("text-[13px] font-extrabold font-mono tabular-nums", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
             {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
           </span>
         </div>
