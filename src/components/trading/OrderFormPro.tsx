@@ -246,23 +246,23 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   return (
     <div className="flex flex-col gap-3.5 h-full">
       {/* ── Buy / Sell Toggle ── */}
-      <div className="flex h-[38px] rounded-xl overflow-hidden bg-[#060D18] p-[3px]">
+      <div className="flex h-[42px] rounded-xl overflow-hidden bg-[#060D18] p-[3px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 rounded-[10px] text-[12px] font-bold uppercase tracking-wider transition-all duration-200",
+            "flex-1 rounded-[10px] text-[13px] font-bold uppercase tracking-wider transition-all duration-200",
             isBuy
               ? "bg-[#00E676] text-[#020617] shadow-[0_2px_12px_rgba(0,230,118,0.35)]"
-              : "text-[#6B7280] hover:text-[#B0B7C3]"
+              : "text-[#94A3B8] hover:text-[#C7D2E0]"
           )}
         >Buy</button>
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 rounded-[10px] text-[12px] font-bold uppercase tracking-wider transition-all duration-200",
+            "flex-1 rounded-[10px] text-[13px] font-bold uppercase tracking-wider transition-all duration-200",
             !isBuy
               ? "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_2px_12px_rgba(255,77,79,0.35)]"
-              : "text-[#6B7280] hover:text-[#B0B7C3]"
+              : "text-[#94A3B8] hover:text-[#C7D2E0]"
           )}
         >Sell</button>
       </div>
