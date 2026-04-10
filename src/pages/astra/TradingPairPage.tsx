@@ -256,18 +256,16 @@ function TradingPairPageContent() {
             <AdminMarketMakerControls isAdmin={isAdmin} />
           </div>
 
-          {/* ═══ STATS STRIP ═══ */}
-          <div className="flex items-center gap-5 px-3 pb-2.5 overflow-x-auto no-scrollbar">
+        {/* ═══ STATS STRIP ═══ */}
+          <div className="flex items-center gap-4 px-3 pb-2 overflow-x-auto no-scrollbar">
             {[
-              { label: "24h High", value: formatPrice(pair.high24h || 0) },
-              { label: "24h Low", value: formatPrice(pair.low24h || 0) },
+              { label: "H", value: formatPrice(pair.high24h || 0) },
+              { label: "L", value: formatPrice(pair.low24h || 0) },
               { label: "Vol", value: formatVol(pair.volume24h || 0) },
-              { label: "Bid", value: formatPrice(bestBidPrice), color: "text-[#00E676]" },
-              { label: "Ask", value: formatPrice(bestAskPrice), color: "text-[#FF4D4F]" },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="flex flex-col whitespace-nowrap">
-                <span className="text-[10px] text-[#94A3B8] font-semibold uppercase tracking-wider">{label}</span>
-                <span className={cn("text-[12px] font-mono tabular-nums font-semibold", color || "text-[#C7D2E0]")}>{value}</span>
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center gap-1 whitespace-nowrap">
+                <span className="text-[10px] text-[#94A3B8] font-semibold uppercase">{label}</span>
+                <span className="text-[11px] font-mono tabular-nums font-semibold text-[#C7D2E0]">{value}</span>
               </div>
             ))}
           </div>
@@ -293,8 +291,8 @@ function TradingPairPageContent() {
         )}
 
         {/* ═══ MAIN TRADING MODULE - Premium Parent Card ═══ */}
-        <div className="mx-1.5 mt-1.5 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-          <div className="flex flex-row" style={{ minHeight: 420 }}>
+        <div className="mx-1.5 mt-1 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+          <div className="flex flex-row" style={{ minHeight: 460 }}>
             {/* Order Form - 52% */}
             <div className="flex flex-col p-2.5 min-w-0" style={{ flex: '0 0 52%' }}>
               <OrderFormPro
@@ -328,7 +326,7 @@ function TradingPairPageContent() {
                 baseCurrency={pair.baseAsset}
                 onPriceClick={handlePriceClick}
                 isLoading={!pair}
-                maxRows={7}
+                maxRows={8}
               />
             </div>
           </div>
