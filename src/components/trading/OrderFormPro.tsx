@@ -157,7 +157,7 @@ const StepperInput: React.FC<{
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
-              className={cn("w-full min-w-[30px] bg-transparent text-left px-1.5 font-mono font-bold text-[#FFFFFF] outline-none tabular-nums placeholder:text-[#6B7280]/40", fontSize)}
+              className={cn("w-full min-w-[30px] bg-transparent text-center px-1.5 font-mono font-bold text-[#FFFFFF] outline-none tabular-nums placeholder:text-[#6B7280]/40", fontSize)}
               style={{ textOverflow: 'clip' }}
             />
           </div>
@@ -188,6 +188,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const [price, setPrice] = useState(currentPrice >= 1 ? currentPrice.toFixed(2) : currentPrice.toFixed(6));
   const [amount, setAmount] = useState('');
   const [activePercent, setActivePercent] = useState<number | null>(null);
+  const [sliderValue, setSliderValue] = useState(0);
 
   useEffect(() => {
     if (selectedPrice != null && selectedPrice > 0) {
@@ -224,11 +225,31 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   const handleQuickPercent = (pct: number) => {
     setActivePercent(pct);
+    setSliderValue(pct);
     const ep = orderType === 'market' ? referencePrice : numPrice;
+    if (pct === 0) {
+      setAmount('');
+      return;
+    }
     if (isBuy && ep > 0) {
       setAmount(((availableQuote * (pct / 100)) / ep).toFixed(6));
     } else if (!isBuy) {
       setAmount((availableBase * (pct / 100)).toFixed(6));
+    }
+  };
+
+  const handleSliderChange = (val: number) => {
+    setSliderValue(val);
+    setActivePercent(val);
+    const ep = orderType === 'market' ? referencePrice : numPrice;
+    if (val === 0) {
+      setAmount('');
+      return;
+    }
+    if (isBuy && ep > 0) {
+      setAmount(((availableQuote * (val / 100)) / ep).toFixed(6));
+    } else if (!isBuy) {
+      setAmount((availableBase * (val / 100)).toFixed(6));
     }
   };
 
@@ -241,10 +262,17 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     onPlaceOrder({ side, type: orderType, price: orderType === 'market' ? undefined : numPrice, quantity: numAmount });
     setAmount('');
     setActivePercent(null);
+    setSliderValue(0);
   };
 
   const estFee = total * 0.005;
-  const gap = compact ? 'gap-2.5' : 'gap-3.5';
+  const gap = compact ? 'gap-2' : 'gap-3';
+
+  const fmtBalance = (v: number) => {
+    if (v >= 1000) return v.toFixed(2);
+    if (v >= 1) return v.toFixed(4);
+    return v.toFixed(6);
+  };
 
   return (
     <div className={cn("flex flex-col h-full", gap)}>
@@ -259,7 +287,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               ? "bg-[#00E676] text-[#020617] shadow-[0_2px_12px_rgba(0,230,118,0.35)]"
               : "text-[#94A3B8] hover:text-[#C7D2E0]"
           )}
-        >Buy</button>
+        >BUY</button>
         <button
           onClick={() => setSide('sell')}
           className={cn(
@@ -269,35 +297,40 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               ? "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_2px_12px_rgba(255,77,79,0.35)]"
               : "text-[#94A3B8] hover:text-[#C7D2E0]"
           )}
-        >Sell</button>
+        >SELL</button>
       </div>
 
       {/* ── Order Type Tabs ── */}
-      <div className="flex items-center gap-0.5 bg-[#060D18] rounded-lg p-[2px]">
+      <div className="flex items-center border-b border-[hsl(230,20%,18%)]/50 gap-3 px-0.5">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setOrderType(t)}
             className={cn(
-              "flex-1 font-bold capitalize rounded-md transition-all",
-              compact ? "text-[10px] py-1.5" : "text-[12px] py-2",
+              "pb-1.5 font-bold capitalize transition-all relative",
+              compact ? "text-[11px]" : "text-[12px]",
               orderType === t
-                ? "bg-[hsl(230,25%,18%)] text-[#FFFFFF] shadow-sm"
+                ? "text-[#FFFFFF]"
                 : "text-[#94A3B8] hover:text-[#C7D2E0]"
             )}
-          >{t}</button>
+          >
+            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {orderType === t && (
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[hsl(186,100%,50%)] rounded-full" />
+            )}
+          </button>
         ))}
       </div>
 
       {/* ── Price Input ── */}
       {orderType !== 'market' && (
         <StepperInput
-          label="Price"
+          label={`Price (${quoteCurrency})`}
           value={price}
           onChange={setPrice}
           step={tickSize}
           min={0}
-          suffix={quoteCurrency}
+          suffix=""
           compact={compact}
           tag={isBuy
             ? { label: 'BBO', value: bestAsk, color: 'red' }
@@ -309,32 +342,65 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* Market price display */}
       {orderType === 'market' && (
         <div className={cn("flex items-center justify-between px-2.5 bg-[#060D18] border border-[hsl(230,20%,22%)]/40 rounded-lg", compact ? "h-[36px]" : "h-[42px]")}>
-          <span className="text-[9px] text-[#94A3B8] uppercase tracking-wider font-semibold">Mkt</span>
+          <span className="text-[9px] text-[#94A3B8] uppercase tracking-wider font-semibold">Market Price</span>
           <span className={cn("font-bold font-mono tabular-nums text-[#FFFFFF]", compact ? "text-[12px]" : "text-[14px]")}>{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
         </div>
       )}
 
       {/* ── Amount Input ── */}
       <StepperInput
-        label="Amount"
+        label={`Amount (${baseCurrency})`}
         value={amount}
-        onChange={(v) => { setAmount(v); setActivePercent(null); }}
+        onChange={(v) => { setAmount(v); setActivePercent(null); setSliderValue(0); }}
         step={lotSize}
         min={0}
         max={!isBuy ? availableBase : undefined}
-        suffix={baseCurrency}
+        placeholder="0.00000000"
+        suffix=""
         compact={compact}
       />
 
+      {/* ── Range Slider ── */}
+      <div className="px-1 relative">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={sliderValue}
+          onChange={(e) => handleSliderChange(parseInt(e.target.value))}
+          className="w-full h-[3px] appearance-none bg-[hsl(230,20%,20%)] rounded-full cursor-pointer
+            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
+            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#C7D2E0]
+            [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#060D18]
+            [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer
+            [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3
+            [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#C7D2E0]
+            [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#060D18]"
+        />
+        {/* Dot markers */}
+        <div className="flex justify-between px-0.5 mt-0.5 pointer-events-none">
+          {[0, 25, 50, 75, 100].map((dot) => (
+            <div
+              key={dot}
+              className={cn(
+                "w-1.5 h-1.5 rounded-full transition-colors",
+                sliderValue >= dot ? (isBuy ? "bg-[#00E676]/60" : "bg-[#FF4D4F]/60") : "bg-[hsl(230,20%,25%)]"
+              )}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* ── Percentage Chips ── */}
-      <div className="grid grid-cols-4 gap-1">
-        {[25, 50, 75, 100].map((pct) => (
+      <div className="grid grid-cols-5 gap-1">
+        {[0, 25, 50, 75, 100].map((pct) => (
           <button
             key={pct}
             onClick={() => handleQuickPercent(pct)}
             className={cn(
               "font-bold rounded-md transition-all border",
-              compact ? "h-[26px] text-[9px]" : "h-[32px] text-[11px]",
+              compact ? "h-[24px] text-[9px]" : "h-[30px] text-[11px]",
               activePercent === pct
                 ? isBuy
                   ? "bg-[#00E676]/12 text-[#00E676] border-[#00E676]/25"
@@ -346,14 +412,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Total ── */}
-      <div className={cn("flex items-center justify-between px-2 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-md", compact ? "h-[30px]" : "h-[36px]")}>
-        <span className={cn("text-[#94A3B8] font-semibold", compact ? "text-[9px]" : "text-[11px]")}>Total</span>
+      <div className={cn("flex items-center justify-between px-2.5 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-lg", compact ? "h-[32px]" : "h-[36px]")}>
+        <span className={cn("text-[#94A3B8] font-semibold", compact ? "text-[10px]" : "text-[11px]")}>Total ({quoteCurrency})</span>
         <span className={cn("font-mono font-bold text-[#FFFFFF] tabular-nums", compact ? "text-[11px]" : "text-[13px]")}>
-          {total > 0 ? `${total >= 1 ? total.toFixed(2) : total.toFixed(4)} ${quoteCurrency}` : '—'}
+          {total > 0 ? (total >= 1 ? total.toFixed(2) : total.toFixed(4)) : '— —'}
         </span>
       </div>
 
-      {/* Slippage preview — only in non-compact or if significant */}
+      {/* Slippage preview */}
       {slippage && numAmount > 0 && slippage.slippagePct > 0.1 && (
         <div className={cn(
           "px-2 py-1.5 rounded-md text-[9px] space-y-0.5 border",
@@ -361,7 +427,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           slippage.slippagePct > 0.5 ? "bg-warning/5 border-warning/15 text-warning" :
           "bg-[hsl(230,30%,8%)]/60 border-[hsl(230,20%,18%)]/20 text-[#94A3B8]"
         )}>
-          <div className="flex justify-between"><span>Slip</span><span className="font-mono tabular-nums font-semibold">{slippage.slippagePct.toFixed(2)}%</span></div>
+          <div className="flex justify-between"><span>Slippage</span><span className="font-mono tabular-nums font-semibold">{slippage.slippagePct.toFixed(2)}%</span></div>
           {slippage.fillable < numAmount && (
             <div className="flex items-center gap-1 text-[#FF4D4F]">
               <AlertTriangle className="h-2.5 w-2.5" />
@@ -371,22 +437,26 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       )}
 
-      {/* ── Balance + Fee ── */}
-      <div className={cn("flex flex-col gap-1 px-0.5", compact ? "text-[9px]" : "text-[11px]")}>
+      {/* ── Balance + Max + Fee ── */}
+      <div className={cn("flex flex-col gap-1 px-0.5", compact ? "text-[10px]" : "text-[11px]")}>
         <div className="flex justify-between">
-          <span className="text-[#94A3B8] font-medium">Avail</span>
+          <span className="text-[#94A3B8] font-medium">Available</span>
           <span className={cn("font-mono tabular-nums font-semibold", hasInsufficientBalance ? "text-[#FF4D4F]" : "text-[#C7D2E0]")}>
-            {availableBalance.toFixed(compact ? 2 : 4)} {balanceCurrency}
+            {fmtBalance(availableBalance)} <span className="text-[#94A3B8] text-[8px]">{balanceCurrency}</span>
           </span>
         </div>
-        {!compact && (
-          <div className="flex justify-between">
-            <span className="text-[#94A3B8] font-medium">Est Fee</span>
-            <span className="font-mono tabular-nums text-[#C7D2E0] font-medium">
-              {total > 0 ? `~${estFee.toFixed(4)}` : '—'} {quoteCurrency}
-            </span>
-          </div>
-        )}
+        <div className="flex justify-between">
+          <span className="text-[#94A3B8] font-medium">Max {isBuy ? 'Buy' : 'Sell'}</span>
+          <span className="font-mono tabular-nums text-[#C7D2E0] font-semibold">
+            {fmtBalance(maxBuyAmount)} <span className="text-[#94A3B8] text-[8px]">{baseCurrency}</span>
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[#94A3B8] font-medium">Est. Fee</span>
+          <span className="font-mono tabular-nums text-[#C7D2E0] font-medium">
+            {total > 0 ? `~${estFee.toFixed(4)}` : '—'} <span className="text-[#94A3B8] text-[8px]">{quoteCurrency}</span>
+          </span>
+        </div>
       </div>
 
       {hasInsufficientBalance && (
@@ -402,7 +472,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         className={cn(
           "w-full rounded-xl font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
-          compact ? "h-[38px] text-[11px]" : "h-[44px] text-[13px]",
+          compact ? "h-[40px] text-[12px]" : "h-[44px] text-[13px]",
           hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
