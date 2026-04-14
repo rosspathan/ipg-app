@@ -6,6 +6,7 @@ import {
   TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Clock,
   BarChart2, Zap
 } from "lucide-react"
+import { BSKTradableCard } from "@/components/wallet/BSKTradableCard"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
