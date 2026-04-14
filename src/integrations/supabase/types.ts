@@ -1813,6 +1813,63 @@ export type Database = {
           },
         ]
       }
+      bsk_global_unlock_events: {
+        Row: {
+          admin_user_id: string
+          completed_at: string | null
+          confirmation_phrase: string
+          conversion_ratio: number
+          created_at: string
+          error_summary: Json | null
+          id: string
+          started_at: string
+          status: string
+          total_locked_bsk_before: number
+          total_locked_bsk_deducted: number
+          total_remainder_bsk: number
+          total_tradable_bsk_credited: number
+          total_users_failed: number
+          total_users_processed: number
+          total_users_skipped: number
+        }
+        Insert: {
+          admin_user_id: string
+          completed_at?: string | null
+          confirmation_phrase: string
+          conversion_ratio?: number
+          created_at?: string
+          error_summary?: Json | null
+          id?: string
+          started_at?: string
+          status?: string
+          total_locked_bsk_before?: number
+          total_locked_bsk_deducted?: number
+          total_remainder_bsk?: number
+          total_tradable_bsk_credited?: number
+          total_users_failed?: number
+          total_users_processed?: number
+          total_users_skipped?: number
+        }
+        Update: {
+          admin_user_id?: string
+          completed_at?: string | null
+          confirmation_phrase?: string
+          conversion_ratio?: number
+          created_at?: string
+          error_summary?: Json | null
+          id?: string
+          started_at?: string
+          status?: string
+          total_locked_bsk_before?: number
+          total_locked_bsk_deducted?: number
+          total_remainder_bsk?: number
+          total_tradable_bsk_credited?: number
+          total_users_failed?: number
+          total_users_processed?: number
+          total_users_skipped?: number
+        }
+        Relationships: []
+      }
       bsk_holding_ledger: {
         Row: {
           amount_bsk: number
@@ -3416,6 +3473,71 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      bsk_unlock_user_records: {
+        Row: {
+          conversion_ratio: number
+          created_at: string
+          error_details: string | null
+          event_id: string
+          holding_after: number
+          holding_before: number
+          id: string
+          locked_bsk_before: number
+          locked_bsk_deducted: number
+          remainder_bsk: number
+          remainder_treatment: string
+          status: string
+          tradable_bsk_credited: number
+          user_id: string
+          withdrawable_after: number
+          withdrawable_before: number
+        }
+        Insert: {
+          conversion_ratio: number
+          created_at?: string
+          error_details?: string | null
+          event_id: string
+          holding_after?: number
+          holding_before: number
+          id?: string
+          locked_bsk_before: number
+          locked_bsk_deducted: number
+          remainder_bsk?: number
+          remainder_treatment?: string
+          status?: string
+          tradable_bsk_credited: number
+          user_id: string
+          withdrawable_after: number
+          withdrawable_before: number
+        }
+        Update: {
+          conversion_ratio?: number
+          created_at?: string
+          error_details?: string | null
+          event_id?: string
+          holding_after?: number
+          holding_before?: number
+          id?: string
+          locked_bsk_before?: number
+          locked_bsk_deducted?: number
+          remainder_bsk?: number
+          remainder_treatment?: string
+          status?: string
+          tradable_bsk_credited?: number
+          user_id?: string
+          withdrawable_after?: number
+          withdrawable_before?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_unlock_user_records_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_global_unlock_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bsk_vesting_config: {
         Row: {
@@ -13967,6 +14089,10 @@ export type Database = {
         Returns: boolean
       }
       distribute_staking_rewards_batch: { Args: never; Returns: Json }
+      execute_bsk_global_unlock: {
+        Args: { p_confirmation_phrase: string }
+        Returns: Json
+      }
       execute_bsk_transfer: {
         Args: { p_amount: number; p_recipient_id: string; p_sender_id: string }
         Returns: Json
@@ -14335,6 +14461,7 @@ export type Database = {
         Args: { p_module_id: string; p_user_id: string }
         Returns: string
       }
+      is_bsk_holding_sunset: { Args: never; Returns: boolean }
       lock_balance_for_order:
         | {
             Args: { p_amount: number; p_asset_id: string; p_user_id: string }
@@ -14414,6 +14541,7 @@ export type Database = {
         }
         Returns: Json
       }
+      preview_bsk_global_unlock: { Args: never; Returns: Json }
       process_badge_qualification: {
         Args: {
           p_ipg_amount: number

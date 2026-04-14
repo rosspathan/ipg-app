@@ -705,6 +705,7 @@ function AppContent() {
                 <Route path="migration-control" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminMigrationControl')))}</React.Suspense>} />
                 <Route path="bsk-migration-audit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationAudit')))}</React.Suspense>} />
                 <Route path="bsk-migration-settings" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationSettings')))}</React.Suspense>} />
+                <Route path="bsk-global-unlock" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminBSKGlobalUnlock')))}</React.Suspense>} />
                 {/* BSK Reports */}
                 <Route path="bsk-migration-reports" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationReports')))}</React.Suspense>} />
                 <Route path="bsk-loan-reports" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKLoanReports')))}</React.Suspense>} />

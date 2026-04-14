@@ -22,6 +22,7 @@ import {
   FileBarChart,
   ScrollText,
   Download,
+  Unlock,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -69,6 +70,7 @@ const managementNav: NavItem[] = [
   { title: "Insurance", url: "/admin/insurance", icon: FileText },
   { title: "Loans", url: "/admin/bsk-loans", icon: DollarSign },
   { title: "Badges", url: "/admin/badges", icon: Crown },
+  { title: "BSK Global Unlock", url: "/admin/bsk-global-unlock", icon: Unlock },
 ];
 
 const reportsNav: NavItem[] = [
