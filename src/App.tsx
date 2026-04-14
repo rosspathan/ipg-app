@@ -707,6 +707,7 @@ function AppContent() {
                 <Route path="bsk-migration-settings" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationSettings')))}</React.Suspense>} />
                 <Route path="bsk-global-unlock" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminBSKGlobalUnlock')))}</React.Suspense>} />
                 {/* BSK Reports */}
+                <Route path="bsk-forensic-audit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminBSKForensicAudit')))}</React.Suspense>} />
                 <Route path="bsk-migration-reports" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationReports')))}</React.Suspense>} />
                 <Route path="bsk-loan-reports" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKLoanReports')))}</React.Suspense>} />
                 <Route path="vip-milestones" element={<React.Suspense fallback={<LoadingFallback />}><VIPMilestoneMonitor /></React.Suspense>} />
