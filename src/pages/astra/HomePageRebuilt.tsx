@@ -3,19 +3,15 @@ import { useState } from "react"
 import { 
   Gift, ChevronRight, ArrowUpRight, Send, ArrowRightLeft,
   Users, Landmark, TrendingUp, TrendingDown, Eye, EyeOff,
-  Lock, History, Calendar, Users2, Zap, ArrowRight
+  History, Zap
 } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
-import { Button } from "@/components/ui/button"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
-import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { ImageCarousel } from "@/components/home/ImageCarousel"
 import { RefreshControl } from "@/components/ui/refresh-control"
 import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms"
 import { useHomePageData } from "@/hooks/useHomePageData"
 import { HomePageSkeleton } from "@/components/home/HomePageSkeleton"
-import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { USDILoanCard } from "@/components/wallet/USDILoanCard"
 import { useTradingPairs } from "@/hooks/useTradingPairs"
 import { cn } from "@/lib/utils"
@@ -27,7 +23,6 @@ import { formatDistanceToNow } from "date-fns"
  */
 export function HomePageRebuilt() {
   const { navigate } = useNavigation()
-  const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [balanceHidden, setBalanceHidden] = useState(false)
   const { programs: allPrograms } = useActivePrograms()
@@ -42,8 +37,10 @@ export function HomePageRebuilt() {
   }
 
   const balance = data?.balance || {
-    withdrawable: 0, holding: 0, total: 0,
-    earnedWithdrawable: 0, earnedHolding: 0, todayEarned: 0, weekEarned: 0,
+    withdrawable: 0,
+    total: 0,
+    earnedWithdrawable: 0,
+    todayEarned: 0,
   }
   const recentActivity = data?.recentActivity || []
   const displayName = data?.displayName || 'User'
@@ -181,79 +178,150 @@ export function HomePageRebuilt() {
             </div>
           </div>
 
-          {/* ── BALANCE MODULE ── */}
-          <div className="px-4 grid grid-cols-2 gap-3">
-            {/* Tradable Card */}
-            <div className="relative p-4 rounded-3xl space-y-2 glass-card backdrop-blur-xl border border-success/20 card-glow-success transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5 overflow-hidden">
-              {/* Top rim gradient */}
-              <div className="absolute inset-0 bg-gradient-to-b from-success/[0.06] to-transparent pointer-events-none rounded-3xl" />
-              {/* Corner accent */}
-              <div className="absolute top-0 right-0 w-14 h-14 bg-gradient-to-bl from-success/10 to-transparent rounded-bl-full pointer-events-none" />
+          {/* ── BSK WALLET HERO ── */}
+          <div className="px-4 space-y-3">
+            <div
+              className="relative overflow-hidden rounded-[32px] glass-card backdrop-blur-xl border border-success/20 shadow-card"
+              data-testid="wallet-bsk-hero-card"
+            >
+              <div
+                className="absolute -top-16 -right-10 h-40 w-40 rounded-full opacity-30 pointer-events-none"
+                style={{ background: 'radial-gradient(circle, hsl(var(--success) / 0.28), transparent 70%)' }}
+              />
+              <div
+                className="absolute -bottom-20 -left-12 h-48 w-48 rounded-full opacity-20 pointer-events-none"
+                style={{ background: 'radial-gradient(circle, hsl(var(--accent) / 0.24), transparent 70%)' }}
+              />
+              <div
+                className="absolute inset-x-0 top-0 h-px pointer-events-none"
+                style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--success) / 0.65), hsl(var(--accent) / 0.35), transparent)' }}
+              />
 
-              <div className="relative">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Tradable</p>
-                <p className="text-[24px] font-extrabold tabular-nums font-mono text-success mt-1.5">
-                  {balanceHidden ? '••••' : balance.withdrawable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="text-[10px] font-semibold text-muted-foreground">BSK</p>
-                <div className="flex gap-1.5 pt-2 flex-wrap">
+              <div className="relative p-5 space-y-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/10 px-3 py-1">
+                      <span className="h-2 w-2 rounded-full bg-success shadow-[0_0_10px_hsl(var(--success)/0.6)]" />
+                      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-success">Tradable BSK</span>
+                    </div>
+                    <p className="max-w-[240px] text-[12px] leading-relaxed text-muted-foreground">
+                      Your primary BSK balance for withdraw, transfer, or on-chain migration.
+                    </p>
+                  </div>
+
                   <button
-                    onClick={() => navigate("/app/programs/bsk-withdraw")}
-                    className="flex-1 h-8 rounded-xl text-[10px] font-semibold bg-success/15 border border-success/30 text-success transition-all hover:bg-success/20 hover:shadow-sm active:scale-[0.97]"
+                    onClick={() => setBalanceHidden(!balanceHidden)}
+                    className="h-10 w-10 rounded-2xl border border-border/40 bg-background/40 backdrop-blur-xl transition-all duration-200 hover:border-success/25 hover:shadow-button active:scale-[0.96]"
+                    aria-label={balanceHidden ? "Show BSK balance" : "Hide BSK balance"}
                   >
-                    Withdraw
+                    {balanceHidden ? <Eye className="mx-auto h-4 w-4 text-muted-foreground" /> : <EyeOff className="mx-auto h-4 w-4 text-muted-foreground" />}
                   </button>
-                  <button
-                    onClick={() => navigate("/app/programs/bsk-transfer")}
-                    className="flex-1 h-8 rounded-xl text-[10px] font-semibold bg-muted/60 border border-border text-foreground/70 transition-all hover:border-primary/20 hover:shadow-sm active:scale-[0.97]"
-                  >
-                    Transfer
-                  </button>
-                  <button
-                    onClick={() => navigate("/app/programs/bsk-migrate")}
-                    className="flex-1 h-8 rounded-xl text-[10px] font-semibold bg-accent/15 border border-accent/30 text-accent transition-all hover:bg-accent/20 hover:shadow-sm active:scale-[0.97]"
-                  >
-                    Migrate
-                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-end gap-3">
+                    <p
+                      className={cn(
+                        "text-[42px] font-extrabold leading-none tracking-tight tabular-nums font-heading transition-all duration-300 sm:text-[46px]",
+                        balanceHidden && "blur-md select-none"
+                      )}
+                      style={{
+                        background: 'linear-gradient(135deg, hsl(var(--success)), hsl(var(--accent)))',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}
+                    >
+                      {balanceHidden ? '••••••' : balance.withdrawable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <span className="pb-1 text-[16px] font-bold tracking-[0.24em] text-success/80">BSK</span>
+                  </div>
+
+                  <p className={cn(
+                    "text-[13px] font-mono tabular-nums text-muted-foreground transition-all duration-300",
+                    balanceHidden && "blur-sm select-none"
+                  )}>
+                    {balanceHidden ? '••••••' : `≈ ₹${(balance.withdrawable * BSK_TO_INR).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-border/40 bg-background/30 px-4 py-3 backdrop-blur-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Available Now</p>
+                    <p className={cn(
+                      "mt-2 text-[15px] font-bold tabular-nums text-foreground",
+                      balanceHidden && "blur-sm select-none"
+                    )}>
+                      {balanceHidden ? '••••' : `${balance.withdrawable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BSK`}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/40 bg-background/30 px-4 py-3 backdrop-blur-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Lifetime Earned</p>
+                    <p className={cn(
+                      "mt-2 text-[15px] font-bold tabular-nums text-foreground",
+                      balanceHidden && "blur-sm select-none"
+                    )}>
+                      {balanceHidden ? '••••' : `${balance.earnedWithdrawable.toLocaleString('en-IN', { maximumFractionDigits: 0 })} BSK`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    {
+                      label: "Withdraw",
+                      icon: ArrowUpRight,
+                      route: "/app/programs/bsk-withdraw",
+                      tone: "text-success",
+                      tile: "bg-success/12 border-success/25",
+                      border: "border-success/20 hover:border-success/35",
+                    },
+                    {
+                      label: "Transfer",
+                      icon: Send,
+                      route: "/app/programs/bsk-transfer",
+                      tone: "text-primary",
+                      tile: "bg-primary/12 border-primary/25",
+                      border: "border-primary/20 hover:border-primary/35",
+                    },
+                    {
+                      label: "Migrate",
+                      icon: Zap,
+                      route: "/app/programs/bsk-migrate",
+                      tone: "text-accent",
+                      tile: "bg-accent/12 border-accent/25",
+                      border: "border-accent/20 hover:border-accent/35",
+                    },
+                  ].map((action) => {
+                    const Icon = action.icon
+                    return (
+                      <button
+                        key={action.label}
+                        onClick={() => navigate(action.route)}
+                        className={cn(
+                          "flex h-12 items-center justify-center gap-2 rounded-2xl border bg-background/35 px-3 text-[12px] font-semibold text-foreground/90 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated active:scale-[0.97]",
+                          action.border
+                        )}
+                      >
+                        <span className={cn("flex h-7 w-7 items-center justify-center rounded-xl border", action.tile)}>
+                          <Icon className={cn("h-3.5 w-3.5", action.tone)} />
+                        </span>
+                        {action.label}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
 
-            {/* Locked Card */}
-            <div className="relative p-4 rounded-3xl space-y-2 glass-card backdrop-blur-xl border border-primary/20 card-glow-primary transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5 overflow-hidden">
-              {/* Top rim gradient */}
-              <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.06] to-transparent pointer-events-none rounded-3xl" />
-              {/* Corner accent */}
-              <div className="absolute top-0 right-0 w-14 h-14 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full pointer-events-none" />
-
-              <div className="relative">
-                <div className="flex items-center gap-1.5">
-                  <Lock className="h-3 w-3 text-primary/60" />
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Locked</p>
-                </div>
-                <p className="text-[24px] font-extrabold tabular-nums font-mono text-primary mt-1.5">
-                  {balanceHidden ? '••••' : balance.holding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="text-[10px] font-semibold text-muted-foreground">BSK</p>
-                <button
-                  onClick={() => setShowRewardsBreakdown(true)}
-                  className="w-full h-8 rounded-xl text-[10px] font-semibold mt-2 bg-primary/12 border border-primary/25 text-primary transition-all hover:bg-primary/18 hover:shadow-sm active:scale-[0.97]"
-                >
-                  <Calendar className="inline h-3 w-3 mr-1" />
-                  Schedule
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* History button */}
-          <div className="px-4">
             <button
               onClick={() => navigate("/app/wallet/history/bsk")}
-              className="w-full flex items-center gap-3 h-12 px-4 rounded-2xl text-[13px] font-semibold glass-card backdrop-blur-xl border border-border/50 text-foreground/80 shadow-card transition-all hover:shadow-elevated hover:-translate-y-0.5 hover:border-primary/20 active:scale-[0.97]"
+              className="w-full flex items-center gap-3 h-12 px-4 rounded-2xl text-[13px] font-semibold glass-card backdrop-blur-xl border border-border/50 text-foreground/80 shadow-card transition-all hover:shadow-elevated hover:-translate-y-0.5 hover:border-success/20 active:scale-[0.97]"
+              data-testid="wallet-bsk-history-cta"
             >
-              <div className="h-7 w-7 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
-                <History className="h-3.5 w-3.5 text-primary" />
+              <div className="h-7 w-7 rounded-xl flex items-center justify-center bg-success/10 border border-success/20">
+                <History className="h-3.5 w-3.5 text-success" />
               </div>
               View Full History
               <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
@@ -472,12 +540,6 @@ export function HomePageRebuilt() {
 
         </div>
       </RefreshControl>
-
-      {/* Rewards Breakdown Bottom Sheet */}
-      <RewardsBreakdown
-        isOpen={showRewardsBreakdown}
-        onClose={() => setShowRewardsBreakdown(false)}
-      />
 
       {/* Quick Switch Radial Menu */}
       <QuickSwitch
