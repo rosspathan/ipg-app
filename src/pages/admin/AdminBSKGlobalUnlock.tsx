@@ -142,7 +142,7 @@ export default function AdminBSKGlobalUnlock() {
             <StatCard icon={Users} label="Users with Locked BSK" value={preview.total_users_with_locked} />
             <StatCard icon={Lock} label="Total Locked BSK" value={Number(preview.total_locked_bsk).toLocaleString()} accent="destructive" />
             <StatCard icon={Unlock} label="Tradable BSK to Credit" value={Number(preview.total_tradable_bsk_to_credit).toLocaleString()} accent="success" />
-            <StatCard icon={Coins} label="Remainder (Goodwill)" value={Number(preview.total_remainder_bsk).toLocaleString()} accent="warning" />
+            <StatCard icon={Coins} label="Remainder (Burned)" value={Number(preview.total_remainder_bsk_burned).toLocaleString()} accent="warning" />
           </div>
 
           {/* Conversion Explanation */}
@@ -168,12 +168,12 @@ export default function AdminBSKGlobalUnlock() {
                   <span className="font-mono font-semibold text-green-600">{Number(preview.total_tradable_bsk_to_credit).toLocaleString()} BSK</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">+ Remainder Goodwill (1:1)</span>
-                  <span className="font-mono font-semibold text-yellow-600">+{Number(preview.total_goodwill_from_remainder).toLocaleString()} BSK</span>
+                  <span className="text-muted-foreground">Remainder (Burned)</span>
+                  <span className="font-mono font-semibold text-yellow-600">{Number(preview.total_remainder_bsk_burned).toLocaleString()} BSK</span>
                 </div>
                 <div className="border-t pt-2 flex items-center justify-between text-sm font-bold">
                   <span>Total Withdrawable Added</span>
-                  <span className="text-green-600">{(Number(preview.total_tradable_bsk_to_credit) + Number(preview.total_goodwill_from_remainder)).toLocaleString()} BSK</span>
+                  <span className="text-green-600">{Number(preview.total_tradable_bsk_to_credit).toLocaleString()} BSK</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground italic">{preview.note}</p>
