@@ -285,7 +285,8 @@ export default function AdminBSKGlobalUnlock() {
               <p>This action will:</p>
               <ul className="list-disc ml-4 space-y-1 text-sm">
                 <li>Convert <strong>{Number(preview?.total_locked_bsk || 0).toLocaleString()} locked BSK</strong> across <strong>{preview?.total_users_with_locked || 0} users</strong></li>
-                <li>Credit <strong>{(Number(preview?.total_tradable_bsk_to_credit || 0) + Number(preview?.total_goodwill_from_remainder || 0)).toLocaleString()} tradable BSK</strong></li>
+                <li>Credit <strong>{Number(preview?.total_tradable_bsk_to_credit || 0).toLocaleString()} tradable BSK</strong></li>
+                <li>Burn <strong>{Number(preview?.total_remainder_bsk_burned || 0).toLocaleString()} remainder BSK</strong> (not divisible by 3)</li>
                 <li>Permanently disable locked BSK</li>
               </ul>
               <p className="font-semibold text-sm mt-3">Type exactly: <code className="bg-muted px-2 py-1 rounded text-xs">{CONFIRMATION_PHRASE}</code></p>
