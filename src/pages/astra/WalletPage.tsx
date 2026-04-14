@@ -353,8 +353,13 @@ export function WalletPage() {
         </div>
       </div>
 
+      {/* ── BSK TRADABLE BALANCE ── */}
+      <div className="animate-fade-in" style={{ animationDelay: '120ms' }}>
+        <BSKTradableCard />
+      </div>
+
       {/* ── 3. BSC ADDRESS BLOCK ── */}
-      <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '160ms' }}>
+      <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
         {/* Chain identity header */}
         <div className="flex items-center gap-2">
           <div className="relative flex items-center justify-center">
