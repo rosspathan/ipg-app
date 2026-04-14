@@ -69,10 +69,21 @@ export default function AdminBSKGlobalUnlock() {
       return data as any;
     },
     onSuccess: (data) => {
-      if (data?.success) {
-        toast({ title: 'Global Unlock Complete', description: `${data.users_processed} users processed. ${data.total_tradable_credited} BSK credited.` });
+      if (data?.success && data?.users_processed > 0) {
+        toast({ 
+          title: '✅ Global Unlock Complete', 
+          description: `${data.users_processed} users processed. ${Number(data.total_tradable_credited).toLocaleString()} BSK credited. ${Number(data.total_remainder_burned || 0).toLocaleString()} BSK burned.${data.users_failed > 0 ? ` ⚠️ ${data.users_failed} users failed.` : ''}` 
+        });
+      } else if (data?.reason === 'all_users_failed') {
+        toast({ 
+          title: '❌ Execution Failed — All Users Errored', 
+          description: `${data.users_failed} users failed. First error: ${data.first_error}`, 
+          variant: 'destructive' 
+        });
+      } else if (data?.reason === 'already_executed') {
+        toast({ title: 'Already Executed', description: 'Locked BSK has already been sunset.', variant: 'destructive' });
       } else {
-        toast({ title: 'Blocked', description: data?.reason || 'Cannot execute', variant: 'destructive' });
+        toast({ title: 'Execution Issue', description: data?.reason || 'Unexpected result — check admin logs.', variant: 'destructive' });
       }
       setShowConfirm(false);
       setTypedPhrase('');
