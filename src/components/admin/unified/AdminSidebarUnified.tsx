@@ -22,6 +22,7 @@ import {
   FileBarChart,
   ScrollText,
   Download,
+  Unlock,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
