@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom"
 
 /**
  * BSKWalletPage - Dedicated BSK balance and management page
- * Phase 3: Astra BSK integration
+ * Locked BSK discontinued — tradable only
  */
 export function BSKWalletPage() {
   const navigate = useNavigate()
@@ -95,42 +95,26 @@ export function BSKWalletPage() {
         </CardContent>
       </Card>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              About BSK
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>
-              BSK (Bonos Stellar Krypto) is our platform's reward token used across all programs.
-            </p>
-            <p>
-              Earn BSK through referrals, staking, and other activities. Use it for trading fees, insurance premiums, and more.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-accent/5 border-accent/20">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Clock className="h-4 w-4 text-accent" />
-              Balance Types
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>
-              <strong>Withdrawable:</strong> Available for immediate use or withdrawal
-            </p>
-            <p>
-              <strong>Holding:</strong> Locked BSK from promotions with vesting schedules
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Info Card */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            About BSK
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>
+            BSK (Bonos Stellar Krypto) is our platform's reward token used across all programs.
+          </p>
+          <p>
+            Earn BSK through referrals, staking, and other activities. Use it for trading fees, insurance premiums, and more.
+          </p>
+          <p>
+            Your tradable BSK balance is available for immediate use, withdrawal, or transfer.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
