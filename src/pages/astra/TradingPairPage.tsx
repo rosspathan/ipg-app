@@ -25,6 +25,7 @@ import { ComplianceGate } from "@/components/compliance/ComplianceGate";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function TradingPairPage() {
   const { session, loading: authLoading, user } = useAuthUser();
@@ -43,6 +44,7 @@ function TradingPairPageContent() {
   const queryClient = useQueryClient();
   const { user } = useAuthUser();
   const { isAdmin } = useAdminCheck();
+  const isMobile = useIsMobile();
 
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [pairSearch, setPairSearch] = useState("");
@@ -55,6 +57,9 @@ function TradingPairPageContent() {
   const { data: internalOrderBookData } = useRealtimeOrderBook(symbol);
   useRealtimeTradingBalances();
   const { data: recentTrades = [] } = useRecentTrades(symbol, 10);
+
+  // Mobile: toggle between order form and order book
+  const [mobilePanel, setMobilePanel] = useState<'form' | 'book'>('form');
 
   const {
     orderBook: wsOrderBook, trades: internalTrades, isConnected: wsConnected,
@@ -122,7 +127,11 @@ function TradingPairPageContent() {
   const bestBidPrice = bookBids[0]?.price || 0;
   const bestAskPrice = bookAsks[0]?.price || 0;
 
-  const handlePriceClick = (price: number) => setSelectedPrice(price);
+  const handlePriceClick = (price: number) => {
+    setSelectedPrice(price);
+    // On mobile, switch to form when user taps a price in the order book
+    if (isMobile) setMobilePanel('form');
+  };
 
   const handlePlaceOrder = async (params: { side: 'buy' | 'sell'; type: 'market' | 'limit'; price?: number; quantity: number }) => {
     try {
@@ -166,11 +175,10 @@ function TradingPairPageContent() {
 
   return (
     <ComplianceGate requireAgeVerification requireTermsAcceptance requireRiskDisclosure>
-      <div className="flex flex-col bg-[#020617] min-h-screen">
+      <div className="flex flex-col bg-[#020617] min-h-screen trade-density">
         {/* ═══ PREMIUM HEADER ═══ */}
         <header className="sticky top-0 z-50 bg-[#020617]/98 backdrop-blur-xl border-b border-[hsl(230,20%,20%)]/40">
           <div className="flex items-center h-12 px-3 gap-2">
-            {/* Back - 44x44 touch target */}
             <button
               onClick={() => navigate("/app/trade")}
               className="flex items-center justify-center w-10 h-10 -ml-1 rounded-xl active:bg-[hsl(230,30%,15%)] transition-colors"
@@ -189,11 +197,10 @@ function TradingPairPageContent() {
                 <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground/40 transition-transform", pairPickerOpen && "rotate-180")} />
               </button>
 
-              {/* Pair picker dropdown */}
               {pairPickerOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setPairPickerOpen(false)} />
-              <div className="absolute left-0 top-full mt-1 w-72 bg-[#0B1220] border border-[hsl(230,20%,22%)]/50 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="absolute left-0 top-full mt-1 w-72 bg-[#0B1220] border border-[hsl(230,20%,22%)]/50 rounded-xl shadow-2xl z-50 overflow-hidden">
                     <div className="p-2 border-b border-[hsl(230,20%,18%)]/40">
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#6B7280]" />
@@ -256,7 +263,7 @@ function TradingPairPageContent() {
             <AdminMarketMakerControls isAdmin={isAdmin} />
           </div>
 
-        {/* ═══ STATS STRIP ═══ */}
+          {/* ═══ STATS STRIP ═══ */}
           <div className="flex items-center gap-4 px-3 pb-2 overflow-x-auto no-scrollbar">
             {[
               { label: "H", value: formatPrice(pair.high24h || 0) },
@@ -290,52 +297,125 @@ function TradingPairPageContent() {
           </div>
         )}
 
-        {/* ═══ MAIN TRADING MODULE - Premium Parent Card ═══ */}
-        <div className="mx-1.5 mt-1 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-          <div className="flex flex-row" style={{ minHeight: 460 }}>
-            {/* Order Form - 52% */}
-            <div className="flex flex-col p-2.5 min-w-0" style={{ flex: '0 0 52%' }}>
-              <OrderFormPro
-                baseCurrency={pair.baseAsset}
-                quoteCurrency={pair.quoteAsset}
-                availableBase={baseBalance.available}
-                availableQuote={quoteBalance.available}
-                lockedBase={baseBalance.locked}
-                lockedQuote={quoteBalance.locked}
-                currentPrice={pair.price}
-                lastTradePrice={lastTradePrice}
-                onPlaceOrder={handlePlaceOrder}
-                bestBid={bestBidPrice}
-                bestAsk={bestAskPrice}
-                selectedPrice={selectedPrice}
-                asks={bookAsks}
-                bids={bookBids}
-                compact
-              />
+        {/* ═══ MAIN TRADING MODULE ═══ */}
+        {isMobile ? (
+          /* ──── MOBILE: Tabbed Form/Book layout ──── */
+          <div className="mx-2 mt-1.5 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)] overflow-hidden">
+            {/* Panel Toggle */}
+            <div className="flex h-[40px] border-b border-[hsl(230,20%,18%)]/40">
+              <button
+                onClick={() => setMobilePanel('form')}
+                className={cn(
+                  "flex-1 text-[12px] font-bold uppercase tracking-wider transition-all relative",
+                  mobilePanel === 'form' ? "text-[#FFFFFF]" : "text-[#94A3B8]"
+                )}
+              >
+                Order
+                {mobilePanel === 'form' && (
+                  <div className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-[hsl(186,100%,50%)] rounded-full" />
+                )}
+              </button>
+              <button
+                onClick={() => setMobilePanel('book')}
+                className={cn(
+                  "flex-1 text-[12px] font-bold uppercase tracking-wider transition-all relative",
+                  mobilePanel === 'book' ? "text-[#FFFFFF]" : "text-[#94A3B8]"
+                )}
+              >
+                Order Book
+                {mobilePanel === 'book' && (
+                  <div className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-[hsl(186,100%,50%)] rounded-full" />
+                )}
+              </button>
             </div>
-            {/* Order Book - 48% */}
-            <div className="flex flex-col min-w-0 border-l border-[hsl(230,20%,20%)]/30" style={{ flex: '1 1 0%' }}>
-              <OrderBookUnified
-                asks={bookAsks}
-                bids={bookBids}
-                lastTradePrice={lastTradePrice}
-                bestBid={bestBidPrice}
-                bestAsk={bestAskPrice}
-                priceChange={pair.change24h}
-                quoteCurrency={pair.quoteAsset}
-                baseCurrency={pair.baseAsset}
-                onPriceClick={handlePriceClick}
-                isLoading={!pair}
-                maxRows={8}
-              />
+
+            {/* Panel Content */}
+            {mobilePanel === 'form' ? (
+              <div className="p-3">
+                <OrderFormPro
+                  baseCurrency={pair.baseAsset}
+                  quoteCurrency={pair.quoteAsset}
+                  availableBase={baseBalance.available}
+                  availableQuote={quoteBalance.available}
+                  lockedBase={baseBalance.locked}
+                  lockedQuote={quoteBalance.locked}
+                  currentPrice={pair.price}
+                  lastTradePrice={lastTradePrice}
+                  onPlaceOrder={handlePlaceOrder}
+                  bestBid={bestBidPrice}
+                  bestAsk={bestAskPrice}
+                  selectedPrice={selectedPrice}
+                  asks={bookAsks}
+                  bids={bookBids}
+                />
+              </div>
+            ) : (
+              <div style={{ minHeight: 420 }}>
+                <OrderBookUnified
+                  asks={bookAsks}
+                  bids={bookBids}
+                  lastTradePrice={lastTradePrice}
+                  bestBid={bestBidPrice}
+                  bestAsk={bestAskPrice}
+                  priceChange={pair.change24h}
+                  quoteCurrency={pair.quoteAsset}
+                  baseCurrency={pair.baseAsset}
+                  onPriceClick={handlePriceClick}
+                  isLoading={!pair}
+                  maxRows={12}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ──── DESKTOP: Side-by-side layout ──── */
+          <div className="mx-1.5 mt-1 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+            <div className="flex flex-row" style={{ minHeight: 460 }}>
+              <div className="flex flex-col p-2.5 min-w-0" style={{ flex: '0 0 52%' }}>
+                <OrderFormPro
+                  baseCurrency={pair.baseAsset}
+                  quoteCurrency={pair.quoteAsset}
+                  availableBase={baseBalance.available}
+                  availableQuote={quoteBalance.available}
+                  lockedBase={baseBalance.locked}
+                  lockedQuote={quoteBalance.locked}
+                  currentPrice={pair.price}
+                  lastTradePrice={lastTradePrice}
+                  onPlaceOrder={handlePlaceOrder}
+                  bestBid={bestBidPrice}
+                  bestAsk={bestAskPrice}
+                  selectedPrice={selectedPrice}
+                  asks={bookAsks}
+                  bids={bookBids}
+                  compact
+                />
+              </div>
+              <div className="flex flex-col min-w-0 border-l border-[hsl(230,20%,20%)]/30" style={{ flex: '1 1 0%' }}>
+                <OrderBookUnified
+                  asks={bookAsks}
+                  bids={bookBids}
+                  lastTradePrice={lastTradePrice}
+                  bestBid={bestBidPrice}
+                  bestAsk={bestAskPrice}
+                  priceChange={pair.change24h}
+                  quoteCurrency={pair.quoteAsset}
+                  baseCurrency={pair.baseAsset}
+                  onPriceClick={handlePriceClick}
+                  isLoading={!pair}
+                  maxRows={8}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <GhostLockWarning />
 
-        {/* ═══ HISTORY TABS - Premium Card ═══ */}
-        <div className="mx-2 mt-2 mb-2 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)] pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+        {/* ═══ HISTORY TABS ═══ */}
+        <div className={cn(
+          "mt-2 mb-2 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]",
+          isMobile ? "mx-2 pb-4" : "mx-2 pb-[max(env(safe-area-inset-bottom,0px),16px)]"
+        )}>
           <TradingHistoryTabs
             symbol={urlSymbol}
             onOrderDetails={setSelectedOrderId}
