@@ -160,7 +160,7 @@ export default function KYCSubmission() {
               <div>
                 <h3 className="font-semibold text-lg">Complete KYC & Earn 5 BSK Tokens!</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Get 5 BSK tokens added to your holding balance once your identity is verified. Complete all steps to get started!
+                  Get 5 BSK tokens added to your balance once your identity is verified. Complete all steps to get started!
                 </p>
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function KYCSubmission() {
                   🎉 Verification Complete - 5 BSK Earned!
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your identity has been verified successfully! 5 BSK tokens have been added to your holding balance.
+                  Your identity has been verified successfully! 5 BSK tokens have been added to your balance.
                 </p>
                 <Button
                   variant="link"
