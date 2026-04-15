@@ -161,7 +161,7 @@ export function BSKTransferForm() {
 
       // No transfer limits enforced
 
-      // Use atomic edge function for secure transfer
+      // Use atomic edge function for secure internal transfer
       const { data, error } = await supabase.functions.invoke('process-bsk-transfer', {
         body: {
           recipient_id: verifiedRecipient.id,
@@ -170,8 +170,22 @@ export function BSKTransferForm() {
         }
       });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Transfer failed');
+      // Edge function now always returns 200 with structured response
+      // But handle legacy non-2xx or network errors gracefully
+      if (error) {
+        // Try to extract meaningful message from the error
+        const errMsg = error.message || '';
+        if (errMsg.includes('non-2xx')) {
+          throw new Error('BSK transfer service is temporarily unavailable. Please try again.');
+        }
+        throw new Error(errMsg || 'Transfer failed due to a network error.');
+      }
+
+      if (!data?.success) {
+        const userError = data?.error || 'Transfer could not be completed.';
+        const refId = data?.request_id ? ` (Ref: ${data.request_id})` : '';
+        throw new Error(userError + refId);
+      }
 
       return data.transaction_ref;
     },
