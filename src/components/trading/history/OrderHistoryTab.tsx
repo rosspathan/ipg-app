@@ -4,17 +4,26 @@
  import { cn } from '@/lib/utils';
  import BigNumber from 'bignumber.js';
  import type { Order } from '@/hooks/useTradeHistory';
+ import { PaginationControls } from '../PaginationControls';
  
  interface OrderHistoryTabProps {
    orders: Order[];
    currentSymbol?: string;
    onDetails?: (orderId: string) => void;
+   page: number;
+   totalPages: number;
+   totalItems: number;
+   onPageChange: (page: number) => void;
  }
  
- export function OrderHistoryTab({
+export function OrderHistoryTab({
    orders,
    currentSymbol,
-   onDetails
+   onDetails,
+   page,
+   totalPages,
+   totalItems,
+   onPageChange
  }: OrderHistoryTabProps) {
    const [filterStatus, setFilterStatus] = useState<string>('all');
    const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -170,9 +179,17 @@
                  </button>
                </div>
              </div>
-           );
+          );
          })}
        </div>
+
+       <PaginationControls
+         page={page}
+         totalPages={totalPages}
+         totalItems={totalItems}
+         pageSize={20}
+         onPageChange={onPageChange}
+       />
      </div>
    );
  }
