@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,6 +71,60 @@ Deno.serve(async (req) => {
 
     console.log(`[BSK Transfer][${requestId}] Processing:`, { sender_id: user.id, recipient_id, amount, memo: memo?.slice(0, 20) });
 
+    // Pre-flight: check recipient balance row integrity before attempting transfer
+    const { data: recipientBalance, error: recipientBalError } = await supabaseAdmin
+      .from('user_bsk_balances')
+      .select('withdrawable_balance, holding_balance')
+      .eq('user_id', recipient_id)
+      .maybeSingle();
+
+    if (!recipientBalError && recipientBalance) {
+      const rw = Number(recipientBalance.withdrawable_balance || 0);
+      const rh = Number(recipientBalance.holding_balance || 0);
+      if (rw < 0 || rh < 0) {
+        console.error(`[BSK Transfer][${requestId}] ⚠️ Recipient balance row is corrupt:`, {
+          recipient_id,
+          withdrawable_balance: rw,
+          holding_balance: rh,
+        });
+        return jsonResponse({
+          success: false,
+          error: 'Transfer cannot be completed because the recipient account has an invalid balance record. Please contact support.',
+          code: 'RECIPIENT_BALANCE_CORRUPT',
+          request_id: requestId,
+          diagnostic: {
+            recipient_withdrawable: rw,
+            recipient_holding: rh,
+          },
+        });
+      }
+    }
+
+    // Pre-flight: check sender balance
+    const { data: senderBalance, error: senderBalError } = await supabaseAdmin
+      .from('user_bsk_balances')
+      .select('withdrawable_balance, holding_balance')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!senderBalError && senderBalance) {
+      const sw = Number(senderBalance.withdrawable_balance || 0);
+      if (sw < amount) {
+        console.warn(`[BSK Transfer][${requestId}] Insufficient balance pre-check:`, {
+          sender_id: user.id,
+          available: sw,
+          requested: amount,
+        });
+        return jsonResponse({
+          success: false,
+          error: `Insufficient BSK balance. You have ${sw.toLocaleString()} BSK available but tried to send ${amount}.`,
+          code: 'INSUFFICIENT_BALANCE',
+          request_id: requestId,
+        });
+      }
+    }
+
+
     // Validation
     if (!recipient_id) {
       return jsonResponse({ success: false, error: 'Recipient is required.', code: 'MISSING_RECIPIENT', request_id: requestId });
@@ -124,15 +178,18 @@ Deno.serve(async (req) => {
       // Map DB errors to user-friendly messages
       const msg = transferError.message || '';
       if (msg.includes('Insufficient balance')) {
-        return jsonResponse({ success: false, error: 'Insufficient BSK balance for this transfer.', code: 'INSUFFICIENT_BALANCE', request_id: requestId });
+        return jsonResponse({ success: false, error: 'Insufficient BSK balance for this transfer.', code: 'INSUFFICIENT_BALANCE', request_id: requestId, diagnostic: { sender: user.id, recipient: recipient_id, amount } });
       }
       if (msg.includes('check_non_negative_balances')) {
-        return jsonResponse({ success: false, error: 'Transfer could not be completed due to a balance validation issue. Please contact support.', code: 'BALANCE_CONSTRAINT', request_id: requestId });
+        return jsonResponse({ success: false, error: 'Transfer cannot be completed because the recipient account has a corrupted balance record. Please contact support.', code: 'RECIPIENT_BALANCE_CORRUPT', request_id: requestId, diagnostic: { sender: user.id, recipient: recipient_id, amount, db_error: msg } });
+      }
+      if (msg.includes('Invalid holding_balance') || msg.includes('Invalid withdrawable_balance')) {
+        return jsonResponse({ success: false, error: 'Transfer cannot be completed because the recipient account has an invalid balance record. Please contact support.', code: 'RECIPIENT_BALANCE_CORRUPT', request_id: requestId, diagnostic: { sender: user.id, recipient: recipient_id, amount, db_error: msg } });
       }
       if (msg.includes('Cannot transfer to yourself')) {
         return jsonResponse({ success: false, error: 'Cannot transfer BSK to yourself.', code: 'SELF_TRANSFER', request_id: requestId });
       }
-      return jsonResponse({ success: false, error: 'Transfer failed. Please try again later.', code: 'TRANSFER_RPC_ERROR', request_id: requestId });
+      return jsonResponse({ success: false, error: 'Transfer failed. Please try again later.', code: 'TRANSFER_RPC_ERROR', request_id: requestId, diagnostic: { sender: user.id, recipient: recipient_id, amount, db_error: msg } });
     }
 
     if (!result?.success) {

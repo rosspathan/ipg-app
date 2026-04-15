@@ -184,6 +184,18 @@ export function BSKTransferForm() {
       if (!data?.success) {
         const userError = data?.error || 'Transfer could not be completed.';
         const refId = data?.request_id ? ` (Ref: ${data.request_id})` : '';
+        
+        // Enhanced error message based on error code
+        const code = data?.code || '';
+        if (code === 'RECIPIENT_BALANCE_CORRUPT') {
+          throw new Error(`Transfer cannot be completed because the recipient's account has an invalid balance record. Please contact support.${refId}`);
+        }
+        if (code === 'INSUFFICIENT_BALANCE') {
+          throw new Error(userError + refId);
+        }
+        if (code === 'TRANSFERS_DISABLED') {
+          throw new Error('BSK transfers are currently disabled. Please check back later.' + refId);
+        }
         throw new Error(userError + refId);
       }
 
