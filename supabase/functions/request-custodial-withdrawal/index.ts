@@ -6,6 +6,9 @@
  * 
  * NEW: On-chain hot wallet liquidity validation before accepting.
  * The actual on-chain transfer is handled by process-custodial-withdrawal.
+ * 
+ * IMPORTANT: All error responses use HTTP 200 with success:false so the
+ * frontend SDK can always read the structured error body.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -14,6 +17,18 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+function jsonResponse(body: Record<string, any>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+function errorResponse(error: string, details?: Record<string, any>) {
+  // Always 200 so supabase.functions.invoke() can read the body
+  return jsonResponse({ success: false, error, ...details });
+}
 
 interface WithdrawalRequest {
   asset_symbol: string;
@@ -75,10 +90,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Unauthorized', { reason: 'missing_auth' });
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -91,10 +103,7 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Invalid authentication. Please log in again.', { reason: 'auth_failed' });
     }
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -106,10 +115,7 @@ Deno.serve(async (req) => {
 
     // Validate inputs
     if (!asset_symbol || !amount || amount <= 0) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid request parameters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Invalid request parameters. Amount must be positive.', { reason: 'invalid_params' });
     }
 
     // Get asset
@@ -121,31 +127,19 @@ Deno.serve(async (req) => {
       .single();
 
     if (assetError || !asset) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Asset ${asset_symbol} not found` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(`Asset ${asset_symbol} not found or inactive.`, { reason: 'asset_not_found' });
     }
 
     if (!asset.withdraw_enabled) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Withdrawals are disabled for ${asset_symbol}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(`Withdrawals are currently disabled for ${asset_symbol}.`, { reason: 'withdrawals_disabled' });
     }
 
     if (asset.min_withdraw_amount && amount < asset.min_withdraw_amount) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Minimum withdrawal is ${asset.min_withdraw_amount} ${asset_symbol}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(`Minimum withdrawal is ${asset.min_withdraw_amount} ${asset_symbol}.`, { reason: 'below_minimum' });
     }
 
     if (asset.max_withdraw_amount && amount > asset.max_withdraw_amount) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Maximum withdrawal is ${asset.max_withdraw_amount} ${asset_symbol}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(`Maximum withdrawal is ${asset.max_withdraw_amount} ${asset_symbol}.`, { reason: 'above_maximum' });
     }
 
     // ═══════════════════════════════════════════════════
@@ -160,10 +154,7 @@ Deno.serve(async (req) => {
 
     if (cbRow?.is_frozen) {
       console.warn(`[request-custodial-withdrawal] Circuit breaker FROZEN for ${asset_symbol}`);
-      return new Response(
-        JSON.stringify({ success: false, error: `Withdrawals for ${asset_symbol} are temporarily frozen for safety. Please try again later.` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(`Withdrawals for ${asset_symbol} are temporarily frozen for safety. Please try again later.`, { reason: 'circuit_breaker' });
     }
 
     // ═══════════════════════════════════════════════════
@@ -219,15 +210,9 @@ Deno.serve(async (req) => {
         }
       } catch (rpcErr: any) {
         console.error(`[request-custodial-withdrawal] RPC liquidity check FAILED — blocking submission:`, rpcErr?.message);
-        // HARDENED: Do NOT allow withdrawal when on-chain balance cannot be verified.
-        // This prevents misleading confidence during RPC outages.
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `Unable to verify hot wallet liquidity for ${asset_symbol}. Please try again in a few minutes.`,
-            reason: 'rpc_unavailable'
-          }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return errorResponse(
+          `Unable to verify hot wallet liquidity for ${asset_symbol}. Please try again in a few minutes.`,
+          { reason: 'rpc_unavailable' }
         );
       }
     }
@@ -255,17 +240,11 @@ Deno.serve(async (req) => {
     }
 
     if (!destinationAddress) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'No withdrawal address found. Please set up your wallet.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('No withdrawal address found. Please set up your wallet first.', { reason: 'no_wallet' });
     }
 
     if (!destinationAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid withdrawal address format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Invalid withdrawal address format.', { reason: 'invalid_address' });
     }
 
     console.log(`[request-custodial-withdrawal] Destination: ${destinationAddress}`);
@@ -288,10 +267,7 @@ Deno.serve(async (req) => {
       );
 
       if (!matchedEntry) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Withdrawal address is not in your allowlist. Add it first and wait for activation.' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return errorResponse('Withdrawal address is not in your allowlist. Add it first and wait for activation.', { reason: 'not_allowlisted' });
       }
 
       const activatedAt = matchedEntry.activated_at ? new Date(matchedEntry.activated_at) : null;
@@ -303,20 +279,14 @@ Deno.serve(async (req) => {
           .update({ activated_at: new Date().toISOString() })
           .eq('id', matchedEntry.id);
 
-        return new Response(
-          JSON.stringify({ success: false, error: `New address requires a ${delayHours}-hour cooling-off period before withdrawals. Please try again later.` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return errorResponse(`New address requires a ${delayHours}-hour cooling-off period before withdrawals. Please try again later.`, { reason: 'cooling_off' });
       }
 
       const activationThreshold = new Date(activatedAt.getTime() + delayHours * 60 * 60 * 1000);
       if (new Date() < activationThreshold) {
         const remainingMs = activationThreshold.getTime() - Date.now();
         const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
-        return new Response(
-          JSON.stringify({ success: false, error: `Address is still in cooling-off period. ${remainingHours}h remaining before withdrawals are allowed.` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return errorResponse(`Address is still in cooling-off period. ${remainingHours}h remaining.`, { reason: 'cooling_off_active' });
       }
 
       console.log(`[request-custodial-withdrawal] ✓ Address passed allowlist + activation check`);
@@ -338,18 +308,15 @@ Deno.serve(async (req) => {
 
     if (rpcError) {
       console.error('[request-custodial-withdrawal] RPC error:', rpcError);
-      return new Response(
-        JSON.stringify({ success: false, error: rpcError.message || 'Withdrawal failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      return errorResponse(
+        rpcError.message || 'Withdrawal processing failed. Please try again.',
+        { reason: 'rpc_error', code: rpcError.code }
       );
     }
 
     if (!result?.success) {
       console.error('[request-custodial-withdrawal] Rejected:', result?.error);
-      return new Response(
-        JSON.stringify({ success: false, error: result?.error || 'Withdrawal failed' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(result?.error || 'Withdrawal failed.', { reason: 'validation_failed' });
     }
 
     console.log(`[request-custodial-withdrawal] ✓ Created withdrawal ${result.withdrawal_id} (liquidity: ${liquidityStatus})`);
@@ -363,10 +330,8 @@ Deno.serve(async (req) => {
       userMessage = `Withdrawal accepted but temporarily queued — the hot wallet is being replenished for ${asset_symbol}. You will be notified when it is sent.`;
     }
 
-    // Update the IBT status_detail if the withdrawal was created
+    // Notify admin if liquidity is insufficient
     if (result.withdrawal_id && liquidityStatus === 'awaiting_liquidity') {
-      // The IBT is created by the frontend, but we also update via trigger sync.
-      // Log this for admin visibility
       await adminClient.from('admin_notifications').insert({
         type: 'withdrawal_liquidity',
         title: `Withdrawal queued: awaiting ${asset_symbol} liquidity`,
@@ -386,26 +351,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        withdrawal_id: result.withdrawal_id,
-        amount: result.amount,
-        fee: result.fee,
-        to_address: destinationAddress,
-        status: 'pending',
-        liquidity_status: liquidityStatus,
-        status_detail: statusDetail,
-        message: userMessage,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonResponse({
+      success: true,
+      withdrawal_id: result.withdrawal_id,
+      amount: result.amount,
+      fee: result.fee,
+      new_balance: result.new_available,
+      to_address: destinationAddress,
+      status: 'pending',
+      liquidity_status: liquidityStatus,
+      status_detail: statusDetail,
+      message: userMessage,
+    });
 
   } catch (error: any) {
     console.error('[request-custodial-withdrawal] Error:', error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'An unexpected error occurred.', { reason: 'internal_error' });
   }
 });
