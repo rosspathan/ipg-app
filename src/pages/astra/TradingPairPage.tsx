@@ -58,8 +58,7 @@ function TradingPairPageContent() {
   useRealtimeTradingBalances();
   const { data: recentTrades = [] } = useRecentTrades(symbol, 10);
 
-  // Mobile: toggle between order form and order book
-  const [mobilePanel, setMobilePanel] = useState<'form' | 'book'>('form');
+  // Mobile panel state removed - both form and book always visible
 
   const {
     orderBook: wsOrderBook, trades: internalTrades, isConnected: wsConnected,
@@ -129,8 +128,6 @@ function TradingPairPageContent() {
 
   const handlePriceClick = (price: number) => {
     setSelectedPrice(price);
-    // On mobile, switch to form when user taps a price in the order book
-    if (isMobile) setMobilePanel('form');
   };
 
   const handlePlaceOrder = async (params: { side: 'buy' | 'sell'; type: 'market' | 'limit'; price?: number; quantity: number }) => {
@@ -298,116 +295,47 @@ function TradingPairPageContent() {
         )}
 
         {/* ═══ MAIN TRADING MODULE ═══ */}
-        {isMobile ? (
-          /* ──── MOBILE: Tabbed Form/Book layout ──── */
-          <div className="mx-2 mt-1.5 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)] overflow-hidden">
-            {/* Panel Toggle */}
-            <div className="flex h-[40px] border-b border-[hsl(230,20%,18%)]/40">
-              <button
-                onClick={() => setMobilePanel('form')}
-                className={cn(
-                  "flex-1 text-[12px] font-bold uppercase tracking-wider transition-all relative",
-                  mobilePanel === 'form' ? "text-[#FFFFFF]" : "text-[#94A3B8]"
-                )}
-              >
-                Order
-                {mobilePanel === 'form' && (
-                  <div className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-[hsl(186,100%,50%)] rounded-full" />
-                )}
-              </button>
-              <button
-                onClick={() => setMobilePanel('book')}
-                className={cn(
-                  "flex-1 text-[12px] font-bold uppercase tracking-wider transition-all relative",
-                  mobilePanel === 'book' ? "text-[#FFFFFF]" : "text-[#94A3B8]"
-                )}
-              >
-                Order Book
-                {mobilePanel === 'book' && (
-                  <div className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-[hsl(186,100%,50%)] rounded-full" />
-                )}
-              </button>
+        <div className={cn(
+          "mt-1 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]",
+          isMobile ? "mx-1" : "mx-1.5"
+        )}>
+          <div className="flex flex-row" style={{ minHeight: isMobile ? 380 : 460 }}>
+            <div className={cn("flex flex-col min-w-0", isMobile ? "p-1.5" : "p-2.5")} style={{ flex: isMobile ? '0 0 54%' : '0 0 52%' }}>
+              <OrderFormPro
+                baseCurrency={pair.baseAsset}
+                quoteCurrency={pair.quoteAsset}
+                availableBase={baseBalance.available}
+                availableQuote={quoteBalance.available}
+                lockedBase={baseBalance.locked}
+                lockedQuote={quoteBalance.locked}
+                currentPrice={pair.price}
+                lastTradePrice={lastTradePrice}
+                onPlaceOrder={handlePlaceOrder}
+                bestBid={bestBidPrice}
+                bestAsk={bestAskPrice}
+                selectedPrice={selectedPrice}
+                asks={bookAsks}
+                bids={bookBids}
+                compact
+              />
             </div>
-
-            {/* Panel Content */}
-            {mobilePanel === 'form' ? (
-              <div className="p-3">
-                <OrderFormPro
-                  baseCurrency={pair.baseAsset}
-                  quoteCurrency={pair.quoteAsset}
-                  availableBase={baseBalance.available}
-                  availableQuote={quoteBalance.available}
-                  lockedBase={baseBalance.locked}
-                  lockedQuote={quoteBalance.locked}
-                  currentPrice={pair.price}
-                  lastTradePrice={lastTradePrice}
-                  onPlaceOrder={handlePlaceOrder}
-                  bestBid={bestBidPrice}
-                  bestAsk={bestAskPrice}
-                  selectedPrice={selectedPrice}
-                  asks={bookAsks}
-                  bids={bookBids}
-                />
-              </div>
-            ) : (
-              <div style={{ minHeight: 420 }}>
-                <OrderBookUnified
-                  asks={bookAsks}
-                  bids={bookBids}
-                  lastTradePrice={lastTradePrice}
-                  bestBid={bestBidPrice}
-                  bestAsk={bestAskPrice}
-                  priceChange={pair.change24h}
-                  quoteCurrency={pair.quoteAsset}
-                  baseCurrency={pair.baseAsset}
-                  onPriceClick={handlePriceClick}
-                  isLoading={!pair}
-                  maxRows={12}
-                />
-              </div>
-            )}
-          </div>
-        ) : (
-          /* ──── DESKTOP: Side-by-side layout ──── */
-          <div className="mx-1.5 mt-1 rounded-2xl bg-[#0B1220] border border-[hsl(230,20%,20%)]/35 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-            <div className="flex flex-row" style={{ minHeight: 460 }}>
-              <div className="flex flex-col p-2.5 min-w-0" style={{ flex: '0 0 52%' }}>
-                <OrderFormPro
-                  baseCurrency={pair.baseAsset}
-                  quoteCurrency={pair.quoteAsset}
-                  availableBase={baseBalance.available}
-                  availableQuote={quoteBalance.available}
-                  lockedBase={baseBalance.locked}
-                  lockedQuote={quoteBalance.locked}
-                  currentPrice={pair.price}
-                  lastTradePrice={lastTradePrice}
-                  onPlaceOrder={handlePlaceOrder}
-                  bestBid={bestBidPrice}
-                  bestAsk={bestAskPrice}
-                  selectedPrice={selectedPrice}
-                  asks={bookAsks}
-                  bids={bookBids}
-                  compact
-                />
-              </div>
-              <div className="flex flex-col min-w-0 border-l border-[hsl(230,20%,20%)]/30" style={{ flex: '1 1 0%' }}>
-                <OrderBookUnified
-                  asks={bookAsks}
-                  bids={bookBids}
-                  lastTradePrice={lastTradePrice}
-                  bestBid={bestBidPrice}
-                  bestAsk={bestAskPrice}
-                  priceChange={pair.change24h}
-                  quoteCurrency={pair.quoteAsset}
-                  baseCurrency={pair.baseAsset}
-                  onPriceClick={handlePriceClick}
-                  isLoading={!pair}
-                  maxRows={8}
-                />
-              </div>
+            <div className="flex flex-col min-w-0 border-l border-[hsl(230,20%,20%)]/30" style={{ flex: '1 1 0%' }}>
+              <OrderBookUnified
+                asks={bookAsks}
+                bids={bookBids}
+                lastTradePrice={lastTradePrice}
+                bestBid={bestBidPrice}
+                bestAsk={bestAskPrice}
+                priceChange={pair.change24h}
+                quoteCurrency={pair.quoteAsset}
+                baseCurrency={pair.baseAsset}
+                onPriceClick={handlePriceClick}
+                isLoading={!pair}
+                maxRows={isMobile ? 6 : 8}
+              />
             </div>
           </div>
-        )}
+        </div>
 
         <GhostLockWarning />
 
