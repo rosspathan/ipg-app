@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
             p_idempotency_key: idempotencyKey,
             p_tx_type: 'credit',
             p_tx_subtype: 'staking_reward',
-            p_balance_type: 'holding',
+            p_balance_type: 'withdrawable',
             p_amount_bsk: dailyReward,
             p_notes: `Daily staking reward for pool: ${pool.name}`,
             p_meta_json: {

@@ -235,9 +235,9 @@ serve(async (req) => {
           p_tx_type: 'credit',
           p_tx_subtype: 'one_time_purchase_bonus',
           p_amount_bsk: holdingBonus,
-          p_balance_type: 'holding',
-          p_notes: `${offer.holding_bonus_percent}% holding bonus: ${offer.campaign_name}`,
-          p_meta_json: { offer_id, order_id, type: 'holding_bonus', bonus_percent: offer.holding_bonus_percent }
+           p_balance_type: 'withdrawable',
+          p_notes: `${offer.holding_bonus_percent}% purchase bonus: ${offer.campaign_name}`,
+          p_meta_json: { offer_id, order_id, type: 'purchase_bonus', bonus_percent: offer.holding_bonus_percent }
         }
       )
 

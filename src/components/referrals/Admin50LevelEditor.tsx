@@ -48,7 +48,7 @@ export function Admin50LevelEditor() {
           allLevels.push({
             level: i,
             bsk_reward: 0,
-            balance_type: 'holding',
+            balance_type: 'withdrawable',
             is_active: false
           });
         }

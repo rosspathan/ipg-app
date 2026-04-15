@@ -35,26 +35,26 @@ Deno.serve(async (req) => {
     const sponsor_id = referralData?.sponsor_id;
     console.log(`[KYC User Reward] Sponsor found: ${sponsor_id || 'none'}`);
 
-    // Credit BSK to holding balance for user using atomic transaction
+    // Credit BSK to withdrawable (Tradable) balance for user using atomic transaction
     const { error: balanceError } = await supabase.rpc('record_bsk_transaction', {
       p_user_id: user_id,
       p_idempotency_key: `kyc_reward_${user_id}`,
       p_tx_type: 'credit',
       p_tx_subtype: 'kyc_completion',
-      p_balance_type: 'holding',
+      p_balance_type: 'withdrawable',
       p_amount_bsk: reward_bsk,
       p_meta_json: {
         reward_type: 'kyc_approval',
-        destination: 'holding'
+        destination: 'withdrawable'
       }
     });
 
     if (balanceError) {
-      console.error('[KYC User Reward] Failed to credit holding balance:', balanceError);
+      console.error('[KYC User Reward] Failed to credit withdrawable balance:', balanceError);
       throw new Error(`Failed to credit balance: ${balanceError.message}`);
     }
 
-    console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to user holding balance`);
+    console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to user withdrawable balance`);
 
     // Credit sponsor if exists
     if (sponsor_id) {
@@ -63,12 +63,12 @@ Deno.serve(async (req) => {
         p_idempotency_key: `kyc_sponsor_reward_${user_id}`,
         p_tx_type: 'credit',
         p_tx_subtype: 'kyc_referral_bonus',
-        p_balance_type: 'holding',
+        p_balance_type: 'withdrawable',
         p_amount_bsk: reward_bsk,
         p_meta_json: {
           reward_type: 'kyc_referral_bonus',
           referee_id: user_id,
-          destination: 'holding'
+          destination: 'withdrawable'
         }
       });
 
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
         console.error('[KYC User Reward] Failed to credit sponsor balance:', sponsorBalanceError);
         // Don't throw - sponsor reward is secondary
       } else {
-        console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to sponsor holding balance`);
+        console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to sponsor withdrawable balance`);
         
         // Create sponsor ledger entry
         await supabase
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
             meta_json: {
               reward_type: 'kyc_referral_bonus',
               referee_id: user_id,
-              destination: 'holding'
+              destination: 'withdrawable'
             }
           });
       }
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
         amount_bsk: reward_bsk,
         meta_json: {
           reward_type: 'kyc_approval',
-          destination: 'holding'
+          destination: 'withdrawable'
         }
       });
 

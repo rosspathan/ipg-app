@@ -151,7 +151,7 @@ serve(async (req: Request) => {
         p_user_id: loan.user_id,
         p_tx_type: 'credit',
         p_tx_subtype: 'loan_completion_bonus',
-        p_balance_type: settings.completion_bonus_destination || 'holding',
+        p_balance_type: 'withdrawable',
         p_amount_bsk: bonusAmount.toNumber(),
         p_idempotency_key: bonusIdempotencyKey,
         p_meta_json: {

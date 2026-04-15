@@ -337,7 +337,7 @@ Deno.serve(async (req) => {
           p_idempotency_key: `badge_bonus_${user_id}_${normalizedBadge}_${Date.now()}`,
           p_tx_type: 'credit',
           p_tx_subtype: 'badge_bonus',
-          p_balance_type: 'holding',
+          p_balance_type: 'withdrawable',
           p_amount_bsk: bonusAmount,
           p_notes: null,
           p_meta_json: {

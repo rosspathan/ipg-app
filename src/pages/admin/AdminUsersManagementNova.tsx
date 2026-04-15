@@ -294,39 +294,19 @@ export default function AdminUsersManagementNova() {
 
       if (updateError) throw updateError;
 
-      // 2. Credit 5 BSK to user's holding balance
-      const { error: balanceError } = await supabase
-        .from('user_bsk_balances')
-        .upsert({
-          user_id: userId,
-          holding_balance: 5,
-          total_earned_holding: 5
-        }, { 
-          onConflict: 'user_id',
-          ignoreDuplicates: false 
-        })
-        .select()
-        .single();
+      // 2. Credit 5 BSK to user's withdrawable (Tradable) balance via atomic RPC
+      const { error: balanceError } = await supabase.rpc('record_bsk_transaction', {
+        p_user_id: userId,
+        p_idempotency_key: `kyc_approval_credit_${userId}`,
+        p_tx_type: 'credit',
+        p_tx_subtype: 'kyc_completion',
+        p_balance_type: 'withdrawable',
+        p_amount_bsk: 5,
+        p_notes: 'KYC approval reward',
+        p_meta_json: { reward_type: 'kyc_approval' },
+      });
 
-      // If user already has balance, we need to increment it
-      if (balanceError) {
-        // Try to increment existing balance
-        const { data: existingBalance } = await supabase
-          .from('user_bsk_balances')
-          .select('holding_balance, total_earned_holding')
-          .eq('user_id', userId)
-          .single();
-
-        if (existingBalance) {
-          await supabase
-            .from('user_bsk_balances')
-            .update({
-              holding_balance: (existingBalance.holding_balance || 0) + 5,
-              total_earned_holding: (existingBalance.total_earned_holding || 0) + 5
-            })
-            .eq('user_id', userId);
-        }
-      }
+      if (balanceError) throw balanceError;
 
       // 3. Distribute team income to upline via edge function
       const { error: commissionError } = await supabase.functions.invoke('process-kyc-commissions', {

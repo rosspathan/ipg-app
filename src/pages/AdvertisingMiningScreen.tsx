@@ -222,35 +222,19 @@ const AdvertisingMiningScreen: React.FC = () => {
       const today = new Date().toISOString().split('T')[0];
       
       if (type === 'free') {
-        // Add to holding ledger
-        const baseHolding = (bskBalances?.holding_balance || 0);
-        const { error: ledgerError } = await (supabase as any)
-          .from('bsk_holding_ledger')
-          .insert({
-            user_id: user.id,
-            amount_bsk: settings.free_daily_reward_bsk,
-            amount_inr: 0,
-            rate_snapshot: 1,
-            tx_type: 'ad_free_view',
-            tx_subtype: ad.id,
-            reference_id: ad.id,
-            balance_before: baseHolding,
-            balance_after: baseHolding + settings.free_daily_reward_bsk,
-            notes: `Free daily ad view on ${today}`
-          });
+        // Credit free ad reward to withdrawable (Tradable BSK) via atomic RPC
+        const { error: creditError } = await supabase.rpc('record_bsk_transaction', {
+          p_user_id: user.id,
+          p_idempotency_key: `ad_free_view_${ad.id}_${today}`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'ad_free_view',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: settings.free_daily_reward_bsk,
+          p_notes: `Free daily ad view on ${today}`,
+          p_meta_json: { ad_id: ad.id, ad_title: ad.title },
+        });
 
-        if (ledgerError) throw ledgerError;
-
-        // Update holding balance
-        const { error: balanceError } = await supabase
-          .from('user_bsk_balance_summary')
-          .update({
-            holding_balance: (bskBalances?.holding_balance || 0) + settings.free_daily_reward_bsk,
-            lifetime_holding_earned: (bskBalances?.lifetime_holding_earned || 0) + settings.free_daily_reward_bsk
-          })
-          .eq('user_id', user.id);
-
-        if (balanceError) throw balanceError;
+        if (creditError) throw creditError;
 
         // Update daily views
         const { error: viewsError } = await supabase
