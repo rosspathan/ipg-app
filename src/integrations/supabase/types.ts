@@ -4870,6 +4870,75 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_trading_reconciliation: {
+        Row: {
+          asset_symbol: string
+          available_drift: number
+          circuit_breaker_triggered: boolean | null
+          created_at: string
+          discrepancy_user_count: number
+          discrepancy_users: Json | null
+          fees_collected: number
+          id: string
+          ledger_available: number
+          ledger_locked: number
+          locked_drift: number
+          pending_withdrawals: number
+          platform_fee_balance: number
+          run_date: string
+          table_available: number
+          table_locked: number
+          total_drift: number
+          total_inflows: number
+          total_outflows: number
+          user_liability: number
+        }
+        Insert: {
+          asset_symbol: string
+          available_drift?: number
+          circuit_breaker_triggered?: boolean | null
+          created_at?: string
+          discrepancy_user_count?: number
+          discrepancy_users?: Json | null
+          fees_collected?: number
+          id?: string
+          ledger_available?: number
+          ledger_locked?: number
+          locked_drift?: number
+          pending_withdrawals?: number
+          platform_fee_balance?: number
+          run_date?: string
+          table_available?: number
+          table_locked?: number
+          total_drift?: number
+          total_inflows?: number
+          total_outflows?: number
+          user_liability?: number
+        }
+        Update: {
+          asset_symbol?: string
+          available_drift?: number
+          circuit_breaker_triggered?: boolean | null
+          created_at?: string
+          discrepancy_user_count?: number
+          discrepancy_users?: Json | null
+          fees_collected?: number
+          id?: string
+          ledger_available?: number
+          ledger_locked?: number
+          locked_drift?: number
+          pending_withdrawals?: number
+          platform_fee_balance?: number
+          run_date?: string
+          table_available?: number
+          table_locked?: number
+          total_drift?: number
+          total_inflows?: number
+          total_outflows?: number
+          user_liability?: number
+        }
+        Relationships: []
+      }
       deposits: {
         Row: {
           amount: number
@@ -8754,6 +8823,45 @@ export type Database = {
           device_id?: string
           token?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      reconciliation_circuit_breaker: {
+        Row: {
+          asset_symbol: string
+          created_at: string
+          drift_amount: number
+          id: string
+          notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          threshold: number
+          triggered_action: string
+        }
+        Insert: {
+          asset_symbol: string
+          created_at?: string
+          drift_amount: number
+          id?: string
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          threshold?: number
+          triggered_action?: string
+        }
+        Update: {
+          asset_symbol?: string
+          created_at?: string
+          drift_amount?: number
+          id?: string
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          threshold?: number
+          triggered_action?: string
         }
         Relationships: []
       }
@@ -14764,6 +14872,7 @@ export type Database = {
           wallet_total: number
         }[]
       }
+      run_daily_trading_reconciliation: { Args: never; Returns: Json }
       run_full_reconciliation_check: { Args: never; Returns: Json }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
