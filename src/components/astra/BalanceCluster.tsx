@@ -165,38 +165,7 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
         </AstraCard>
       )}
 
-      {/* BSK Holding Card - Only show if balance > 0 */}
-      {holdingBalance && holdingBalance.balance > 0 && (
-        <AstraCard variant="elevated" data-testid="bsk-holding-card">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-warning/10 rounded-full flex items-center justify-center">
-                  <Lock className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <h4 className="font-semibold">BSK — Holding</h4>
-                  <p className="text-sm text-text-secondary">Non-withdrawable rewards</p>
-                </div>
-              </div>
-            </div>
-            
-            <BalanceDisplay
-              amount={holdingBalance.balance}
-              currency="BSK"
-              size="lg"
-              isPrivate={!showPrivate}
-              secondary={showPrivate ? `≈ $${holdingBalance.valueUSD.toFixed(2)}` : undefined}
-            />
-            
-            <div className="mt-4 p-3 bg-warning/5 border border-warning/20 rounded-lg">
-              <p className="text-xs text-warning">
-                This balance comes from ad rewards, promotions, and vesting. Cannot be withdrawn.
-              </p>
-            </div>
-          </div>
-        </AstraCard>
-      )}
+      {/* BSK Holding Card - REMOVED: Holding BSK is sunset/legacy only */}
 
       {/* Crypto Assets Card */}
       <AstraCard variant="elevated" data-testid="crypto-assets-list">

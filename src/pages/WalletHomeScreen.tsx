@@ -134,11 +134,6 @@ const WalletHomeScreen = () => {
               className="animate-fade-in-scale"
               style={{ animationDelay: "300ms", animationFillMode: "both" }}
             />
-            <BSKBalanceCard 
-              balanceType="holding"
-              className="animate-fade-in-scale"
-              style={{ animationDelay: "350ms", animationFillMode: "both" }}
-            />
           </div>
         </div>
         

@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface BSKBalanceCardProps {
-  balanceType: 'withdrawable' | 'holding';
+  balanceType: 'withdrawable';
   className?: string;
   style?: React.CSSProperties;
 }
@@ -33,18 +33,12 @@ export const BSKBalanceCard: React.FC<BSKBalanceCardProps> = ({
     );
   }
 
-  const balance = balanceType === 'withdrawable' 
-    ? bskBalances.withdrawable_balance 
-    : bskBalances.holding_balance;
-
-  const totalEarned = balanceType === 'withdrawable'
-    ? bskBalances.lifetime_withdrawable_earned
-    : bskBalances.lifetime_holding_earned;
-
+  const balance = bskBalances.withdrawable_balance;
+  const totalEarned = bskBalances.lifetime_withdrawable_earned;
   const currentRate = getCurrentBSKRate();
   const inrValue = balance * currentRate;
 
-  const isWithdrawable = balanceType === 'withdrawable';
+  const isWithdrawable = true;
 
   return (
     <Card 

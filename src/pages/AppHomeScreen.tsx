@@ -214,9 +214,6 @@ const AppHomeScreen = () => {
             <BSKBalanceCard 
               balanceType="withdrawable"
             />
-            <BSKBalanceCard 
-              balanceType="holding"
-            />
           </div>
         </div>
 
