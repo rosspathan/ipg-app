@@ -1590,6 +1590,60 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_balance_integrity_repairs: {
+        Row: {
+          created_at: string
+          diagnostic_snapshot: Json
+          id: string
+          issue_type: string
+          ledger_holding_balance: number
+          ledger_withdrawable_balance: number
+          likely_cause: string | null
+          new_holding_balance: number
+          new_withdrawable_balance: number
+          old_holding_balance: number
+          old_withdrawable_balance: number
+          reason: string
+          repaired_by: string | null
+          status: string
+          target_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          diagnostic_snapshot?: Json
+          id?: string
+          issue_type: string
+          ledger_holding_balance?: number
+          ledger_withdrawable_balance?: number
+          likely_cause?: string | null
+          new_holding_balance?: number
+          new_withdrawable_balance?: number
+          old_holding_balance?: number
+          old_withdrawable_balance?: number
+          reason: string
+          repaired_by?: string | null
+          status?: string
+          target_user_id: string
+        }
+        Update: {
+          created_at?: string
+          diagnostic_snapshot?: Json
+          id?: string
+          issue_type?: string
+          ledger_holding_balance?: number
+          ledger_withdrawable_balance?: number
+          likely_cause?: string | null
+          new_holding_balance?: number
+          new_withdrawable_balance?: number
+          old_holding_balance?: number
+          old_withdrawable_balance?: number
+          reason?: string
+          repaired_by?: string | null
+          status?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       bsk_bonus_campaigns: {
         Row: {
           allow_stacking: boolean
@@ -14276,6 +14330,26 @@ export type Database = {
         Returns: string
       }
       get_badge_tier_value: { Args: { badge_name: string }; Returns: number }
+      get_bsk_balance_integrity_report: {
+        Args: { p_user_id?: string }
+        Returns: {
+          current_holding_balance: number
+          current_withdrawable_balance: number
+          email: string
+          full_name: string
+          has_negative_holding: boolean
+          has_negative_withdrawable: boolean
+          holding_diff: number
+          ledger_holding_balance: number
+          ledger_withdrawable_balance: number
+          likely_cause: string
+          missing_balance_row: boolean
+          severity: string
+          user_id: string
+          username: string
+          withdrawable_diff: number
+        }[]
+      }
       get_commission_rate_for_level: {
         Args: { p_level: number; p_level_percentages: Json }
         Returns: number
@@ -14661,6 +14735,10 @@ export type Database = {
             Args: { p_reason?: string; p_withdrawal_id: string }
             Returns: Json
           }
+      repair_bsk_balance_from_ledger: {
+        Args: { p_reason: string; p_target_user_id: string }
+        Returns: Json
+      }
       request_sensitive_admin_operation: {
         Args: {
           _delay_hours?: number
