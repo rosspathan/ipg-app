@@ -59,7 +59,17 @@ serve(async (req) => {
 
     console.log(`[full-trading-reconciliation] Action: ${action}, Scheduled: ${isScheduledRun}`);
 
-    // Get all wallet balances (excluding platform account)
+    // Run the daily reconciliation RPC which does deep token-by-token analysis
+    const { data: reconResult, error: reconError } = await supabaseAdmin.rpc('run_daily_trading_reconciliation');
+    
+    if (reconError) {
+      console.error('[full-trading-reconciliation] RPC error:', reconError);
+      throw reconError;
+    }
+
+    console.log('[full-trading-reconciliation] RPC result:', JSON.stringify(reconResult));
+
+    // Also do the legacy ledger-vs-balance comparison for backward compat
     const { data: walletBalances, error: wbError } = await supabaseAdmin
       .from('wallet_balances')
       .select('user_id, asset_id, available, locked, assets!inner(symbol)')
@@ -67,7 +77,6 @@ serve(async (req) => {
 
     if (wbError) throw wbError;
 
-    // Get ledger sums per user per asset
     const { data: ledgerData, error: ledgerError } = await supabaseAdmin
       .from('trading_balance_ledger')
       .select('user_id, asset_symbol, delta_available, delta_locked')
@@ -84,7 +93,6 @@ serve(async (req) => {
       ledgerAgg[key].locked += Number(entry.delta_locked || 0);
     }
 
-    // Compare
     const discrepancies: any[] = [];
     let totalChecked = 0;
 
@@ -100,28 +108,24 @@ serve(async (req) => {
       const walletLocked = Number(wb.locked || 0);
       const walletTotal = walletAvailable + walletLocked;
       
-      const ledgerNetAvailable = ledger.available;
-      const ledgerNetLocked = ledger.locked;
-      const ledgerTotal = ledgerNetAvailable + ledgerNetLocked;
-      
-      const drift = Math.abs(walletTotal - ledgerTotal);
+      const ledgerTotal = ledger.available + ledger.locked;
+      const drift = walletTotal - ledgerTotal;
 
-      if (drift > 0.001) {
+      if (Math.abs(drift) > 0.001) {
         discrepancies.push({
           user_id: wb.user_id,
           asset_symbol: sym,
           wallet_available: walletAvailable,
           wallet_locked: walletLocked,
           wallet_total: walletTotal,
-          ledger_net_available: ledgerNetAvailable,
-          ledger_net_locked: ledgerNetLocked,
+          ledger_net_available: ledger.available,
+          ledger_net_locked: ledger.locked,
           ledger_total: ledgerTotal,
-          drift: walletTotal - ledgerTotal,
+          drift,
         });
       }
     }
 
-    // Sort by absolute drift
     discrepancies.sort((a, b) => Math.abs(b.drift) - Math.abs(a.drift));
 
     const result = {
@@ -130,74 +134,62 @@ serve(async (req) => {
       total_checked: totalChecked,
       total_discrepancies: discrepancies.length,
       discrepancies: discrepancies.slice(0, 50),
+      daily_reconciliation: reconResult,
       summary: {
         total_positive_drift: discrepancies.filter(d => d.drift > 0).reduce((s, d) => s + d.drift, 0),
         total_negative_drift: discrepancies.filter(d => d.drift < 0).reduce((s, d) => s + d.drift, 0),
       },
-      auto_freeze_triggered: false,
+      auto_freeze_triggered: reconResult?.circuit_breaker_triggered || false,
     };
 
-    // AUTO-FREEZE: If critical discrepancies found during scheduled run, freeze withdrawals
-    const CRITICAL_DRIFT_THRESHOLD = 100; // >100 token drift = critical
+    // AUTO-FREEZE for critical discrepancies (legacy path)
+    const CRITICAL_DRIFT_THRESHOLD = 100;
     const criticalDiscrepancies = discrepancies.filter(d => Math.abs(d.drift) > CRITICAL_DRIFT_THRESHOLD);
 
     if ((action === 'alert' || isScheduledRun) && criticalDiscrepancies.length > 0) {
-      console.warn(`[full-trading-reconciliation] CRITICAL: ${criticalDiscrepancies.length} critical discrepancies found!`);
+      console.warn(`[full-trading-reconciliation] CRITICAL: ${criticalDiscrepancies.length} critical discrepancies!`);
       
-      // Log to security audit
-      await supabaseAdmin
-        .from('security_audit_log')
-        .insert({
-          event_type: 'TRADING_RECONCILIATION_CRITICAL_MISMATCH',
-          actor_id: '00000000-0000-0000-0000-000000000001',
-          details: {
-            total_discrepancies: discrepancies.length,
-            critical_discrepancies: criticalDiscrepancies.length,
-            top_discrepancies: criticalDiscrepancies.slice(0, 10),
-            auto_freeze: true,
-            scheduled_run: isScheduledRun,
-          }
-        });
+      await supabaseAdmin.from('security_audit_log').insert({
+        event_type: 'TRADING_RECONCILIATION_CRITICAL_MISMATCH',
+        actor_id: '00000000-0000-0000-0000-000000000001',
+        details: {
+          total_discrepancies: discrepancies.length,
+          critical_discrepancies: criticalDiscrepancies.length,
+          top_discrepancies: criticalDiscrepancies.slice(0, 10),
+          auto_freeze: true,
+          scheduled_run: isScheduledRun,
+        }
+      });
 
-      // Auto-freeze withdrawals by updating system settings
       const { error: freezeError } = await supabaseAdmin
         .from('system_settings')
-        .update({ 
-          value: 'false', 
-          updated_at: new Date().toISOString() 
-        })
+        .update({ value: 'false', updated_at: new Date().toISOString() })
         .eq('key', 'withdrawals_enabled');
 
       if (!freezeError) {
         result.auto_freeze_triggered = true;
-        console.warn('[full-trading-reconciliation] AUTO-FREEZE: Withdrawals disabled due to critical drift');
+        console.warn('[full-trading-reconciliation] AUTO-FREEZE: Withdrawals disabled');
         
-        // Log the freeze action
-        await supabaseAdmin
-          .from('security_audit_log')
-          .insert({
-            event_type: 'WITHDRAWAL_AUTO_FREEZE',
-            actor_id: '00000000-0000-0000-0000-000000000001',
-            details: {
-              reason: 'Critical balance drift detected by auto-reconciliation',
-              critical_count: criticalDiscrepancies.length,
-              max_drift: Math.max(...criticalDiscrepancies.map(d => Math.abs(d.drift))),
-            }
-          });
-      }
-    } else if ((action === 'alert' || isScheduledRun) && discrepancies.length > 0) {
-      // Non-critical discrepancies - just log warning
-      await supabaseAdmin
-        .from('security_audit_log')
-        .insert({
-          event_type: 'TRADING_RECONCILIATION_MISMATCH',
+        await supabaseAdmin.from('security_audit_log').insert({
+          event_type: 'WITHDRAWAL_AUTO_FREEZE',
           actor_id: '00000000-0000-0000-0000-000000000001',
           details: {
-            total_discrepancies: discrepancies.length,
-            top_discrepancies: discrepancies.slice(0, 10),
-            scheduled_run: isScheduledRun,
+            reason: 'Critical balance drift detected by auto-reconciliation',
+            critical_count: criticalDiscrepancies.length,
+            max_drift: Math.max(...criticalDiscrepancies.map(d => Math.abs(d.drift))),
           }
         });
+      }
+    } else if ((action === 'alert' || isScheduledRun) && discrepancies.length > 0) {
+      await supabaseAdmin.from('security_audit_log').insert({
+        event_type: 'TRADING_RECONCILIATION_MISMATCH',
+        actor_id: '00000000-0000-0000-0000-000000000001',
+        details: {
+          total_discrepancies: discrepancies.length,
+          top_discrepancies: discrepancies.slice(0, 10),
+          scheduled_run: isScheduledRun,
+        }
+      });
     }
 
     console.log(`[full-trading-reconciliation] Checked: ${totalChecked}, Discrepancies: ${discrepancies.length}, Auto-freeze: ${result.auto_freeze_triggered}`);
