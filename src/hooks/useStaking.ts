@@ -32,12 +32,11 @@ export function useStaking() {
       // 1. Check user's BSK balance
       const { data: balanceData } = await supabase
         .from('user_bsk_balances')
-        .select('withdrawable_balance, holding_balance')
+        .select('withdrawable_balance')
         .eq('user_id', user.id)
         .single();
 
       const withdrawable = Number(balanceData?.withdrawable_balance || 0);
-      const holding = Number(balanceData?.holding_balance || 0);
 
       if (withdrawable < amount) {
         toast.error('Insufficient BSK balance', {
@@ -65,14 +64,17 @@ export function useStaking() {
         return;
       }
 
-      // 3. Move BSK from withdrawable to holding balance
-      const { error: balanceError } = await supabase
-        .from('user_bsk_balances')
-        .update({
-          withdrawable_balance: withdrawable - amount,
-          holding_balance: holding + amount,
-        })
-        .eq('user_id', user.id);
+      // 3. Debit BSK from withdrawable balance via atomic RPC
+      const { error: balanceError } = await supabase.rpc('record_bsk_transaction', {
+        p_user_id: user.id,
+        p_idempotency_key: `staking_deposit_${pool.id}_${Date.now()}`,
+        p_tx_type: 'debit',
+        p_tx_subtype: 'staking_deposit',
+        p_balance_type: 'withdrawable',
+        p_amount_bsk: amount,
+        p_notes: `Staked ${amount} BSK in pool: ${plan.name}`,
+        p_meta_json: { pool_id: pool.id, plan_name: plan.name, apy: plan.apy },
+      });
 
       if (balanceError) throw balanceError;
 

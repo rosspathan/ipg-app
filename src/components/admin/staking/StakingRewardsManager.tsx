@@ -167,35 +167,29 @@ export const StakingRewardsManager = () => {
 
       if (distributionError) throw distributionError;
 
-      // Process each reward
+      // Process each reward — credit to withdrawable (Tradable BSK) via atomic RPC
       for (const reward of rewardsToDistribute) {
-        // Credit BSK balance - upsert to ensure record exists
-        const { data: currentBalance } = await supabase
-          .from("user_bsk_balances")
-          .select("holding_balance")
-          .eq("user_id", reward.user_id)
-          .single();
+        const idempotencyKey = `staking_reward_dist_${distributionData.id}_${reward.id}`;
+        const { error: creditError } = await supabase.rpc('record_bsk_transaction', {
+          p_user_id: reward.user_id,
+          p_idempotency_key: idempotencyKey,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'staking_reward',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: reward.reward_amount,
+          p_notes: `Staking reward distribution ${distributionData.id}`,
+          p_meta_json: {
+            distribution_id: distributionData.id,
+            reward_id: reward.id,
+            pool_id: reward.pool_id,
+            stake_amount: reward.stake_amount,
+            apy_used: reward.apy_used,
+          },
+        });
 
-        if (currentBalance) {
-          // Update existing balance
-          await supabase
-            .from("user_bsk_balances")
-            .update({
-              holding_balance: currentBalance.holding_balance + reward.reward_amount,
-              total_earned_holding: currentBalance.holding_balance + reward.reward_amount,
-            })
-            .eq("user_id", reward.user_id);
-        } else {
-          // Create new balance record
-          await supabase
-            .from("user_bsk_balances")
-            .insert({
-              user_id: reward.user_id,
-              holding_balance: reward.reward_amount,
-              withdrawable_balance: 0,
-              total_earned_holding: reward.reward_amount,
-              total_earned_withdrawable: 0,
-            });
+        if (creditError) {
+          console.error(`Failed to credit reward ${reward.id}:`, creditError);
+          throw creditError;
         }
 
         // Mark reward as distributed
