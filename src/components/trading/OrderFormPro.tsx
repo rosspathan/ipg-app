@@ -360,37 +360,38 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         compact={compact}
       />
 
-      {/* ── Range Slider ── */}
-      <div className="px-1 relative">
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={sliderValue}
-          onChange={(e) => handleSliderChange(parseInt(e.target.value))}
-          className="w-full h-[3px] appearance-none bg-[hsl(230,20%,20%)] rounded-full cursor-pointer
-            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
-            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#C7D2E0]
-            [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#060D18]
-            [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer
-            [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3
-            [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#C7D2E0]
-            [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#060D18]"
-        />
-        {/* Dot markers */}
-        <div className="flex justify-between px-0.5 mt-0.5 pointer-events-none">
-          {[0, 25, 50, 75, 100].map((dot) => (
-            <div
-              key={dot}
-              className={cn(
-                "w-1.5 h-1.5 rounded-full transition-colors",
-                sliderValue >= dot ? (isBuy ? "bg-[#00E676]/60" : "bg-[#FF4D4F]/60") : "bg-[hsl(230,20%,25%)]"
-              )}
-            />
-          ))}
+      {/* ── Range Slider (hidden in compact) ── */}
+      {!compact && (
+        <div className="px-1 relative">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={sliderValue}
+            onChange={(e) => handleSliderChange(parseInt(e.target.value))}
+            className="w-full h-[3px] appearance-none bg-[hsl(230,20%,20%)] rounded-full cursor-pointer
+              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
+              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#C7D2E0]
+              [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#060D18]
+              [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3
+              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#C7D2E0]
+              [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#060D18]"
+          />
+          <div className="flex justify-between px-0.5 mt-0.5 pointer-events-none">
+            {[0, 25, 50, 75, 100].map((dot) => (
+              <div
+                key={dot}
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-colors",
+                  sliderValue >= dot ? (isBuy ? "bg-[#00E676]/60" : "bg-[#FF4D4F]/60") : "bg-[hsl(230,20%,25%)]"
+                )}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Percentage Chips ── */}
       <div className="grid grid-cols-5 gap-1">
