@@ -35,17 +35,17 @@ Deno.serve(async (req) => {
     const sponsor_id = referralData?.sponsor_id;
     console.log(`[KYC User Reward] Sponsor found: ${sponsor_id || 'none'}`);
 
-    // Credit BSK to holding balance for user using atomic transaction
+    // Credit BSK to withdrawable (Tradable) balance for user using atomic transaction
     const { error: balanceError } = await supabase.rpc('record_bsk_transaction', {
       p_user_id: user_id,
       p_idempotency_key: `kyc_reward_${user_id}`,
       p_tx_type: 'credit',
       p_tx_subtype: 'kyc_completion',
-      p_balance_type: 'holding',
+      p_balance_type: 'withdrawable',
       p_amount_bsk: reward_bsk,
       p_meta_json: {
         reward_type: 'kyc_approval',
-        destination: 'holding'
+        destination: 'withdrawable'
       }
     });
 
