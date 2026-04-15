@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
           p_idempotency_key: `team_income_${event_id}_${userId}_holding`,
           p_tx_type: 'credit',
           p_tx_subtype: 'team_income',
-          p_balance_type: 'holding',
+          p_balance_type: 'withdrawable',
           p_amount_bsk: updates.holding.toNumber(),
           p_meta_json: {
             payer_id: payer_id,

@@ -50,11 +50,11 @@ Deno.serve(async (req) => {
     });
 
     if (balanceError) {
-      console.error('[KYC User Reward] Failed to credit holding balance:', balanceError);
+      console.error('[KYC User Reward] Failed to credit withdrawable balance:', balanceError);
       throw new Error(`Failed to credit balance: ${balanceError.message}`);
     }
 
-    console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to user holding balance`);
+    console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to user withdrawable balance`);
 
     // Credit sponsor if exists
     if (sponsor_id) {
