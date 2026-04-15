@@ -33,7 +33,10 @@ export function TradingHistoryTabs({
   }, [symbol]);
 
   const {
-    fills, orders, openOrders, fundsMovements,
+    fills, fillsTotal, fillsPage, fillsTotalPages, setFillsPage,
+    orders, ordersTotal, ordersPage, ordersTotalPages, setOrdersPage,
+    openOrders,
+    fundsMovements, fundsTotal, fundsPage, fundsTotalPages, setFundsPage,
     isLoadingFills, isLoadingOrders, isLoadingOpenOrders, isLoadingFunds,
   } = useTradeHistory({ symbol: normalizedSymbol });
 
@@ -85,6 +88,10 @@ export function TradingHistoryTabs({
               orders={orders}
               currentSymbol={normalizedSymbol}
               onDetails={onOrderDetails}
+              page={ordersPage}
+              totalPages={ordersTotalPages}
+              totalItems={ordersTotal}
+              onPageChange={setOrdersPage}
             />
           )
         )}
@@ -94,12 +101,22 @@ export function TradingHistoryTabs({
               fills={fills}
               currentSymbol={normalizedSymbol}
               onDetails={onTradeDetails}
+              page={fillsPage}
+              totalPages={fillsTotalPages}
+              totalItems={fillsTotal}
+              onPageChange={setFillsPage}
             />
           )
         )}
         {activeTab === 'funds' && (
           isLoadingFunds ? <LoadingState /> : (
-            <FundsLedgerTab movements={fundsMovements} />
+            <FundsLedgerTab
+              movements={fundsMovements}
+              page={fundsPage}
+              totalPages={fundsTotalPages}
+              totalItems={fundsTotal}
+              onPageChange={setFundsPage}
+            />
           )
         )}
       </div>

@@ -5,20 +5,25 @@ import { ArrowUpRight, ArrowDownRight, Filter, ArrowLeftRight } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import BigNumber from 'bignumber.js';
- import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
- } from "@/components/ui/select";
- import type { FundsMovement } from '@/hooks/useTradeHistory';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { FundsMovement } from '@/hooks/useTradeHistory';
+import { PaginationControls } from '../PaginationControls';
+
+interface FundsLedgerTabProps {
+  movements: FundsMovement[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+}
  
- interface FundsLedgerTabProps {
-   movements: FundsMovement[];
- }
- 
- export function FundsLedgerTab({ movements }: FundsLedgerTabProps) {
+ export function FundsLedgerTab({ movements, page, totalPages, totalItems, onPageChange }: FundsLedgerTabProps) {
   const navigate = useNavigate();
   const [filterType, setFilterType] = useState<string>('all');
    const [filterAsset, setFilterAsset] = useState<string>('all');
@@ -181,9 +186,17 @@ import BigNumber from 'bignumber.js';
                  )}
                </div>
              </div>
-           );
+          );
          })}
        </div>
+
+       <PaginationControls
+         page={page}
+         totalPages={totalPages}
+         totalItems={totalItems}
+         pageSize={20}
+         onPageChange={onPageChange}
+       />
      </div>
    );
  }

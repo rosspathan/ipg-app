@@ -4,20 +4,28 @@
  import { cn } from '@/lib/utils';
  import BigNumber from 'bignumber.js';
  import type { TradeFill } from '@/hooks/useTradeHistory';
- 
- // Configure BigNumber
+ import { PaginationControls } from '../PaginationControls';
+
  BigNumber.config({ DECIMAL_PLACES: 8, ROUNDING_MODE: BigNumber.ROUND_DOWN });
- 
+
  interface TradeHistoryFillsTabProps {
    fills: TradeFill[];
    currentSymbol?: string;
    onDetails?: (tradeId: string) => void;
+   page: number;
+   totalPages: number;
+   totalItems: number;
+   onPageChange: (page: number) => void;
  }
  
- export function TradeHistoryFillsTab({
+export function TradeHistoryFillsTab({
    fills,
    currentSymbol,
-   onDetails
+   onDetails,
+   page,
+   totalPages,
+   totalItems,
+   onPageChange
  }: TradeHistoryFillsTabProps) {
    const [filterSide, setFilterSide] = useState<string>('all');
    const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -186,9 +194,17 @@
                  </button>
                </div>
              </div>
-           );
+          );
          })}
        </div>
+
+       <PaginationControls
+         page={page}
+         totalPages={totalPages}
+         totalItems={totalItems}
+         pageSize={20}
+         onPageChange={onPageChange}
+       />
      </div>
    );
  }
