@@ -431,7 +431,7 @@ const AdvertisingMiningScreen: React.FC = () => {
           <TabsContent value="free" className="space-y-6">
             {/* BSK Balance Cards */}
             <div className="grid gap-4">
-              <BSKBalanceCard balanceType="holding" />
+              <BSKBalanceCard balanceType="withdrawable" />
             </div>
 
             {/* Info Banner */}
