@@ -10,7 +10,7 @@ import { UnifiedTransactionFeed } from "@/components/UnifiedTransactionFeed";
 import { AnnouncementTicker } from "@/components/AnnouncementTicker";
 import QuickActionGrid from "@/components/QuickActionGrid";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
-import { BSKBalanceCard } from "@/components/BSKBalanceCard";
+
 import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { AdCarousel } from "@/components/AdCarousel";
 import InsuranceCard from "@/components/InsuranceCard";
