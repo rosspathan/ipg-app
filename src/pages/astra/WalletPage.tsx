@@ -6,7 +6,7 @@ import {
   TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Clock,
   BarChart2, Zap
 } from "lucide-react"
-import { BSKTradableCard } from "@/components/wallet/BSKTradableCard"
+
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
@@ -353,10 +353,6 @@ export function WalletPage() {
         </div>
       </div>
 
-      {/* ── BSK TRADABLE BALANCE ── */}
-      <div className="animate-fade-in" style={{ animationDelay: '120ms' }}>
-        <BSKTradableCard />
-      </div>
 
       {/* ── 3. BSC ADDRESS BLOCK ── */}
       <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
