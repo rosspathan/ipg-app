@@ -355,7 +355,7 @@ export function WalletPage() {
 
 
       {/* ── 3. BSC ADDRESS BLOCK ── */}
-      <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
+      <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '120ms' }}>
         {/* Chain identity header */}
         <div className="flex items-center gap-2">
           <div className="relative flex items-center justify-center">
