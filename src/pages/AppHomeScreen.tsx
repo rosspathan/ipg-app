@@ -207,15 +207,6 @@ const AppHomeScreen = () => {
           />
         </div>
 
-        {/* BSK Balances Section */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground tracking-tight">BSK Balances</h3>
-          <div className="grid gap-4">
-            <BSKBalanceCard 
-              balanceType="withdrawable"
-            />
-          </div>
-        </div>
 
         {/* Legacy Bonus Balance Card */}
         <BonusBalanceCard />
