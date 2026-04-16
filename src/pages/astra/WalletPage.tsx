@@ -14,7 +14,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { copyToClipboard } from "@/utils/clipboard"
 import { useWalletBalances } from "@/hooks/useWalletBalances"
 import { useBep20Balances } from "@/hooks/useBep20Balances"
-import { useTradingBalances } from "@/hooks/useTradingBalances"
+
 import { useNavigation } from "@/hooks/useNavigation"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
@@ -132,17 +132,12 @@ export function WalletPage() {
   const walletIntegrity = useWalletIntegrity(user?.id || null)
   const { portfolio, loading: portfolioLoading } = useWalletBalances()
   const { balances: onchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances()
-  const { data: tradingBalances, isLoading: tradingLoading } = useTradingBalances()
 
   const { balances: bep20Balances } = useBep20Balances()
   const onchainUsd = useMemo(() => {
     if (!bep20Balances || bep20Balances.length === 0) return 0
     return bep20Balances.reduce((total, bal) => total + (bal.onchainUsdValue || 0), 0)
   }, [bep20Balances])
-  const activeTradingBalances = useMemo(() =>
-    (tradingBalances || []).filter(b => b.balance > 0.000001), [tradingBalances])
-  const tradingTotalUsd = useMemo(() =>
-    activeTradingBalances.reduce((sum, b) => sum + (b.usd_value || 0), 0), [activeTradingBalances])
 
   const filteredAssets = useMemo(() =>
     onchainBalances
@@ -516,72 +511,9 @@ export function WalletPage() {
         )}
       </div>
 
-      {/* ── 5. TRADING BALANCES ── */}
-      <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '240ms' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <SectionLabel>Trading Balances</SectionLabel>
-            <span className="flex items-center gap-1 text-[10px] font-bold text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              Live
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {tradingTotalUsd > 0 && (
-              <span className="balance-gradient-text text-[12px] font-bold tabular-nums font-mono">
-                ${tradingTotalUsd.toFixed(2)}
-              </span>
-            )}
-            <button
-              onClick={() => navigate('/app/wallet/transfer')}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-[11px] font-bold bg-accent/10 border border-accent/25 text-accent hover:bg-accent/20 transition-colors active:scale-95"
-            >
-              <ArrowLeftRight className="h-3 w-3" /> Transfer
-            </button>
-          </div>
-        </div>
-
-        {tradingLoading ? (
-          <div className="text-center py-6 text-[12px] text-muted-foreground">Loading...</div>
-        ) : activeTradingBalances.length === 0 ? (
-          <div className="text-center py-8 text-[12px] text-muted-foreground">No trading balances</div>
-        ) : (
-          <div className="glass-card overflow-hidden" style={{ borderRadius: '20px' }}>
-            {activeTradingBalances.map((asset, i) => (
-              <div key={asset.symbol}>
-                <div className="flex items-center justify-between px-4 py-3.5 hover:bg-accent/[0.03] transition-all duration-150">
-                  <div className="flex items-center gap-3">
-                    <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
-                    <div>
-                      <span className="text-[13px] font-bold text-foreground">{asset.symbol}</span>
-                      {asset.usd_value && asset.usd_value > 0 && (
-                        <p className="text-[10px] text-muted-foreground font-mono">${asset.usd_value.toFixed(2)}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[13px] font-mono font-bold tabular-nums text-success">
-                      {asset.available.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                    </p>
-                    {asset.locked > 0.000001 && (
-                      <p className="text-[10px] font-mono tabular-nums text-warning flex items-center gap-1 justify-end">
-                        <Lock className="h-2.5 w-2.5" />
-                        {asset.locked.toFixed(4)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                {i < activeTradingBalances.length - 1 && (
-                  <div className="mx-4 h-px bg-border/20" />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* ── 6. USDI LOAN CARD ── */}
-      <div className="px-4 animate-fade-in" style={{ animationDelay: '280ms' }}>
+      <div className="px-4 animate-fade-in" style={{ animationDelay: '240ms' }}>
         <button
           onClick={() => navigate("/app/wallet/loan")}
           className="w-full text-left group relative overflow-hidden glass-card p-5 space-y-4 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] border border-accent/20"
