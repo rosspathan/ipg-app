@@ -14,7 +14,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { copyToClipboard } from "@/utils/clipboard"
 import { useWalletBalances } from "@/hooks/useWalletBalances"
 import { useBep20Balances } from "@/hooks/useBep20Balances"
-import { useTradingBalances } from "@/hooks/useTradingBalances"
+
 import { useNavigation } from "@/hooks/useNavigation"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
@@ -132,17 +132,12 @@ export function WalletPage() {
   const walletIntegrity = useWalletIntegrity(user?.id || null)
   const { portfolio, loading: portfolioLoading } = useWalletBalances()
   const { balances: onchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances()
-  const { data: tradingBalances, isLoading: tradingLoading } = useTradingBalances()
 
   const { balances: bep20Balances } = useBep20Balances()
   const onchainUsd = useMemo(() => {
     if (!bep20Balances || bep20Balances.length === 0) return 0
     return bep20Balances.reduce((total, bal) => total + (bal.onchainUsdValue || 0), 0)
   }, [bep20Balances])
-  const activeTradingBalances = useMemo(() =>
-    (tradingBalances || []).filter(b => b.balance > 0.000001), [tradingBalances])
-  const tradingTotalUsd = useMemo(() =>
-    activeTradingBalances.reduce((sum, b) => sum + (b.usd_value || 0), 0), [activeTradingBalances])
 
   const filteredAssets = useMemo(() =>
     onchainBalances
