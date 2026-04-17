@@ -26,6 +26,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { KycLockedBanner } from "@/components/kyc/KycLockedBanner";
 
 export function TradingPairPage() {
   const { session, loading: authLoading, user } = useAuthUser();
@@ -293,6 +294,11 @@ function TradingPairPageContent() {
             <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
           </div>
         )}
+
+        {/* ═══ KYC GATE ═══ */}
+        <div className={cn(isMobile ? "mx-1 mt-2" : "mx-1.5 mt-2")}>
+          <KycLockedBanner action="trade" compact />
+        </div>
 
         {/* ═══ MAIN TRADING MODULE ═══ */}
         <div className={cn(
