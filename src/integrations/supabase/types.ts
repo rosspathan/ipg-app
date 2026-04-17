@@ -7274,6 +7274,54 @@ export type Database = {
           },
         ]
       }
+      kyc_decision_audit: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          evidence_json: Json | null
+          id: string
+          ip_address: unknown
+          notes: string | null
+          pillar: string
+          status_after: string | null
+          status_before: string | null
+          submission_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          evidence_json?: Json | null
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          pillar: string
+          status_after?: string | null
+          status_before?: string | null
+          submission_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          evidence_json?: Json | null
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          pillar?: string
+          status_after?: string | null
+          status_before?: string | null
+          submission_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       kyc_documents_new: {
         Row: {
           created_at: string
@@ -7395,15 +7443,36 @@ export type Database = {
         Row: {
           created_at: string
           data_json: Json
+          documents_notes: string | null
+          documents_reviewed_at: string | null
+          documents_reviewed_by: string | null
+          documents_status: Database["public"]["Enums"]["kyc_pillar_status"]
           email_computed: string | null
+          face_captured_at: string | null
+          face_notes: string | null
+          face_reviewed_at: string | null
+          face_reviewed_by: string | null
+          face_selfie_path: string | null
+          face_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          final_approved_at: string | null
+          final_approved_by: string | null
+          final_status: Database["public"]["Enums"]["kyc_status_v2"]
           full_name_computed: string | null
           id: string
           level: string
+          mobile_notes: string | null
+          mobile_number: string | null
+          mobile_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          mobile_submitted_at: string | null
+          mobile_verified_at: string | null
+          mobile_verified_by: string | null
           phone_computed: string | null
           rejection_reason: string | null
+          resubmission_allowed: boolean
           review_notes: string | null
           reviewed_at: string | null
           reviewer_id: string | null
+          risk_flags: Json
           status: string
           submitted_at: string | null
           updated_at: string
@@ -7412,15 +7481,36 @@ export type Database = {
         Insert: {
           created_at?: string
           data_json?: Json
+          documents_notes?: string | null
+          documents_reviewed_at?: string | null
+          documents_reviewed_by?: string | null
+          documents_status?: Database["public"]["Enums"]["kyc_pillar_status"]
           email_computed?: string | null
+          face_captured_at?: string | null
+          face_notes?: string | null
+          face_reviewed_at?: string | null
+          face_reviewed_by?: string | null
+          face_selfie_path?: string | null
+          face_status?: Database["public"]["Enums"]["kyc_pillar_status"]
+          final_approved_at?: string | null
+          final_approved_by?: string | null
+          final_status?: Database["public"]["Enums"]["kyc_status_v2"]
           full_name_computed?: string | null
           id?: string
           level: string
+          mobile_notes?: string | null
+          mobile_number?: string | null
+          mobile_status?: Database["public"]["Enums"]["kyc_pillar_status"]
+          mobile_submitted_at?: string | null
+          mobile_verified_at?: string | null
+          mobile_verified_by?: string | null
           phone_computed?: string | null
           rejection_reason?: string | null
+          resubmission_allowed?: boolean
           review_notes?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
+          risk_flags?: Json
           status?: string
           submitted_at?: string | null
           updated_at?: string
@@ -7429,15 +7519,36 @@ export type Database = {
         Update: {
           created_at?: string
           data_json?: Json
+          documents_notes?: string | null
+          documents_reviewed_at?: string | null
+          documents_reviewed_by?: string | null
+          documents_status?: Database["public"]["Enums"]["kyc_pillar_status"]
           email_computed?: string | null
+          face_captured_at?: string | null
+          face_notes?: string | null
+          face_reviewed_at?: string | null
+          face_reviewed_by?: string | null
+          face_selfie_path?: string | null
+          face_status?: Database["public"]["Enums"]["kyc_pillar_status"]
+          final_approved_at?: string | null
+          final_approved_by?: string | null
+          final_status?: Database["public"]["Enums"]["kyc_status_v2"]
           full_name_computed?: string | null
           id?: string
           level?: string
+          mobile_notes?: string | null
+          mobile_number?: string | null
+          mobile_status?: Database["public"]["Enums"]["kyc_pillar_status"]
+          mobile_submitted_at?: string | null
+          mobile_verified_at?: string | null
+          mobile_verified_by?: string | null
           phone_computed?: string | null
           rejection_reason?: string | null
+          resubmission_allowed?: boolean
           review_notes?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
+          risk_flags?: Json
           status?: string
           submitted_at?: string | null
           updated_at?: string
@@ -14335,6 +14446,15 @@ export type Database = {
         Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
       }
+      admin_update_kyc_pillar: {
+        Args: {
+          p_action: string
+          p_notes?: string
+          p_pillar: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       assert_ipg_staking_currency: {
         Args: { p_currency: string }
         Returns: undefined
@@ -14924,6 +15044,7 @@ export type Database = {
         Returns: string
       }
       is_bsk_holding_sunset: { Args: never; Returns: boolean }
+      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_wallet_address_blocked: {
         Args: { _address: string }
         Returns: boolean
@@ -15335,7 +15456,25 @@ export type Database = {
       draw_status: "OPEN" | "CLOSED" | "COMPLETED" | "CANCELLED"
       insurance_type: "ACCIDENT" | "TRADING"
       invite_policy: "BLOCK_WHEN_FULL" | "WAITLIST"
+      kyc_pillar_status:
+        | "not_submitted"
+        | "pending_review"
+        | "approved"
+        | "rejected"
+        | "needs_resubmission"
       kyc_status: "unverified" | "pending" | "verified" | "rejected"
+      kyc_status_v2:
+        | "not_started"
+        | "submitted"
+        | "documents_under_review"
+        | "face_pending"
+        | "face_verified"
+        | "mobile_pending_admin_verification"
+        | "mobile_verified"
+        | "approved"
+        | "rejected"
+        | "needs_resubmission"
+        | "suspended"
       missed_day_policy: "forfeit" | "carry_forward"
       per_user_limit_type: "once" | "once_per_campaign" | "unlimited"
       policy_status: "ACTIVE" | "EXPIRED" | "CANCELLED"
@@ -15518,7 +15657,27 @@ export const Constants = {
       draw_status: ["OPEN", "CLOSED", "COMPLETED", "CANCELLED"],
       insurance_type: ["ACCIDENT", "TRADING"],
       invite_policy: ["BLOCK_WHEN_FULL", "WAITLIST"],
+      kyc_pillar_status: [
+        "not_submitted",
+        "pending_review",
+        "approved",
+        "rejected",
+        "needs_resubmission",
+      ],
       kyc_status: ["unverified", "pending", "verified", "rejected"],
+      kyc_status_v2: [
+        "not_started",
+        "submitted",
+        "documents_under_review",
+        "face_pending",
+        "face_verified",
+        "mobile_pending_admin_verification",
+        "mobile_verified",
+        "approved",
+        "rejected",
+        "needs_resubmission",
+        "suspended",
+      ],
       missed_day_policy: ["forfeit", "carry_forward"],
       per_user_limit_type: ["once", "once_per_campaign", "unlimited"],
       policy_status: ["ACTIVE", "EXPIRED", "CANCELLED"],
