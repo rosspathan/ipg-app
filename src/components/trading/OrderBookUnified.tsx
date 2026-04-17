@@ -78,7 +78,7 @@ const getDustThreshold = (entries: OrderBookEntry[]) => {
   return median * 0.05;
 };
 
-const ROW_H = 24;
+const ROW_H = 28;
 
 const BookRow = memo(({
   price, quantity, maxQty, side, precision, onClick, isDust, isBest,
@@ -98,7 +98,7 @@ const BookRow = memo(({
         isDust && "opacity-35",
         isBest && "bg-[hsl(230,20%,10%)]"
       )}
-      style={{ height: ROW_H, padding: '0 6px' }}
+      style={{ height: ROW_H, padding: '0 8px' }}
     >
       {/* Depth bar */}
       <div
@@ -110,14 +110,14 @@ const BookRow = memo(({
       />
       {/* Price — 50% */}
       <span className={cn(
-        "relative z-10 text-[10px] font-mono tabular-nums text-left leading-none truncate",
+        "relative z-10 text-[13px] font-mono tabular-nums text-left leading-none truncate",
         isAsk ? "text-[#FF4D4F]" : "text-[#00E676]",
         isBest && "font-bold"
       )} style={{ fontWeight: isBest ? 700 : 600, width: '50%', flexShrink: 0 }}>
         {fmtPrice(price, precision)}
       </span>
       {/* Amount — 50% */}
-      <span className="relative z-10 text-[10px] font-mono tabular-nums text-right text-[#C7D2E0] leading-none truncate" style={{ fontWeight: 500, width: '50%', flexShrink: 0 }}>
+      <span className="relative z-10 text-[12px] font-mono tabular-nums text-right text-[#C7D2E0] leading-none truncate" style={{ fontWeight: 500, width: '50%', flexShrink: 0 }}>
         {fmtCompact(quantity)}
       </span>
     </div>
@@ -205,16 +205,16 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
         <select
           value={precision}
           onChange={(e) => setPrecision(parseFloat(e.target.value))}
-          className="h-4 text-[8px] font-mono bg-[hsl(230,20%,10%)] border-none rounded px-1 text-[#C7D2E0] cursor-pointer focus:outline-none appearance-none"
+          className="h-5 text-[10px] font-mono bg-[hsl(230,20%,10%)] border-none rounded px-1.5 text-[#C7D2E0] cursor-pointer focus:outline-none appearance-none"
         >
           {precisionOptions.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
       {/* Column Header */}
-      <div className="flex items-center px-1.5 py-0.5 text-[8px] font-bold text-[#94A3B8] uppercase tracking-wider border-b border-[hsl(230,20%,12%)]/30">
+      <div className="flex items-center px-2 py-1 text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider border-b border-[hsl(230,20%,12%)]/30">
         <span style={{ width: '50%' }}>Price</span>
-        <span className="text-right" style={{ width: '50%' }}>Qty</span>
+        <span className="text-right" style={{ width: '50%' }}>Amount</span>
       </div>
 
       {/* Asks */}
@@ -238,7 +238,7 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       {/* ── Central Price with LAST label ── */}
       <div
         className={cn(
-          "flex items-center justify-center gap-1.5 px-1.5 h-[28px] border-y border-[hsl(230,20%,18%)]/50 transition-colors duration-700 cursor-pointer",
+          "flex items-center justify-center gap-2 px-2 h-[34px] border-y border-[hsl(230,20%,18%)]/50 transition-colors duration-700 cursor-pointer",
           flashDir === 'up' && "bg-[#00E676]/8",
           flashDir === 'down' && "bg-[#FF4D4F]/8",
           !flashDir && "bg-[hsl(230,30%,6%)]"
@@ -246,12 +246,13 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
         onClick={() => onPriceClick?.(effectivePrice)}
       >
         {isPositive
-          ? <TrendingUp className="h-3 w-3 text-[#00E676]" />
-          : <TrendingDown className="h-3 w-3 text-[#FF4D4F]" />
+          ? <TrendingUp className="h-3.5 w-3.5 text-[#00E676]" />
+          : <TrendingDown className="h-3.5 w-3.5 text-[#FF4D4F]" />
         }
-        <span className={cn("text-[12px] font-extrabold font-mono tabular-nums", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
+        <span className={cn("text-[16px] font-extrabold font-mono tabular-nums tracking-tight", isPositive ? "text-[#00E676]" : "text-[#FF4D4F]")}>
           {effectivePrice >= 1 ? effectivePrice.toFixed(2) : effectivePrice.toFixed(6)}
         </span>
+        <span className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-wider">Last</span>
       </div>
 
       {/* Bids */}
@@ -273,14 +274,14 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
       )}
 
       {/* Pressure bar */}
-      <div className="px-1.5 py-1 border-t border-[hsl(230,20%,18%)]/50">
-        <div className="flex items-center gap-1">
-          <span className="text-[8px] font-mono tabular-nums text-[#00E676] font-bold w-7">{bidPct.toFixed(0)}%</span>
+      <div className="px-2 py-1.5 border-t border-[hsl(230,20%,18%)]/50">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-mono tabular-nums text-[#00E676] font-bold w-9">{bidPct.toFixed(1)}%</span>
           <div className="flex-1 h-[3px] rounded-full overflow-hidden flex bg-[#060D18]">
             <div className="bg-[#00E676]/60 rounded-l-full transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
             <div className="bg-[#FF4D4F]/60 rounded-r-full transition-[width] duration-300" style={{ width: `${100 - bidPct}%` }} />
           </div>
-          <span className="text-[8px] font-mono tabular-nums text-[#FF4D4F] font-bold w-7 text-right">{(100 - bidPct).toFixed(0)}%</span>
+          <span className="text-[10px] font-mono tabular-nums text-[#FF4D4F] font-bold w-9 text-right">{(100 - bidPct).toFixed(1)}%</span>
         </div>
       </div>
     </div>
