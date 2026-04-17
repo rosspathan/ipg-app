@@ -239,8 +239,9 @@ function FinalStatusPill({ status }: { status: string }) {
   const cfg =
     status === "approved" ? { c: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", t: "Approved" }
       : status === "rejected" ? { c: "bg-rose-500/15 text-rose-700 dark:text-rose-400", t: "Rejected" }
+      : status === "needs_resubmission" ? { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" }
       : status === "suspended" ? { c: "bg-zinc-500/20 text-zinc-700 dark:text-zinc-300", t: "Suspended" }
-      : { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Pending" };
+      : { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Pending" };
   return <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", cfg.c)}>{cfg.t}</span>;
 }
 
