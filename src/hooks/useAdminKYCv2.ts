@@ -101,15 +101,35 @@ const isPillarPending = (s: PillarStatus) =>
   s === "pending_review";
 
 /**
- * A submission is "active pending" for the admin queue only if its overall
- * `final_status` is still awaiting a decision — i.e. not approved, rejected,
- * needs_resubmission, or suspended.
+ * A submission is "active pending" for the admin work-queue only if:
+ *  - its `final_status` is still awaiting a decision (not terminal), AND
+ *  - the user has actually submitted at least one pillar for review (so we
+ *    don't flood the admin queue with "not_started" / passive accounts).
+ *
+ * Terminal states (approved, rejected, needs_resubmission, suspended) and
+ * accounts that have done nothing yet are excluded from the actionable queue.
  */
-const isSubmissionPending = (s: { final_status: FinalStatus }) =>
-  s.final_status !== "approved" &&
-  s.final_status !== "rejected" &&
-  s.final_status !== "needs_resubmission" &&
-  s.final_status !== "suspended";
+const isSubmissionPending = (s: {
+  final_status: FinalStatus;
+  documents_status: PillarStatus;
+  face_status: PillarStatus;
+  mobile_status: PillarStatus;
+}) => {
+  if (
+    s.final_status === "approved" ||
+    s.final_status === "rejected" ||
+    s.final_status === "needs_resubmission" ||
+    s.final_status === "suspended"
+  ) {
+    return false;
+  }
+  // At least one pillar must be actively in review or already approved
+  // for this submission to count as "actionable" for an admin.
+  const pillars = [s.documents_status, s.face_status, s.mobile_status];
+  return pillars.some(
+    (p) => p === "pending_review" || p === "approved"
+  );
+};
 
 export function useAdminKYCv2() {
   const { toast } = useToast();
