@@ -572,9 +572,9 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold capitalize text-primary">
             {activePillar}
           </span>
-          {finalBlocked && (
+          {finalApproveBlocked && (
             <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-              All 3 pillars required
+              All 3 pillars required for approval
             </span>
           )}
         </div>
@@ -593,7 +593,7 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           <Button
             size="sm"
             onClick={() => act("approve")}
-            disabled={k.busy || finalBlocked}
+            disabled={k.busy || finalApproveBlocked}
             className="bg-emerald-600 hover:bg-emerald-700 text-white h-11"
           >
             <Check className="mr-1 h-3.5 w-3.5" /> Approve
