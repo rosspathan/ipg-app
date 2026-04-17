@@ -47,6 +47,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ================================================================
+    // KYC GATE — block wallet ↔ trading transfers until 3-pillar approved
+    // ================================================================
+    {
+      const adminAuth = createClient(supabaseUrl, serviceKey);
+      const { data: kycOk, error: kycErr } = await adminAuth.rpc("is_kyc_approved", { _user_id: user.id });
+      if (kycErr) {
+        console.error("[internal-balance-transfer] KYC check failed:", kycErr);
+        return new Response(
+          JSON.stringify({ error: "KYC_REQUIRED", message: "Could not verify KYC status. Please try again." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (!kycOk) {
+        return new Response(
+          JSON.stringify({
+            error: "KYC_REQUIRED",
+            message: "Complete the new 3-pillar KYC (documents, face, mobile) and final admin approval to move funds between wallet and trading.",
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const { asset_id, amount, direction, tx_hash } = await req.json();
 
     // Validate inputs

@@ -61,6 +61,22 @@ Deno.serve(async (req) => {
     // Use service role for database operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // ================================================================
+    // KYC GATE — moving funds in/out of trading requires new KYC
+    // ================================================================
+    {
+      const { data: kycOk, error: kycErr } = await adminClient.rpc("is_kyc_approved", { _user_id: user.id });
+      if (kycErr || !kycOk) {
+        return new Response(
+          JSON.stringify({
+            error: "KYC_REQUIRED",
+            message: "Complete the new 3-pillar KYC (documents, face, mobile) and final admin approval before moving funds to or from your trading account.",
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Fetch the transfer record
     const { data: transfer, error: transferError } = await adminClient
       .from("trading_balance_transfers")

@@ -34,6 +34,22 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // ================================================================
+    // KYC GATE — peer-to-peer BSK / asset transfers require new KYC
+    // ================================================================
+    {
+      const { data: kycOk, error: kycErr } = await admin.rpc('is_kyc_approved', { _user_id: user.id });
+      if (kycErr || !kycOk) {
+        return new Response(
+          JSON.stringify({
+            error: 'KYC_REQUIRED',
+            message: 'Complete the new 3-pillar KYC (documents, face, mobile) and final admin approval before sending funds to other users.',
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Find recipient by username, email, phone, or referral code
     const { data: recipientProfile, error: recipientError } = await admin
       .from('profiles')

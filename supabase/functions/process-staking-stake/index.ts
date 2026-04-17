@@ -35,6 +35,22 @@ serve(async (req) => {
       );
     }
 
+    // ================================================================
+    // KYC GATE — staking requires full 3-pillar KYC + final approval
+    // ================================================================
+    {
+      const { data: kycOk, error: kycErr } = await supabase.rpc('is_kyc_approved', { _user_id: user.id });
+      if (kycErr || !kycOk) {
+        return new Response(
+          JSON.stringify({
+            error: 'KYC_REQUIRED',
+            message: 'Complete the new 3-pillar KYC (documents, face, mobile) and final admin approval before staking.',
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const { plan_id, amount, idempotency_key } = await req.json();
 
     if (!plan_id || !amount || amount <= 0) {
