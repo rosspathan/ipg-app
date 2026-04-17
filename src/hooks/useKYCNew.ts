@@ -260,7 +260,7 @@ export const useKYCNew = () => {
       if (error?.message?.includes('PHONE_ALREADY_USED')) {
         toast({
           title: "Phone Number Already Used",
-          description: "This mobile number is already registered for KYC. Please contact support.",
+          description: "This mobile number is already used in the new KYC system. Please use a different number or contact support.",
           variant: "destructive",
         });
       } else {
