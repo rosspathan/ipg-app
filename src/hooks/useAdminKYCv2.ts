@@ -132,7 +132,7 @@ export function useAdminKYCv2() {
       }
 
       const merged: KycSubmissionV2[] = (rows ?? []).map((r: any) => {
-        const p = profilesById[r.user_id] ?? {};
+        const p: any = profilesById[r.user_id] ?? {};
         return {
           ...r,
           profile_email: p.email ?? null,
