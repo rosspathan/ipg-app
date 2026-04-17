@@ -156,14 +156,14 @@ export function HomePageRebuilt() {
               </div>
 
               {/* Premium Glass Action Buttons — per-action color identity */}
-              <div className="flex gap-3">
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {heroActions.map((btn) => (
                   <button
                     key={btn.label}
                     onClick={btn.action}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 h-[50px] rounded-2xl",
-                      "text-[13px] font-semibold",
+                      "flex flex-col items-center justify-center gap-1.5 h-[64px] rounded-2xl",
+                      "text-[11px] sm:text-[12px] font-semibold",
                       "glass-card backdrop-blur-xl",
                       "border",
                       btn.borderColor,
@@ -176,11 +176,63 @@ export function HomePageRebuilt() {
                     )}
                   >
                     <span className={btn.iconColor}>{btn.icon}</span>
-                    {btn.label}
+                    <span className="leading-none">{btn.label}</span>
                   </button>
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* ── FUND TRANSFER CTA — Onchain ↔ Trading ── */}
+          <div className="px-4">
+            <button
+              onClick={() => navigate("/app/wallet/transfer")}
+              className={cn(
+                "group relative w-full overflow-hidden rounded-3xl glass-card backdrop-blur-xl",
+                "border border-accent/25 shadow-card text-left",
+                "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated hover:border-accent/40 active:scale-[0.99]"
+              )}
+              data-testid="home-fund-transfer-cta"
+              aria-label="Move funds between On-chain Wallet and Trading Account"
+            >
+              <div
+                className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full opacity-30"
+                style={{ background: "radial-gradient(circle, hsl(var(--accent) / 0.35), transparent 70%)" }}
+              />
+              <div
+                className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full opacity-20"
+                style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.30), transparent 70%)" }}
+              />
+
+              <div className="relative p-4 sm:p-5 flex items-center gap-4">
+                {/* Icon tile */}
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-accent/30 bg-accent/12">
+                  <ArrowRightLeft className="h-5 w-5 text-accent" />
+                </div>
+
+                {/* Copy */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-accent">Fund Transfer</p>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded-full border border-border/40 bg-background/40">
+                      Instant
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[14px] font-semibold text-foreground leading-tight truncate">
+                    Move funds between accounts
+                  </p>
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <Wallet className="h-3 w-3 text-success" />
+                    <span className="font-medium">On-chain</span>
+                    <ArrowRightLeft className="h-3 w-3 text-accent" />
+                    <Building2 className="h-3 w-3 text-primary" />
+                    <span className="font-medium">Trading</span>
+                  </div>
+                </div>
+
+                <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </button>
           </div>
 
           {/* ── BSK WALLET HERO ── */}
