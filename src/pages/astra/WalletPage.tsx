@@ -410,6 +410,14 @@ export function WalletPage() {
         </button>
       </div>
 
+      {/* ── TRADING BALANCES ── */}
+      <div className="px-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        <TradingBalancesCard
+          balances={tradingBalances || []}
+          loading={tradingBalancesLoading}
+          onTransfer={() => navigate("/app/wallet/transfer")}
+        />
+      </div>
 
       {/* ── 3. BSC ADDRESS BLOCK ── */}
       <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '120ms' }}>
