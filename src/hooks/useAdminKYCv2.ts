@@ -76,6 +76,7 @@ export type KycQueueFilter =
   | "ready_final"
   | "approved"
   | "rejected"
+  | "needs_resubmission"
   | "suspended"
   | "all";
 
@@ -91,8 +92,24 @@ export interface KycAuditEntry {
   created_at: string;
 }
 
+/**
+ * "Pending review" = waiting on admin action.
+ * `needs_resubmission` and `rejected` are NOT pending — they belong in their
+ * own queues so they don't pollute the admin work-list.
+ */
 const isPillarPending = (s: PillarStatus) =>
-  s === "not_submitted" || s === "pending_review" || s === "needs_resubmission";
+  s === "pending_review";
+
+/**
+ * A submission is "active pending" for the admin queue only if its overall
+ * `final_status` is still awaiting a decision — i.e. not approved, rejected,
+ * needs_resubmission, or suspended.
+ */
+const isSubmissionPending = (s: { final_status: FinalStatus }) =>
+  s.final_status !== "approved" &&
+  s.final_status !== "rejected" &&
+  s.final_status !== "needs_resubmission" &&
+  s.final_status !== "suspended";
 
 export function useAdminKYCv2() {
   const { toast } = useToast();
@@ -170,42 +187,85 @@ export function useAdminKYCv2() {
 
   const stats = useMemo(() => {
     const total = submissions.length;
-    const pendingDocs = submissions.filter((s) => isPillarPending(s.documents_status)).length;
-    const pendingFace = submissions.filter((s) => isPillarPending(s.face_status)).length;
-    const pendingMobile = submissions.filter((s) => isPillarPending(s.mobile_status)).length;
+    // Pillar pending counts only count *true* pending pillars on submissions
+    // that are still actively in the admin queue (final_status not terminal).
+    const isActive = (s: KycSubmissionV2) => isSubmissionPending(s);
+    const pendingDocs = submissions.filter((s) => isActive(s) && isPillarPending(s.documents_status)).length;
+    const pendingFace = submissions.filter((s) => isActive(s) && isPillarPending(s.face_status)).length;
+    const pendingMobile = submissions.filter((s) => isActive(s) && isPillarPending(s.mobile_status)).length;
     const readyFinal = submissions.filter(
       (s) =>
         s.documents_status === "approved" &&
         s.face_status === "approved" &&
         s.mobile_status === "approved" &&
         s.final_status !== "approved" &&
+        s.final_status !== "rejected" &&
+        s.final_status !== "needs_resubmission" &&
         s.final_status !== "suspended"
     ).length;
     const approved = submissions.filter((s) => s.final_status === "approved").length;
     const rejected = submissions.filter((s) => s.final_status === "rejected").length;
+    const needsResubmission = submissions.filter((s) => s.final_status === "needs_resubmission").length;
     const suspended = submissions.filter((s) => s.final_status === "suspended").length;
-    const pendingAny = submissions.filter(
-      (s) => s.final_status !== "approved" && s.final_status !== "suspended" && s.final_status !== "rejected"
-    ).length;
-    return { total, pendingDocs, pendingFace, pendingMobile, readyFinal, approved, rejected, suspended, pendingAny };
+    // Pending = ONLY actively-awaiting-admin submissions (excludes
+    // rejected, needs_resubmission, approved, suspended).
+    const pendingAny = submissions.filter(isSubmissionPending).length;
+    return {
+      total,
+      pendingDocs,
+      pendingFace,
+      pendingMobile,
+      readyFinal,
+      approved,
+      rejected,
+      needsResubmission,
+      suspended,
+      pendingAny,
+    };
   }, [submissions]);
 
   const filtered = useMemo(() => {
     let list = submissions;
     switch (filter) {
-      case "pending_documents": list = list.filter((s) => isPillarPending(s.documents_status)); break;
-      case "pending_face": list = list.filter((s) => isPillarPending(s.face_status)); break;
-      case "pending_mobile": list = list.filter((s) => isPillarPending(s.mobile_status)); break;
-      case "ready_final": list = list.filter(
-        (s) => s.documents_status === "approved" && s.face_status === "approved" && s.mobile_status === "approved" && s.final_status !== "approved" && s.final_status !== "suspended"
-      ); break;
-      case "approved": list = list.filter((s) => s.final_status === "approved"); break;
-      case "rejected": list = list.filter((s) => s.final_status === "rejected"); break;
-      case "suspended": list = list.filter((s) => s.final_status === "suspended"); break;
-      case "pending_any": list = list.filter(
-        (s) => s.final_status !== "approved" && s.final_status !== "suspended" && s.final_status !== "rejected"
-      ); break;
-      case "all": break;
+      // Pillar-pending tabs only show submissions still awaiting decision.
+      case "pending_documents":
+        list = list.filter((s) => isSubmissionPending(s) && isPillarPending(s.documents_status));
+        break;
+      case "pending_face":
+        list = list.filter((s) => isSubmissionPending(s) && isPillarPending(s.face_status));
+        break;
+      case "pending_mobile":
+        list = list.filter((s) => isSubmissionPending(s) && isPillarPending(s.mobile_status));
+        break;
+      case "ready_final":
+        list = list.filter(
+          (s) =>
+            s.documents_status === "approved" &&
+            s.face_status === "approved" &&
+            s.mobile_status === "approved" &&
+            s.final_status !== "approved" &&
+            s.final_status !== "rejected" &&
+            s.final_status !== "needs_resubmission" &&
+            s.final_status !== "suspended"
+        );
+        break;
+      case "approved":
+        list = list.filter((s) => s.final_status === "approved");
+        break;
+      case "rejected":
+        list = list.filter((s) => s.final_status === "rejected");
+        break;
+      case "needs_resubmission":
+        list = list.filter((s) => s.final_status === "needs_resubmission");
+        break;
+      case "suspended":
+        list = list.filter((s) => s.final_status === "suspended");
+        break;
+      case "pending_any":
+        list = list.filter(isSubmissionPending);
+        break;
+      case "all":
+        break;
     }
     if (search.trim()) {
       const q = search.trim().toLowerCase();

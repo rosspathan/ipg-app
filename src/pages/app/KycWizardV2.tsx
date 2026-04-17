@@ -296,6 +296,22 @@ export default function KycWizardV2() {
                     </div>
                   </div>
                 </Card>
+              ) : gate.finalStatus === "needs_resubmission" ? (
+                <Card className="overflow-hidden border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-background p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-amber-500/20 p-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg font-semibold tracking-tight text-amber-700 dark:text-amber-300">
+                        Resubmission required
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {gate.rejectionReason || "An admin has asked you to resubmit. Review the pillar notes below and update what's required."}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
               ) : gate.finalStatus === "suspended" ? (
                 <Card className="overflow-hidden border-zinc-500/40 bg-gradient-to-br from-zinc-500/15 via-zinc-500/5 to-background p-5">
                   <div className="flex items-start gap-3">
@@ -401,7 +417,7 @@ export default function KycWizardV2() {
               })}
 
               {/* Final status footer — only when not already shown in hero */}
-              {!gate.approved && gate.finalStatus !== "rejected" && gate.finalStatus !== "suspended" &&
+              {!gate.approved && gate.finalStatus !== "rejected" && gate.finalStatus !== "needs_resubmission" && gate.finalStatus !== "suspended" &&
                 !(gate.documentsStatus === "approved" && gate.faceStatus === "approved" && gate.mobileStatus === "approved") && (
                 <Card className="border-2 border-border/60 p-4">
                   <div className="flex items-center gap-3">

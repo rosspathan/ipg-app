@@ -66,13 +66,13 @@ export function useAdminDashboardRealtime() {
         .select("*", { count: "exact", head: true })
         .eq("status", "live");
 
-      // Fetch pending KYC count from the NEW 3-pillar system only.
-      // Legacy `kyc_profiles` is reference-only and must not be counted as
-      // pending against admin queues.
+      // Pending KYC = submissions still actively awaiting an admin decision.
+      // Excludes terminal states (approved, rejected, needs_resubmission, suspended)
+      // so rejected/resubmission cases never appear in the pending counter.
       const { count: pendingKYC } = await supabase
         .from("kyc_profiles_new")
         .select("*", { count: "exact", head: true })
-        .in("final_status", ["submitted", "documents_under_review", "face_pending", "mobile_pending_admin_verification"]);
+        .not("final_status", "in", "(approved,rejected,needs_resubmission,suspended)");
 
       const { count: pendingWithdrawals } = await supabase
         .from("fiat_deposits")
