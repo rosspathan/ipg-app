@@ -40,12 +40,12 @@ const filterChips: {
   label: string;
   statKey: "pendingAny" | "pendingDocs" | "pendingFace" | "pendingMobile" | "readyFinal" | "approved" | "rejected" | "needsResubmission" | "suspended" | "total";
 }[] = [
-  { value: "pending_any", label: "Pending", statKey: "pendingAny" },
+  { value: "pending_any", label: "Action Queue", statKey: "pendingAny" },
   { value: "pending_documents", label: "Docs", statKey: "pendingDocs" },
   { value: "pending_face", label: "Face", statKey: "pendingFace" },
   { value: "pending_mobile", label: "Mobile", statKey: "pendingMobile" },
-  { value: "ready_final", label: "Ready", statKey: "readyFinal" },
-  { value: "needs_resubmission", label: "Resubmit", statKey: "needsResubmission" },
+  { value: "ready_final", label: "Ready · Final", statKey: "readyFinal" },
+  { value: "needs_resubmission", label: "Resubmit Waiting", statKey: "needsResubmission" },
   { value: "rejected", label: "Rejected", statKey: "rejected" },
   { value: "approved", label: "Approved", statKey: "approved" },
   { value: "all", label: "All", statKey: "total" },
