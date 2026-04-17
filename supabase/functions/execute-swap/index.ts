@@ -128,6 +128,22 @@ serve(async (req) => {
 
     console.log(`[execute-swap] User ${userId}: ${amount} ${from_asset} → ${to_asset}`)
 
+    // 0. KYC GATE — only fully approved users (3-pillar) may swap
+    const { error: kycErr } = await supabaseAdmin.rpc('assert_kyc_approved', {
+      p_user_id: userId,
+      p_action: 'swap',
+    })
+    if (kycErr) {
+      console.warn(`[execute-swap] KYC blocked user ${userId}:`, kycErr.message)
+      return new Response(
+        JSON.stringify({
+          error: 'KYC_REQUIRED',
+          message: 'KYC verification (documents, face, mobile) is required to swap. Please complete verification.',
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // 1. Fetch current market prices
     const { data: prices, error: pricesError } = await supabaseAdmin
       .from('market_prices')

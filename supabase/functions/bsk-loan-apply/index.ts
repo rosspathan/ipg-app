@@ -110,22 +110,24 @@ serve(async (req: Request) => {
       );
     }
 
-    // Get user profile for KYC and badge check
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('kyc_status')
-      .eq('user_id', user.id)
-      .single();
-
-    if (settings.kyc_required && (!profile || profile.kyc_status !== 'verified')) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'KYC verification required before loan application',
-          kyc_required: true
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders }}
-      );
+    // KYC GATE — strict 3-pillar approval (documents + face + mobile)
+    // Replaces legacy `profiles.kyc_status === 'verified'` check.
+    if (settings.kyc_required) {
+      const { error: kycErr } = await supabase.rpc('assert_kyc_approved', {
+        p_user_id: user.id,
+        p_action: 'loan application',
+      });
+      if (kycErr) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'KYC verification (documents, face, mobile) is required before applying for a loan.',
+            code: 'KYC_REQUIRED',
+            kyc_required: true,
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders }}
+        );
+      }
     }
 
     // No need to get BSK rate since loan is directly in BSK
