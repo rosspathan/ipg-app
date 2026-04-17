@@ -66,11 +66,13 @@ export function useAdminDashboardRealtime() {
         .select("*", { count: "exact", head: true })
         .eq("status", "live");
 
-      // Fetch pending actions
+      // Fetch pending KYC count from the NEW 3-pillar system only.
+      // Legacy `kyc_profiles` is reference-only and must not be counted as
+      // pending against admin queues.
       const { count: pendingKYC } = await supabase
-        .from("kyc_profiles")
+        .from("kyc_profiles_new")
         .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
+        .in("final_status", ["submitted", "documents_under_review", "face_pending", "mobile_pending_admin_verification"]);
 
       const { count: pendingWithdrawals } = await supabase
         .from("fiat_deposits")
@@ -173,7 +175,7 @@ export function useAdminDashboardRealtime() {
 
     const kycChannel = supabase
       .channel("kyc-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_profiles" }, fetchDashboardData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_profiles_new" }, fetchDashboardData)
       .subscribe();
 
     const withdrawalsChannel = supabase

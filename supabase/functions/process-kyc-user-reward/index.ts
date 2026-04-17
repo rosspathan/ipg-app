@@ -112,18 +112,12 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to create ledger entry: ${ledgerError.message}`);
     }
 
-    // Update profiles.is_kyc_approved = TRUE
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ is_kyc_approved: true })
-      .eq('user_id', user_id);
-
-    if (profileError) {
-      console.error('[KYC Reward] Failed to update is_kyc_approved:', profileError);
-      throw new Error(`Failed to set KYC approval flag: ${profileError.message}`);
-    }
-
-    console.log(`[KYC User Reward] SUCCESS: Credited ${reward_bsk} BSK to user and ${sponsor_id ? reward_bsk + ' BSK to sponsor' : 'no sponsor'} and set is_kyc_approved = TRUE for user ${user_id}`);
+    // NOTE: Do NOT manually toggle profiles.is_kyc_approved here. The DB
+    // trigger `sync_kyc_status_mirror` is the only writer of that field and
+    // derives it from the strict 3-pillar truth in kyc_profiles_new. The
+    // `guard_profile_kyc_fields` trigger will silently downgrade any stale
+    // approval write that doesn't match truth.
+    console.log(`[KYC User Reward] SUCCESS: Credited ${reward_bsk} BSK to user and ${sponsor_id ? reward_bsk + ' BSK to sponsor' : 'no sponsor'} for user ${user_id} (profile mirror is auto-managed by DB trigger)`);
 
     return new Response(
       JSON.stringify({

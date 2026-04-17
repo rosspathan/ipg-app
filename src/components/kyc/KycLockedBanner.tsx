@@ -50,8 +50,8 @@ export function KycLockedBanner({ action = "use this feature", className, compac
       >
         <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
         <div className="min-w-0 flex-1">
-          <div className="truncate font-medium text-foreground">KYC required to {action}</div>
-          <div className="truncate text-xs text-muted-foreground">{gate.reason}</div>
+          <div className="truncate font-medium text-foreground">New KYC required to {action}</div>
+          <div className="truncate text-xs text-muted-foreground">Legacy KYC is no longer sufficient · {gate.reason}</div>
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
       </button>
@@ -71,9 +71,13 @@ export function KycLockedBanner({ action = "use this feature", className, compac
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-base sm:text-lg font-semibold tracking-tight">
-            KYC approval required to {action}
+            New KYC required to {action}
           </h3>
-          <p className="mt-1 text-sm text-muted-foreground">{gate.reason}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Complete all 3 pillars (documents, face, mobile) plus admin approval.
+            {' '}Previous/legacy KYC is no longer sufficient.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground/80">{gate.reason}</p>
 
           {/* Pillar status chips */}
           <div className="mt-3 flex flex-wrap gap-1.5">
