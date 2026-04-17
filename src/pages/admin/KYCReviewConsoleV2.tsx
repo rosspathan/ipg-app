@@ -160,13 +160,17 @@ export default function KYCReviewConsoleV2() {
           <div className="mx-auto mb-3 inline-flex rounded-full bg-muted p-4">
             <ShieldCheck className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="font-medium">Nothing in this queue</p>
-          <p className="text-sm text-muted-foreground">New submissions will appear here automatically.</p>
+          <p className="font-medium">Nothing actionable in this queue</p>
+          <p className="text-sm text-muted-foreground">
+            Only users with submitted pillars awaiting your review appear here.
+          </p>
         </Card>
       ) : (
         <div className="space-y-2">
           {k.submissions.map((s) => (
-            <UserCard key={s.id} sub={s} onOpen={() => setSelected(s)} />
+            <ErrorBoundary key={s.id}>
+              <UserCard sub={s} onOpen={() => setSelected(s)} />
+            </ErrorBoundary>
           ))}
         </div>
       )}
@@ -177,7 +181,11 @@ export default function KYCReviewConsoleV2() {
           side="right"
           className="w-full sm:max-w-2xl p-0 overflow-hidden data-[state=open]:duration-300 flex flex-col"
         >
-          {selected && <ReviewDrawer sub={selected} k={k} onClose={() => setSelected(null)} />}
+          {selected && (
+            <ErrorBoundary>
+              <ReviewDrawer sub={selected} k={k} onClose={() => setSelected(null)} />
+            </ErrorBoundary>
+          )}
         </SheetContent>
       </Sheet>
     </div>
