@@ -14104,6 +14104,45 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_legacy_reference: {
+        Row: {
+          first_name: string | null
+          has_new_kyc: boolean | null
+          id_number: string | null
+          id_type: string | null
+          last_name: string | null
+          legacy_reviewed_at: string | null
+          legacy_status: string | null
+          legacy_submitted_at: string | null
+          new_kyc_approved: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          first_name?: string | null
+          has_new_kyc?: never
+          id_number?: string | null
+          id_type?: string | null
+          last_name?: string | null
+          legacy_reviewed_at?: string | null
+          legacy_status?: string | null
+          legacy_submitted_at?: string | null
+          new_kyc_approved?: never
+          user_id?: string | null
+        }
+        Update: {
+          first_name?: string | null
+          has_new_kyc?: never
+          id_number?: string | null
+          id_type?: string | null
+          last_name?: string | null
+          legacy_reviewed_at?: string | null
+          legacy_status?: string | null
+          legacy_submitted_at?: string | null
+          new_kyc_approved?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       mv_user_bsk_balances: {
         Row: {
           holding_balance: number | null
