@@ -11,6 +11,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   ShieldCheck, Search, RefreshCw, FileText, Camera, Phone, X, Check,
   Clock, AlertCircle, ChevronDown, History, User2, Loader2, Plus,
@@ -149,9 +150,12 @@ export default function KYCReviewConsoleV2() {
         </div>
       )}
 
-      {/* Full-screen review drawer */}
+      {/* Full-screen review drawer — bottom sheet on mobile, side sheet on desktop */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-2xl p-0 overflow-y-auto data-[state=open]:duration-300"
+        >
           {selected && <ReviewDrawer sub={selected} k={k} onClose={() => setSelected(null)} />}
         </SheetContent>
       </Sheet>
@@ -241,10 +245,20 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
   }, [sub.id, sub.face_selfie_path, sub.user_id, k]);
 
   const allGreen = sub.documents_status === "approved" && sub.face_status === "approved" && sub.mobile_status === "approved";
+  const reasonRequired = activePillar !== "final" || true; // reasons always recommended
+  const finalBlocked = activePillar === "final" && !allGreen;
 
   const act = async (action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend") => {
     if (action !== "approve" && !notes.trim()) {
-      alert("Please add a note explaining the decision.");
+      toast.error("A reason is required", {
+        description: "Please enter a clear note so the user knows what to fix.",
+      });
+      return;
+    }
+    if (finalBlocked && action === "approve") {
+      toast.error("Final approval blocked", {
+        description: "All 3 pillars (documents, face, mobile) must be approved first.",
+      });
       return;
     }
     await k.updatePillar(sub.user_id, activePillar, action, notes.trim() || undefined);
@@ -417,42 +431,52 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
       </div>
 
       {/* Floating expandable action button */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         {fabOpen && (
-          <Card className="w-[min(92vw,22rem)] space-y-2 p-3 shadow-2xl">
+          <Card className="w-[min(94vw,24rem)] space-y-2.5 p-3 shadow-2xl border-primary/30">
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold">
                 Action: <span className="capitalize text-primary">{activePillar}</span>
               </p>
-              <Button size="icon" variant="ghost" className="ml-auto h-7 w-7" onClick={() => setFabOpen(false)}>
+              {finalBlocked && (
+                <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                  All 3 pillars required
+                </span>
+              )}
+              <Button size="icon" variant="ghost" className={cn("h-7 w-7", !finalBlocked && "ml-auto")} onClick={() => setFabOpen(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <Textarea
-              placeholder="Notes (required for reject/resubmit)…"
+              placeholder={activePillar === "final" ? "Optional note (recommended)…" : "Reason — required for reject / resubmit"}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="text-sm"
+              rows={3}
+              className="text-sm resize-none"
             />
             <div className="grid grid-cols-3 gap-1.5">
-              <Button size="sm" onClick={() => act("approve")} disabled={k.busy} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Button
+                size="sm"
+                onClick={() => act("approve")}
+                disabled={k.busy || finalBlocked}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-10"
+              >
                 <Check className="mr-1 h-3.5 w-3.5" /> Approve
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy}>
+              <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy} className="h-10">
                 <X className="mr-1 h-3.5 w-3.5" /> Reject
               </Button>
-              <Button size="sm" variant="outline" onClick={() => act("request_resubmission")} disabled={k.busy}>
+              <Button size="sm" variant="outline" onClick={() => act("request_resubmission")} disabled={k.busy} className="h-10">
                 <AlertCircle className="mr-1 h-3.5 w-3.5" /> Resubmit
               </Button>
             </div>
             {activePillar === "final" && sub.final_status === "approved" && (
-              <Button size="sm" variant="outline" className="w-full" onClick={() => act("suspend")} disabled={k.busy}>
+              <Button size="sm" variant="outline" className="w-full h-10" onClick={() => act("suspend")} disabled={k.busy}>
                 Suspend account
               </Button>
             )}
             {activePillar === "final" && sub.final_status === "suspended" && (
-              <Button size="sm" variant="outline" className="w-full" onClick={() => act("unsuspend")} disabled={k.busy}>
+              <Button size="sm" variant="outline" className="w-full h-10" onClick={() => act("unsuspend")} disabled={k.busy}>
                 Unsuspend
               </Button>
             )}
@@ -461,9 +485,13 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
         <Button
           size="lg"
           onClick={() => setFabOpen((o) => !o)}
-          className={cn("h-14 w-14 rounded-full shadow-lg", fabOpen && "rotate-45")}
+          className={cn(
+            "h-14 w-14 rounded-full shadow-2xl transition-transform",
+            fabOpen && "rotate-45"
+          )}
+          aria-label={fabOpen ? "Close action panel" : "Open action panel"}
         >
-          <Plus className="h-6 w-6 transition-transform" />
+          <Plus className="h-6 w-6" />
         </Button>
       </div>
     </div>

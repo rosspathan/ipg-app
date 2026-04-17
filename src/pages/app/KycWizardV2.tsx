@@ -259,29 +259,95 @@ export default function KycWizardV2() {
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
               className="space-y-4"
             >
-              {/* Hero status card */}
-              <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/10 via-background to-background p-5">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-2xl bg-primary/15 p-3">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-lg font-semibold tracking-tight">
-                      {gate.approved ? "You're fully verified" : "Complete 3 pillars to unlock trading"}
-                    </h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {gate.approved
-                        ? "Trade, withdraw, and migrate freely."
-                        : "Each pillar is reviewed by an admin. Final approval unlocks all features."}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      <PillarChip label="Documents" status={gate.documentsStatus} />
-                      <PillarChip label="Face" status={gate.faceStatus} />
-                      <PillarChip label="Mobile" status={gate.mobileStatus} />
+              {/* Hero status alert — variant by final_status */}
+              {gate.approved ? (
+                <Card className="overflow-hidden border-emerald-500/40 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-background p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-emerald-500/20 p-3">
+                      <Check className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
+                        ✅ KYC fully approved
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        All restricted features are now unlocked. You can trade, withdraw, transfer, stake, and migrate freely.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button size="sm" onClick={() => navigate("/app/trading")}>Start trading</Button>
+                        <Button size="sm" variant="outline" onClick={() => navigate("/app/wallet")}>Go to wallet</Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              ) : gate.finalStatus === "rejected" ? (
+                <Card className="overflow-hidden border-rose-500/40 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-background p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-rose-500/20 p-3">
+                      <X className="h-5 w-5 text-rose-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg font-semibold tracking-tight text-rose-700 dark:text-rose-300">
+                        KYC rejected
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {gate.rejectionReason || "Your KYC submission was rejected. Please review admin notes on each pillar below and resubmit."}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ) : gate.finalStatus === "suspended" ? (
+                <Card className="overflow-hidden border-zinc-500/40 bg-gradient-to-br from-zinc-500/15 via-zinc-500/5 to-background p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-zinc-500/20 p-3">
+                      <AlertCircle className="h-5 w-5 text-zinc-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg font-semibold tracking-tight">Account suspended</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Your account is currently suspended. Please contact support for assistance.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ) : gate.documentsStatus === "approved" && gate.faceStatus === "approved" && gate.mobileStatus === "approved" ? (
+                <Card className="overflow-hidden border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-background p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-amber-500/20 p-3">
+                      <Clock className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg font-semibold tracking-tight text-amber-700 dark:text-amber-300">
+                        Awaiting final admin approval
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        All 3 pillars are approved. An admin will grant final approval shortly — your features will unlock automatically.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/10 via-background to-background p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-primary/15 p-3">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg font-semibold tracking-tight">
+                        Complete 3 pillars to unlock trading
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Each pillar is reviewed by an admin. Final approval unlocks trading, withdrawals, transfers, staking, and migration.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        <PillarChip label="Documents" status={gate.documentsStatus} />
+                        <PillarChip label="Face" status={gate.faceStatus} />
+                        <PillarChip label="Mobile" status={gate.mobileStatus} />
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Per-pillar cards */}
               {(["documents", "face", "mobile"] as const).map((p) => {
@@ -318,8 +384,13 @@ export default function KycWizardV2() {
                         </div>
                         <p className="mt-0.5 text-xs text-muted-foreground">{meta.desc}</p>
                         {notes && status !== "approved" && (
-                          <div className="mt-2 rounded-lg border border-border/60 bg-muted/40 p-2 text-xs">
-                            <span className="font-medium">Admin note: </span>{notes}
+                          <div className={cn(
+                            "mt-2 rounded-lg border p-2 text-xs",
+                            status === "rejected" ? "border-rose-500/30 bg-rose-500/5 text-rose-700 dark:text-rose-300" :
+                            status === "needs_resubmission" ? "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300" :
+                            "border-border/60 bg-muted/40"
+                          )}>
+                            <span className="font-semibold">Admin note: </span>{notes}
                           </div>
                         )}
                       </div>
@@ -329,36 +400,21 @@ export default function KycWizardV2() {
                 );
               })}
 
-              {/* Final status footer */}
-              <Card className={cn(
-                "border-2 p-4",
-                gate.approved ? "border-emerald-500/40 bg-emerald-500/5" :
-                gate.documentsStatus === "approved" && gate.faceStatus === "approved" && gate.mobileStatus === "approved"
-                  ? "border-amber-500/40 bg-amber-500/5"
-                  : "border-border/60"
-              )}>
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className={cn(
-                    "h-5 w-5",
-                    gate.approved ? "text-emerald-600" :
-                    gate.documentsStatus === "approved" && gate.faceStatus === "approved" && gate.mobileStatus === "approved"
-                      ? "text-amber-600" : "text-muted-foreground"
-                  )} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">
-                      {gate.approved ? "Final approval granted" :
-                        gate.documentsStatus === "approved" && gate.faceStatus === "approved" && gate.mobileStatus === "approved"
-                          ? "All pillars complete — awaiting admin final approval"
-                          : "Final admin approval pending"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {gate.finalStatus === "rejected" && gate.rejectionReason
-                        ? gate.rejectionReason
-                        : "An admin will give you final approval after all 3 pillars are green."}
-                    </p>
+              {/* Final status footer — only when not already shown in hero */}
+              {!gate.approved && gate.finalStatus !== "rejected" && gate.finalStatus !== "suspended" &&
+                !(gate.documentsStatus === "approved" && gate.faceStatus === "approved" && gate.mobileStatus === "approved") && (
+                <Card className="border-2 border-border/60 p-4">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">Final admin approval pending</p>
+                      <p className="text-xs text-muted-foreground">
+                        Once all 3 pillars are green an admin will give final approval. Restricted features unlock instantly.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              )}
             </motion.div>
           )}
 
