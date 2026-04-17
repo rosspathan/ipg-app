@@ -254,10 +254,16 @@ function FinalStatusPill({ sub }: { sub: KycSubmissionV2 }) {
     const pillars = [sub.documents_status, sub.face_status, sub.mobile_status];
     const allApproved = pillars.every((s) => s === "approved");
     const adminNeedsToAct = pillars.some((s) => s === "pending_review");
+    // If ANY pillar is rejected or needs resubmission, the user must act first.
+    const userMustResubmit = pillars.some(
+      (s) => s === "rejected" || s === "needs_resubmission"
+    );
     const userNeedsToSubmit = pillars.some((s) => s === "not_submitted");
 
     if (allApproved) {
       cfg = { c: "bg-violet-500/15 text-violet-700 dark:text-violet-400", t: "Ready · Final" };
+    } else if (userMustResubmit) {
+      cfg = { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" };
     } else if (adminNeedsToAct) {
       cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Review" };
     } else if (userNeedsToSubmit) {
