@@ -128,6 +128,32 @@ Deno.serve(async (req) => {
 
     console.log(`[USER-MIGRATE-BSK v${VERSION}] User ${user.id} action: ${action}`);
 
+    // ─────────────────────────────────────────────────────────────
+    // KYC GATE — block migrations that move funds (initiate_migration only)
+    // Read-only actions (check_*, get_*) remain accessible.
+    // ─────────────────────────────────────────────────────────────
+    if (action === 'initiate_migration') {
+      const { data: kycOk, error: kycErr } = await supabase.rpc('is_kyc_approved', { _user_id: user.id });
+      if (kycErr) {
+        console.error('[user-migrate-bsk-onchain] KYC check failed:', kycErr);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Could not verify KYC status. Please try again.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (!kycOk) {
+        console.warn(`[user-migrate-bsk-onchain] Blocked — user ${user.id} not KYC approved`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'KYC_REQUIRED',
+            message: 'KYC approval is required before migrating funds. Complete document verification, face verification, and admin mobile verification to continue.',
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     switch (action) {
       case 'check_availability':
         return await checkAvailability(supabase, user.id);
