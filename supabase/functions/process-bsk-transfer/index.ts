@@ -47,6 +47,21 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: false, error: 'Authentication required. Please log in again.', code: 'UNAUTHORIZED', request_id: requestId });
     }
 
+    // KYC GATE — only fully approved users (3-pillar) may transfer BSK
+    const { error: kycErr } = await supabaseAdmin.rpc('assert_kyc_approved', {
+      p_user_id: user.id,
+      p_action: 'BSK transfer',
+    });
+    if (kycErr) {
+      console.warn(`[BSK Transfer][${requestId}] KYC blocked user ${user.id}:`, kycErr.message);
+      return jsonResponse({
+        success: false,
+        error: 'KYC verification (documents, face, mobile) is required to send BSK. Please complete verification.',
+        code: 'KYC_REQUIRED',
+        request_id: requestId,
+      }, 403);
+    }
+
     // Check if BSK transfers are enabled
     const { data: transferSetting, error: settingError } = await supabaseAdmin
       .from('system_settings')
