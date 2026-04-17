@@ -266,6 +266,10 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
   const [notes, setNotes] = useState("");
 
   // Resolve all signed URLs once whenever the selected submission changes.
+  // CRITICAL: depend ONLY on stable primitive identifiers — depending on `k`
+  // (the whole hook result) caused infinite re-fetches because k is a fresh
+  // object every render, which kept assetsLoading flickering and made the
+  // bottom bar feel "dead" / unresponsive.
   useEffect(() => {
     let cancelled = false;
     setAssetsLoading(true);
@@ -280,29 +284,41 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
       setAssetsLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [sub.id, sub.face_selfie_path, sub.user_id, k]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sub.id, sub.face_selfie_path, sub.user_id, sub.updated_at]);
 
   const allGreen =
     sub.documents_status === "approved" &&
     sub.face_status === "approved" &&
     sub.mobile_status === "approved";
-  const finalBlocked = activePillar === "final" && !allGreen;
+  // Only Approve on the FINAL pillar requires all 3 green. Reject / Resubmit
+  // / Suspend / Unsuspend on the final pillar must remain available.
+  const finalApproveBlocked = activePillar === "final" && !allGreen;
 
   const act = async (action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend") => {
+    console.info("[KYCReview] act()", { user: sub.user_id, pillar: activePillar, action, hasNotes: !!notes.trim() });
+
     if ((action === "reject" || action === "request_resubmission") && !notes.trim()) {
       toast.error("A reason is required", {
-        description: "Please tell the user clearly what to fix.",
+        description: "Please tell the user clearly what to fix in the textarea above.",
+        duration: 4500,
       });
       return;
     }
-    if (finalBlocked && action === "approve") {
+    if (finalApproveBlocked && action === "approve") {
       toast.error("Final approval blocked", {
         description: "All 3 pillars (documents, face, mobile) must be approved first.",
+        duration: 4500,
       });
       return;
     }
-    await k.updatePillar(sub.user_id, activePillar, action, notes.trim() || undefined);
-    setNotes("");
+    try {
+      await k.updatePillar(sub.user_id, activePillar, action, notes.trim() || undefined);
+      setNotes("");
+    } catch (err) {
+      // useAdminKYCv2 already shows a toast; we still log for diagnostics.
+      console.error("[KYCReview] act() failed", err);
+    }
   };
 
   const phone = sub.phone_computed || dataJson.phone || sub.mobile_number;
@@ -556,9 +572,9 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold capitalize text-primary">
             {activePillar}
           </span>
-          {finalBlocked && (
+          {finalApproveBlocked && (
             <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-              All 3 pillars required
+              All 3 pillars required for approval
             </span>
           )}
         </div>
@@ -577,7 +593,7 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           <Button
             size="sm"
             onClick={() => act("approve")}
-            disabled={k.busy || finalBlocked}
+            disabled={k.busy || finalApproveBlocked}
             className="bg-emerald-600 hover:bg-emerald-700 text-white h-11"
           >
             <Check className="mr-1 h-3.5 w-3.5" /> Approve
