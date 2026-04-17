@@ -14068,16 +14068,34 @@ export type Database = {
           created_at: string | null
           data_json: Json | null
           display_name: string | null
+          display_status: string | null
+          documents_notes: string | null
+          documents_reviewed_at: string | null
+          documents_status:
+            | Database["public"]["Enums"]["kyc_pillar_status"]
+            | null
           email_computed: string | null
+          face_notes: string | null
+          face_reviewed_at: string | null
+          face_selfie_path: string | null
+          face_status: Database["public"]["Enums"]["kyc_pillar_status"] | null
+          final_approved_at: string | null
+          final_approved_by: string | null
+          final_status: Database["public"]["Enums"]["kyc_status_v2"] | null
           full_name_computed: string | null
           id: string | null
           level: string | null
+          mobile_notes: string | null
+          mobile_number: string | null
+          mobile_status: Database["public"]["Enums"]["kyc_pillar_status"] | null
+          mobile_verified_at: string | null
           phone_computed: string | null
           profile_email: string | null
           rejection_reason: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewer_id: string | null
+          risk_flags: Json | null
           status: string | null
           submitted_at: string | null
           updated_at: string | null
@@ -14966,6 +14984,7 @@ export type Database = {
           user_count: number
         }[]
       }
+      get_kyc_display_status: { Args: { _user_id: string }; Returns: string }
       get_masked_profile_data: {
         Args: {
           p_email?: string
