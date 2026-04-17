@@ -5931,6 +5931,108 @@ export type Database = {
         }
         Relationships: []
       }
+      hotwallet_security_alerts: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          amount: number | null
+          created_at: string
+          destination_address: string | null
+          hot_wallet_address: string
+          id: string
+          message: string
+          metadata: Json | null
+          related_user_id: string | null
+          related_withdrawal_id: string | null
+          severity: string
+          token_symbol: string | null
+          tx_hash: string | null
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          amount?: number | null
+          created_at?: string
+          destination_address?: string | null
+          hot_wallet_address: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          related_user_id?: string | null
+          related_withdrawal_id?: string | null
+          severity?: string
+          token_symbol?: string | null
+          tx_hash?: string | null
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          amount?: number | null
+          created_at?: string
+          destination_address?: string | null
+          hot_wallet_address?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          related_user_id?: string | null
+          related_withdrawal_id?: string | null
+          severity?: string
+          token_symbol?: string | null
+          tx_hash?: string | null
+        }
+        Relationships: []
+      }
+      hotwallet_security_thresholds: {
+        Row: {
+          alert_on_duplicate: boolean
+          alert_on_unmatched: boolean
+          created_at: string
+          hot_wallet_address: string
+          id: string
+          is_active: boolean
+          max_daily_amount_per_address: number
+          max_daily_tx_count_per_address: number
+          max_single_tx_amount: number
+          notes: string | null
+          token_symbol: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_on_duplicate?: boolean
+          alert_on_unmatched?: boolean
+          created_at?: string
+          hot_wallet_address: string
+          id?: string
+          is_active?: boolean
+          max_daily_amount_per_address?: number
+          max_daily_tx_count_per_address?: number
+          max_single_tx_amount?: number
+          notes?: string | null
+          token_symbol?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_on_duplicate?: boolean
+          alert_on_unmatched?: boolean
+          created_at?: string
+          hot_wallet_address?: string
+          id?: string
+          is_active?: boolean
+          max_daily_amount_per_address?: number
+          max_daily_tx_count_per_address?: number
+          max_single_tx_amount?: number
+          notes?: string | null
+          token_symbol?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       idempotency_keys: {
         Row: {
           created_at: string | null
@@ -14028,6 +14130,65 @@ export type Database = {
         }
         Relationships: []
       }
+      v_hotwallet_address_profiles: {
+        Row: {
+          completed_count: number | null
+          destination_address: string | null
+          distinct_user_count: number | null
+          first_withdrawal_at: string | null
+          last_withdrawal_at: string | null
+          linked_user_ids: string[] | null
+          pending_count: number | null
+          tokens_used: string[] | null
+          total_amount_withdrawn: number | null
+        }
+        Relationships: []
+      }
+      v_hotwallet_inbound_reconciliation: {
+        Row: {
+          amount: number | null
+          confirmations: number | null
+          confirmed_at: string | null
+          created_at: string | null
+          hot_wallet_address: string | null
+          onchain_record_id: string | null
+          source_address: string | null
+          status: string | null
+          token_name: string | null
+          token_symbol: string | null
+          tx_hash: string | null
+          user_email: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
+      v_hotwallet_outbound_reconciliation: {
+        Row: {
+          amount: number | null
+          block_number: number | null
+          completed_at: string | null
+          confirmations: number | null
+          confirmed_at: string | null
+          destination_address: string | null
+          fee_amount: number | null
+          match_status: string | null
+          mismatch_flag: boolean | null
+          onchain_amount: number | null
+          onchain_record_id: string | null
+          requested_at: string | null
+          token_name: string | null
+          token_symbol: string | null
+          tx_hash: string | null
+          user_email: string | null
+          user_full_name: string | null
+          user_id: string | null
+          username: string | null
+          withdrawal_id: string | null
+          withdrawal_status: string | null
+        }
+        Relationships: []
+      }
       v_phantom_liquidity_diagnostic: {
         Row: {
           age_minutes: number | null
@@ -14531,6 +14692,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      generate_hotwallet_daily_proof_report: {
+        Args: { p_date?: string }
+        Returns: Json
+      }
       generate_referral_code: {
         Args: { code_length?: number }
         Returns: string
@@ -14993,6 +15158,7 @@ export type Database = {
       }
       run_daily_trading_reconciliation: { Args: never; Returns: Json }
       run_full_reconciliation_check: { Args: never; Returns: Json }
+      scan_hotwallet_security_alerts: { Args: never; Returns: Json }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
       settle_trade:
