@@ -707,7 +707,8 @@ function AppContent() {
                 <Route path="bsk-ledger" element={<React.Suspense fallback={<LoadingFallback />}><BSKLedgerViewer /></React.Suspense>} />
                 <Route path="bsk-ledger-complete" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKLedgerComplete /></React.Suspense>} />
                 <Route path="bsk-reconciliation" element={<React.Suspense fallback={<LoadingFallback />}><BSKReconciliation /></React.Suspense>} />
-                <Route path="bsk-onchain-migration" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKOnchainMigration')))}</React.Suspense>} />
+                {/* Legacy /admin/bsk-onchain-migration removed 2026-04-17 — superseded by /admin/migration-control. Both route + edge function deleted to eliminate duplicate money-movement path. */}
+                <Route path="bsk-onchain-migration" element={<Navigate to="/admin/migration-control" replace />} />
                 <Route path="migration-control" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminMigrationControl')))}</React.Suspense>} />
                 <Route path="bsk-migration-audit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationAudit')))}</React.Suspense>} />
                 <Route path="bsk-migration-settings" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BSKMigrationSettings')))}</React.Suspense>} />
