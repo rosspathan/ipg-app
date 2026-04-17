@@ -14501,6 +14501,10 @@ export type Database = {
         Args: { p_currency: string }
         Returns: undefined
       }
+      assert_kyc_approved: {
+        Args: { _action?: string; _user_id: string }
+        Returns: undefined
+      }
       atomic_badge_purchase: {
         Args: {
           p_badge_name: string
