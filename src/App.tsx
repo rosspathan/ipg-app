@@ -261,6 +261,8 @@ import { ProfileHub } from "@/pages/ProfileHub";
 import { KYCPage } from "@/pages/KYCPage";
 import KYCSubmission from "@/pages/KYCSubmission";
 import KYCSubmissionSimple from "@/pages/KYCSubmissionSimple";
+const KycWizardV2 = React.lazy(() => import("@/pages/app/KycWizardV2").then(m => ({ default: m.default || (m as any).KycWizardV2 })));
+const KYCReviewConsoleV2 = React.lazy(() => import("@/pages/admin/KYCReviewConsoleV2").then(m => ({ default: m.default || (m as any).KYCReviewConsoleV2 })));
 import { IDCardPage } from "@/pages/IDCardPage";
 import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
