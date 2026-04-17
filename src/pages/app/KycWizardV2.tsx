@@ -417,7 +417,7 @@ export default function KycWizardV2() {
               })}
 
               {/* Final status footer — only when not already shown in hero */}
-              {!gate.approved && gate.finalStatus !== "rejected" && gate.finalStatus !== "suspended" &&
+              {!gate.approved && gate.finalStatus !== "rejected" && gate.finalStatus !== "needs_resubmission" && gate.finalStatus !== "suspended" &&
                 !(gate.documentsStatus === "approved" && gate.faceStatus === "approved" && gate.mobileStatus === "approved") && (
                 <Card className="border-2 border-border/60 p-4">
                   <div className="flex items-center gap-3">
