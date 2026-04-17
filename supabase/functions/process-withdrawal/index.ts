@@ -84,9 +84,26 @@ serve(async (req) => {
       throw new Error('Invalid amount');
     }
 
-    // Require KYC for large withdrawals (>$1000 equivalent)
-    if (amountNum > 1000 && profile.kyc_status !== 'approved') {
-      throw new Error('KYC verification required for withdrawals over $1,000. Please complete verification in your profile settings.');
+    // ─────────────────────────────────────────────────────────────
+    // KYC GATE — strict 3-pillar approval (documents + face + mobile + final).
+    // Legacy `profile.kyc_status === 'approved'` is NO LONGER trusted; old KYC
+    // records do not unlock withdrawals.
+    // ─────────────────────────────────────────────────────────────
+    {
+      const { data: kycOk, error: kycErr } = await supabase.rpc('is_kyc_approved', { _user_id: user.id });
+      if (kycErr) {
+        console.error('[process-withdrawal] KYC check failed:', kycErr);
+        throw new Error('KYC verification check failed. Please try again.');
+      }
+      if (!kycOk) {
+        return new Response(
+          JSON.stringify({
+            error: 'KYC_REQUIRED',
+            message: 'KYC verification (documents, face, and mobile) is required to withdraw. Complete the new KYC in your profile.',
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Validate address format

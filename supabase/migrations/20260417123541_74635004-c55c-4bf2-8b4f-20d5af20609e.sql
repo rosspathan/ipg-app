@@ -1,0 +1,1 @@
+ALTER VIEW public.kyc_legacy_reference SET (security_invoker = true);
