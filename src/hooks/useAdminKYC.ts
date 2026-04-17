@@ -21,6 +21,13 @@ export interface KYCSubmissionWithUser {
   profile_email: string | null;
   display_name: string | null;
   username: string | null;
+  // 3-pillar truth (now exposed by kyc_admin_summary)
+  documents_status?: string;
+  face_status?: string;
+  mobile_status?: string;
+  final_status?: string;
+  final_approved_at?: string | null;
+  display_status?: string; // canonical display status from DB
 }
 
 export type KYCStatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
@@ -57,9 +64,17 @@ export function useAdminKYC() {
       const allSubmissions = (kycData || []) as KYCSubmissionWithUser[];
       setSubmissions(allSubmissions);
 
-      const pending = allSubmissions.filter(s => ['pending', 'submitted', 'in_review'].includes(s.status)).length;
-      const approved = allSubmissions.filter(s => s.status === 'approved').length;
-      const rejected = allSubmissions.filter(s => s.status === 'rejected').length;
+      // Use canonical display_status (3-pillar truth) instead of legacy status
+      const isApproved = (s: KYCSubmissionWithUser) => (s.display_status ?? s.status) === 'approved';
+      const isRejected = (s: KYCSubmissionWithUser) => (s.display_status ?? s.status) === 'rejected';
+      const isPending = (s: KYCSubmissionWithUser) => {
+        const ds = s.display_status ?? s.status;
+        return ds === 'under_review' || ds === 'pending' || ds === 'submitted' || ds === 'in_review' || ds === 'needs_action';
+      };
+
+      const pending = allSubmissions.filter(isPending).length;
+      const approved = allSubmissions.filter(isApproved).length;
+      const rejected = allSubmissions.filter(isRejected).length;
       
       setStats({
         total: allSubmissions.length,
@@ -225,11 +240,12 @@ export function useAdminKYC() {
     }
   };
 
-  // Filter and search
+  // Filter and search — uses canonical display_status (3-pillar truth)
   const filteredSubmissions = submissions.filter((submission) => {
+    const effectiveStatus = submission.display_status ?? submission.status;
     if (statusFilter === 'pending') {
-      if (!['pending', 'submitted', 'in_review'].includes(submission.status)) return false;
-    } else if (statusFilter !== 'all' && submission.status !== statusFilter) {
+      if (!['pending', 'submitted', 'in_review', 'under_review', 'needs_action'].includes(effectiveStatus)) return false;
+    } else if (statusFilter !== 'all' && effectiveStatus !== statusFilter) {
       return false;
     }
 
