@@ -11378,11 +11378,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "trades_buy_order_id_fkey"
+            columns: ["buy_order_id"]
+            isOneToOne: false
+            referencedRelation: "v_phantom_liquidity_diagnostic"
+            referencedColumns: ["order_id"]
+          },
+          {
             foreignKeyName: "trades_sell_order_id_fkey"
             columns: ["sell_order_id"]
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_sell_order_id_fkey"
+            columns: ["sell_order_id"]
+            isOneToOne: false
+            referencedRelation: "v_phantom_liquidity_diagnostic"
+            referencedColumns: ["order_id"]
           },
         ]
       }
@@ -14014,6 +14028,63 @@ export type Database = {
         }
         Relationships: []
       }
+      v_phantom_liquidity_diagnostic: {
+        Row: {
+          age_minutes: number | null
+          amount: number | null
+          created_at: string | null
+          filled_amount: number | null
+          issue_type: string | null
+          locked_amount: number | null
+          locked_asset_symbol: string | null
+          order_id: string | null
+          order_type: string | null
+          price: number | null
+          remaining: number | null
+          side: string | null
+          status: string | null
+          symbol: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          age_minutes?: never
+          amount?: number | null
+          created_at?: string | null
+          filled_amount?: number | null
+          issue_type?: never
+          locked_amount?: number | null
+          locked_asset_symbol?: string | null
+          order_id?: string | null
+          order_type?: string | null
+          price?: number | null
+          remaining?: never
+          side?: string | null
+          status?: string | null
+          symbol?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          age_minutes?: never
+          amount?: number | null
+          created_at?: string | null
+          filled_amount?: number | null
+          issue_type?: never
+          locked_amount?: number | null
+          locked_asset_symbol?: string | null
+          order_id?: string | null
+          order_type?: string | null
+          price?: number | null
+          remaining?: never
+          side?: string | null
+          status?: string | null
+          symbol?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_adjust_user_balance: {
@@ -14202,6 +14273,14 @@ export type Database = {
       can_view_profile: {
         Args: { profile_user_id: string; viewer_id: string }
         Returns: boolean
+      }
+      cancel_residual_market_orders: {
+        Args: never
+        Returns: {
+          cancelled_order_id: string
+          refunded_amount: number
+          refunded_asset: string
+        }[]
       }
       check_active_offers: { Args: never; Returns: boolean }
       check_badge_commission_health: { Args: never; Returns: Json }
