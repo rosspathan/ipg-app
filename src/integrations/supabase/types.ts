@@ -14924,6 +14924,10 @@ export type Database = {
         Returns: string
       }
       is_bsk_holding_sunset: { Args: never; Returns: boolean }
+      is_wallet_address_blocked: {
+        Args: { _address: string }
+        Returns: boolean
+      }
       is_wallet_blocked: {
         Args: { _address: string; _scope?: string }
         Returns: boolean
