@@ -32,6 +32,8 @@ import AssetLogo from "@/components/AssetLogo"
 import { formatCurrency } from "@/utils/formatters"
 import { cn } from "@/lib/utils"
 import { useTradingPairs } from "@/hooks/useTradingPairs"
+import { useTradingBalances } from "@/hooks/useTradingBalances"
+import { TradingBalancesCard } from "@/components/wallet/TradingBalancesCard"
 
 // ── Section label component
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
