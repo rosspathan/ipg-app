@@ -21,6 +21,9 @@ import { useWeb3 } from "@/contexts/Web3Context";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 import PinEntryDialog from "@/components/profile/PinEntryDialog";
 import { useOnchainBalances } from "@/hooks/useOnchainBalances";
+import { KycLockedBanner } from "@/components/kyc/KycLockedBanner";
+import { useKycGate } from "@/hooks/useKycGate";
+import { handleKycError } from "@/lib/kycErrorHandler";
 
 type TransferDirection = "to_trading" | "to_wallet";
 
@@ -498,8 +501,12 @@ const TransferScreen = () => {
       }
     } catch (err: any) {
       const msg = err.message || "Transfer failed";
-      setTransferError(msg);
-      toast({ title: "Transfer Failed", description: msg, variant: "destructive" });
+      if (!handleKycError(err)) {
+        setTransferError(msg);
+        toast({ title: "Transfer Failed", description: msg, variant: "destructive" });
+      } else {
+        setTransferError("KYC approval required to transfer to wallet.");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -581,6 +588,8 @@ const TransferScreen = () => {
   return (
     <div className="min-h-screen bg-background px-6 py-8">
       <div className="max-w-sm mx-auto w-full space-y-6">
+        {/* KYC gate banner — visible when withdrawing to wallet requires KYC */}
+        {direction === "to_wallet" && <KycLockedBanner action="withdraw to your wallet" compact />}
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
