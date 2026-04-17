@@ -51,6 +51,30 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    // ================================================================
+    // KYC GATE — must be approved across all 3 pillars before trading
+    // ================================================================
+    {
+      const { data: kycOk, error: kycErr } = await adminClient.rpc('is_kyc_approved', { _user_id: user.id });
+      if (kycErr) {
+        console.error('[place-order] KYC check failed:', kycErr);
+        return new Response(
+          JSON.stringify({ error: 'KYC_REQUIRED: Could not verify KYC status. Please try again.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (!kycOk) {
+        console.warn(`[place-order] Blocked — user ${user.id} not KYC approved`);
+        return new Response(
+          JSON.stringify({
+            error: 'KYC_REQUIRED',
+            message: 'KYC approval is required before trading. Complete document verification, face verification, and admin mobile verification to continue.',
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Check for idempotency key
     const idempotencyKey = req.headers.get('idempotency-key');
     
