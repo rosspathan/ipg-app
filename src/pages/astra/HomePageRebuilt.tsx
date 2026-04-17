@@ -3,7 +3,7 @@ import { useState } from "react"
 import { 
   Gift, ChevronRight, ArrowUpRight, Send, ArrowRightLeft,
   Users, Landmark, TrendingUp, TrendingDown, Eye, EyeOff,
-  History, Zap
+  History, Zap, Wallet, Building2
 } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
@@ -90,6 +90,11 @@ export function HomePageRebuilt() {
       label: "Add Funds", icon: <ArrowUpRight className="h-[18px] w-[18px]" />, 
       action: () => navigate("/app/wallet/deposit"),
       iconColor: "text-success", borderColor: "border-success/25", hoverBorder: "hover:border-success/40"
+    },
+    { 
+      label: "Transfer", icon: <ArrowRightLeft className="h-[18px] w-[18px]" />, 
+      action: () => navigate("/app/wallet/transfer"),
+      iconColor: "text-accent", borderColor: "border-accent/25", hoverBorder: "hover:border-accent/40"
     },
     { 
       label: "Send", icon: <Send className="h-[18px] w-[18px]" />, 
