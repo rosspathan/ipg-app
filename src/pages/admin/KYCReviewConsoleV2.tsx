@@ -38,15 +38,16 @@ import { KycImageViewer } from "@/components/admin/kyc/KycImageViewer";
 const filterChips: {
   value: KycQueueFilter;
   label: string;
-  statKey: "pendingAny" | "pendingDocs" | "pendingFace" | "pendingMobile" | "readyFinal" | "approved" | "rejected" | "suspended" | "total";
+  statKey: "pendingAny" | "pendingDocs" | "pendingFace" | "pendingMobile" | "readyFinal" | "approved" | "rejected" | "needsResubmission" | "suspended" | "total";
 }[] = [
   { value: "pending_any", label: "Pending", statKey: "pendingAny" },
   { value: "pending_documents", label: "Docs", statKey: "pendingDocs" },
   { value: "pending_face", label: "Face", statKey: "pendingFace" },
   { value: "pending_mobile", label: "Mobile", statKey: "pendingMobile" },
   { value: "ready_final", label: "Ready", statKey: "readyFinal" },
-  { value: "approved", label: "Approved", statKey: "approved" },
+  { value: "needs_resubmission", label: "Resubmit", statKey: "needsResubmission" },
   { value: "rejected", label: "Rejected", statKey: "rejected" },
+  { value: "approved", label: "Approved", statKey: "approved" },
   { value: "all", label: "All", statKey: "total" },
 ];
 
