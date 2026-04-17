@@ -116,20 +116,20 @@ const StepperInput: React.FC<{
 
   useEffect(() => () => stopLongPress(), []);
 
-  const h = compact ? 'h-[32px]' : 'h-[44px]';
-  const btnW = compact ? 'w-[26px]' : 'w-[38px]';
-  const fontSize = compact ? 'text-[11px]' : 'text-[15px]';
+  const h = compact ? 'h-[40px]' : 'h-[44px]';
+  const btnW = compact ? 'w-[34px]' : 'w-[38px]';
+  const fontSize = compact ? 'text-[14px]' : 'text-[15px]';
 
   return (
     <div className="space-y-0.5">
       <div className="flex items-center justify-between px-0.5">
-        <span className="text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider">{label}</span>
+        <span className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider">{label}</span>
         {tag && tag.value > 0 && (
           <button
             type="button"
             onClick={() => onChange(formatNum(tag.value))}
             className={cn(
-              "text-[8px] font-bold px-1.5 py-0.5 rounded-md transition-all",
+              "text-[10px] font-bold px-2 py-0.5 rounded-md transition-all",
               tag.color === 'red' ? "text-[#FF4D4F] bg-[#FF4D4F]/10 active:bg-[#FF4D4F]/20" : "text-[#00E676] bg-[#00E676]/10 active:bg-[#00E676]/20"
             )}
           >
@@ -161,7 +161,7 @@ const StepperInput: React.FC<{
               style={{ textOverflow: 'clip' }}
             />
           </div>
-          {suffix && <span className="text-[8px] text-[#94A3B8] font-bold flex-shrink-0 pr-1 uppercase">{suffix}</span>}
+          {suffix && <span className="text-[10px] text-[#94A3B8] font-bold flex-shrink-0 pr-1.5 uppercase">{suffix}</span>}
         </div>
         <button
           type="button"
@@ -277,12 +277,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   return (
     <div className={cn("flex flex-col h-full", gap)}>
       {/* ── Buy / Sell Toggle ── */}
-      <div className={cn("flex rounded-xl overflow-hidden bg-[#060D18] p-[2px]", compact ? "h-[30px]" : "h-[42px]")}>
+      <div className={cn("flex rounded-xl overflow-hidden bg-[#060D18] p-[2px]", compact ? "h-[36px]" : "h-[42px]")}>
         <button
           onClick={() => setSide('buy')}
           className={cn(
             "flex-1 rounded-[10px] font-bold uppercase tracking-wider transition-all duration-200",
-            compact ? "text-[11px]" : "text-[13px]",
+            compact ? "text-[13px]" : "text-[13px]",
             isBuy
               ? "bg-[#00E676] text-[#020617] shadow-[0_2px_12px_rgba(0,230,118,0.35)]"
               : "text-[#94A3B8] hover:text-[#C7D2E0]"
@@ -292,7 +292,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           onClick={() => setSide('sell')}
           className={cn(
             "flex-1 rounded-[10px] font-bold uppercase tracking-wider transition-all duration-200",
-            compact ? "text-[11px]" : "text-[13px]",
+            compact ? "text-[13px]" : "text-[13px]",
             !isBuy
               ? "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_2px_12px_rgba(255,77,79,0.35)]"
               : "text-[#94A3B8] hover:text-[#C7D2E0]"
@@ -308,7 +308,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             onClick={() => setOrderType(t)}
             className={cn(
               "pb-1.5 font-bold capitalize transition-all relative",
-              compact ? "text-[11px]" : "text-[12px]",
+              compact ? "text-[13px]" : "text-[12px]",
               orderType === t
                 ? "text-[#FFFFFF]"
                 : "text-[#94A3B8] hover:text-[#C7D2E0]"
@@ -341,9 +341,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* Market price display */}
       {orderType === 'market' && (
-        <div className={cn("flex items-center justify-between px-2.5 bg-[#060D18] border border-[hsl(230,20%,22%)]/40 rounded-lg", compact ? "h-[30px]" : "h-[42px]")}>
-          <span className="text-[9px] text-[#94A3B8] uppercase tracking-wider font-semibold">Market Price</span>
-          <span className={cn("font-bold font-mono tabular-nums text-[#FFFFFF]", compact ? "text-[12px]" : "text-[14px]")}>{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
+        <div className={cn("flex items-center justify-between px-2.5 bg-[#060D18] border border-[hsl(230,20%,22%)]/40 rounded-lg", compact ? "h-[40px]" : "h-[42px]")}>
+          <span className="text-[11px] text-[#94A3B8] uppercase tracking-wider font-semibold">Market Price</span>
+          <span className={cn("font-bold font-mono tabular-nums text-[#FFFFFF]", compact ? "text-[14px]" : "text-[14px]")}>{referencePrice >= 1 ? referencePrice.toFixed(2) : referencePrice.toFixed(6)}</span>
         </div>
       )}
 
@@ -401,7 +401,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             onClick={() => handleQuickPercent(pct)}
             className={cn(
               "font-bold rounded-md transition-all border",
-              compact ? "h-[20px] text-[8px]" : "h-[30px] text-[11px]",
+              compact ? "h-[26px] text-[11px]" : "h-[30px] text-[11px]",
               activePercent === pct
                 ? isBuy
                   ? "bg-[#00E676]/12 text-[#00E676] border-[#00E676]/25"
@@ -413,9 +413,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Total ── */}
-      <div className={cn("flex items-center justify-between px-2 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-lg", compact ? "h-[26px]" : "h-[36px]")}>
-        <span className={cn("text-[#94A3B8] font-semibold", compact ? "text-[10px]" : "text-[11px]")}>Total ({quoteCurrency})</span>
-        <span className={cn("font-mono font-bold text-[#FFFFFF] tabular-nums", compact ? "text-[11px]" : "text-[13px]")}>
+      <div className={cn("flex items-center justify-between px-2.5 bg-[#060D18]/60 border border-[hsl(230,20%,20%)]/30 rounded-lg", compact ? "h-[34px]" : "h-[36px]")}>
+        <span className={cn("text-[#94A3B8] font-semibold", compact ? "text-[12px]" : "text-[11px]")}>Total ({quoteCurrency})</span>
+        <span className={cn("font-mono font-bold text-[#FFFFFF] tabular-nums", compact ? "text-[13px]" : "text-[13px]")}>
           {total > 0 ? (total >= 1 ? total.toFixed(2) : total.toFixed(4)) : '— —'}
         </span>
       </div>
@@ -439,23 +439,23 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       )}
 
       {/* ── Balance + Max + Fee ── */}
-      <div className={cn("flex flex-col gap-0.5 px-0.5", compact ? "text-[9px]" : "text-[11px]")}>
+      <div className={cn("flex flex-col gap-1 px-0.5", compact ? "text-[12px]" : "text-[11px]")}>
         <div className="flex justify-between">
           <span className="text-[#94A3B8] font-medium">Available</span>
           <span className={cn("font-mono tabular-nums font-semibold", hasInsufficientBalance ? "text-[#FF4D4F]" : "text-[#C7D2E0]")}>
-            {fmtBalance(availableBalance)} <span className="text-[#94A3B8] text-[8px]">{balanceCurrency}</span>
+            {fmtBalance(availableBalance)} <span className="text-[#94A3B8] text-[10px]">{balanceCurrency}</span>
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#94A3B8] font-medium">Max {isBuy ? 'Buy' : 'Sell'}</span>
           <span className="font-mono tabular-nums text-[#C7D2E0] font-semibold">
-            {fmtBalance(maxBuyAmount)} <span className="text-[#94A3B8] text-[8px]">{baseCurrency}</span>
+            {fmtBalance(maxBuyAmount)} <span className="text-[#94A3B8] text-[10px]">{baseCurrency}</span>
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#94A3B8] font-medium">Est. Fee</span>
           <span className="font-mono tabular-nums text-[#C7D2E0] font-medium">
-            {total > 0 ? `~${estFee.toFixed(4)}` : '—'} <span className="text-[#94A3B8] text-[8px]">{quoteCurrency}</span>
+            {total > 0 ? `~${estFee.toFixed(4)}` : '—'} <span className="text-[#94A3B8] text-[10px]">{quoteCurrency}</span>
           </span>
         </div>
       </div>
@@ -473,7 +473,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         className={cn(
           "w-full rounded-xl font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
-          compact ? "h-[34px] text-[11px]" : "h-[44px] text-[13px]",
+          compact ? "h-[42px] text-[13px]" : "h-[44px] text-[13px]",
           hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
