@@ -243,11 +243,11 @@ function TradingPairPageContent() {
 
             {/* Price + change */}
             <div className="flex items-baseline gap-1.5 mr-1">
-              <span className={cn("text-base font-bold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
+              <span className={cn("text-lg font-bold font-mono tabular-nums", isPositive ? "text-success" : "text-danger")}>
                 {formatPrice(lastTradePrice)}
               </span>
               <span className={cn(
-                "text-[10px] font-bold px-1.5 py-0.5 rounded-md",
+                "text-[11px] font-bold px-1.5 py-0.5 rounded-md",
                 isPositive ? "text-success bg-success/12" : "text-danger bg-danger/12"
               )}>
                 {isPositive ? "+" : ""}{pair.change24h.toFixed(2)}%
@@ -268,9 +268,9 @@ function TradingPairPageContent() {
               { label: "L", value: formatPrice(pair.low24h || 0) },
               { label: "Vol", value: formatVol(pair.volume24h || 0) },
             ].map(({ label, value }) => (
-              <div key={label} className="flex items-center gap-1 whitespace-nowrap">
-                <span className="text-[10px] text-[#94A3B8] font-semibold uppercase">{label}</span>
-                <span className="text-[11px] font-mono tabular-nums font-semibold text-[#C7D2E0]">{value}</span>
+              <div key={label} className="flex items-center gap-1.5 whitespace-nowrap">
+                <span className="text-[11px] text-[#94A3B8] font-semibold uppercase">{label}</span>
+                <span className="text-[12px] font-mono tabular-nums font-semibold text-[#C7D2E0]">{value}</span>
               </div>
             ))}
           </div>
