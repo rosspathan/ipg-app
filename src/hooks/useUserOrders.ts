@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { handleKycError } from '@/lib/kycErrorHandler';
 
 interface PlaceOrderParams {
   symbol: string;
@@ -108,6 +109,7 @@ export const useUserOrders = (symbol?: string) => {
       queryClient.invalidateQueries({ queryKey: ['user-balance'] });
     },
     onError: (error: any) => {
+      if (handleKycError(error)) return;
       toast.error('Order failed', {
         description: error.message || 'Failed to place order',
       });
