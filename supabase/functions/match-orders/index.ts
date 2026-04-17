@@ -241,16 +241,31 @@ Deno.serve(async (req) => {
           let executionPrice = new BigNumber(0);
           let buyerIsTaker = false; // Track who is the taker for fee purposes
 
+          // PHANTOM LIQUIDITY GUARD (defense in depth — DB also enforces this)
+          // The maker (older order) MUST be a limit order with positive price.
+          // Market orders execute IOC at order placement time and never rest.
+          const buyerIsOlder = new Date(buyOrder.created_at) <= new Date(sellOrder.created_at);
+          const makerOrder = buyerIsOlder ? buyOrder : sellOrder;
+          const takerOrder = buyerIsOlder ? sellOrder : buyOrder;
+
+          if (makerOrder.order_type === 'market') {
+            console.warn(`[Matching Engine] PHANTOM SKIP: maker order ${makerOrder.id} is market type, cannot rest as liquidity`);
+            continue;
+          }
+          if (!makerOrder.price || Number(makerOrder.price) <= 0) {
+            console.warn(`[Matching Engine] PHANTOM SKIP: maker order ${makerOrder.id} has invalid price=${makerOrder.price}`);
+            continue;
+          }
+
           if (buyOrder.order_type === 'market' && sellOrder.order_type === 'market') {
-            // Both market orders - should not match (no price reference)
             continue;
           } else if (buyOrder.order_type === 'market') {
-            // Buy market order takes seller's limit price (buyer is taker)
+            // Buy is market (taker), seller is limit maker → execute at seller price
             canMatch = true;
             executionPrice = new BigNumber(String(sellOrder.price));
             buyerIsTaker = true;
           } else if (sellOrder.order_type === 'market') {
-            // Sell market order takes buyer's limit price (seller is taker)
+            // Sell is market (taker), buyer is limit maker → execute at buyer price
             canMatch = true;
             executionPrice = new BigNumber(String(buyOrder.price));
             buyerIsTaker = false;
