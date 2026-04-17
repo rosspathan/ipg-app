@@ -108,6 +108,24 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // ─────────────────────────────────────────────────────────────
+    // KYC GATE — must be approved across all 3 pillars before withdrawing
+    // ─────────────────────────────────────────────────────────────
+    {
+      const { data: kycOk, error: kycErr } = await adminClient.rpc('is_kyc_approved', { _user_id: user.id });
+      if (kycErr) {
+        console.error('[request-custodial-withdrawal] KYC check failed:', kycErr);
+        return errorResponse('Could not verify KYC status. Please try again.', { reason: 'kyc_check_failed' });
+      }
+      if (!kycOk) {
+        console.warn(`[request-custodial-withdrawal] Blocked — user ${user.id} not KYC approved`);
+        return errorResponse(
+          'KYC approval is required before withdrawals. Complete document verification, face verification, and admin mobile verification to continue.',
+          { reason: 'KYC_REQUIRED' }
+        );
+      }
+    }
+
     const body: WithdrawalRequest = await req.json();
     const { asset_symbol, amount } = body;
 

@@ -21,6 +21,30 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    // ─────────────────────────────────────────────────────────────
+    // KYC GATE — must be approved across all 3 pillars before BSK withdrawal
+    // ─────────────────────────────────────────────────────────────
+    {
+      const { data: kycOk, error: kycErr } = await supabase.rpc('is_kyc_approved', { _user_id: user.id });
+      if (kycErr) {
+        console.error('[process-bsk-withdrawal] KYC check failed:', kycErr);
+        return new Response(
+          JSON.stringify({ error: 'Could not verify KYC status. Please try again.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (!kycOk) {
+        console.warn(`[process-bsk-withdrawal] Blocked — user ${user.id} not KYC approved`);
+        return new Response(
+          JSON.stringify({
+            error: 'KYC_REQUIRED',
+            message: 'KYC approval is required before withdrawals. Complete document verification, face verification, and admin mobile verification to continue.',
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Fetch user profile for display information
     const { data: userProfile } = await supabase
       .from('profiles')
