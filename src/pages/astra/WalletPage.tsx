@@ -134,6 +134,7 @@ export function WalletPage() {
   const walletIntegrity = useWalletIntegrity(user?.id || null)
   const { portfolio, loading: portfolioLoading } = useWalletBalances()
   const { balances: onchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances()
+  const { data: tradingBalances, isLoading: tradingBalancesLoading } = useTradingBalances()
 
   const { balances: bep20Balances } = useBep20Balances()
   const onchainUsd = useMemo(() => {
