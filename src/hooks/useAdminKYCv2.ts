@@ -76,6 +76,7 @@ export type KycQueueFilter =
   | "ready_final"
   | "approved"
   | "rejected"
+  | "needs_resubmission"
   | "suspended"
   | "all";
 
@@ -91,8 +92,24 @@ export interface KycAuditEntry {
   created_at: string;
 }
 
+/**
+ * "Pending review" = waiting on admin action.
+ * `needs_resubmission` and `rejected` are NOT pending — they belong in their
+ * own queues so they don't pollute the admin work-list.
+ */
 const isPillarPending = (s: PillarStatus) =>
-  s === "not_submitted" || s === "pending_review" || s === "needs_resubmission";
+  s === "pending_review";
+
+/**
+ * A submission is "active pending" for the admin queue only if its overall
+ * `final_status` is still awaiting a decision — i.e. not approved, rejected,
+ * needs_resubmission, or suspended.
+ */
+const isSubmissionPending = (s: { final_status: FinalStatus }) =>
+  s.final_status !== "approved" &&
+  s.final_status !== "rejected" &&
+  s.final_status !== "needs_resubmission" &&
+  s.final_status !== "suspended";
 
 export function useAdminKYCv2() {
   const { toast } = useToast();
