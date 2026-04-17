@@ -1366,6 +1366,42 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_wallet_addresses: {
+        Row: {
+          block_scope: string
+          blocked_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          reason: string
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          block_scope?: string
+          blocked_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          reason: string
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          block_scope?: string
+          blocked_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          reason?: string
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       bonus_assets: {
         Row: {
           contract_address: string | null
@@ -14644,6 +14680,10 @@ export type Database = {
         Returns: string
       }
       is_bsk_holding_sunset: { Args: never; Returns: boolean }
+      is_wallet_blocked: {
+        Args: { _address: string; _scope?: string }
+        Returns: boolean
+      }
       lock_balance_for_order:
         | {
             Args: { p_amount: number; p_asset_id: string; p_user_id: string }
