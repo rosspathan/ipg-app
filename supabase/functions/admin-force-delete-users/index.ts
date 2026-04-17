@@ -36,6 +36,53 @@ serve(async (req: Request) => {
     auth: { persistSession: false },
   });
 
+  // 🔐 SECURITY: Require authenticated admin user before any destructive operation.
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Unauthorized: missing auth header" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!anonKey) {
+    return new Response(JSON.stringify({ error: "Server not configured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false },
+  });
+
+  const { data: userData, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !userData?.user) {
+    return new Response(JSON.stringify({ error: "Unauthorized: invalid session" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  const { data: roleRow } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (!roleRow) {
+    console.warn(`🚫 Non-admin user ${userData.user.id} attempted admin-force-delete-users`);
+    return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  console.log(`✅ Admin ${userData.user.email} authorized for force-delete operation`);
+
   try {
     if (req.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
