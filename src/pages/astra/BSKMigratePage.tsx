@@ -188,6 +188,8 @@ export function BSKMigratePage() {
       </div>
 
       <div className="p-4 space-y-4 max-w-lg mx-auto">
+        {/* KYC gate banner */}
+        <KycLockedBanner action="migrate BSK to on-chain" />
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
