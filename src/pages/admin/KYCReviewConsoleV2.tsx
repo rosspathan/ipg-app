@@ -63,7 +63,7 @@ const statusLabel = (s: PillarStatus) =>
     : s === "rejected" ? "Rejected"
     : s === "needs_resubmission" ? "Needs resubmit"
     : s === "pending_review" ? "Pending review"
-    : "Not submitted";
+    : "—";
 
 const PillarBadge = ({ s, label }: { s: PillarStatus; label?: string }) => (
   <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium">
