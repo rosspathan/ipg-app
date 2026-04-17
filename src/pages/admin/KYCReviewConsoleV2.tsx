@@ -235,10 +235,18 @@ function UserCard({ sub, onOpen }: { sub: KycSubmissionV2; onOpen: () => void })
   );
 }
 
-function FinalStatusPill({ sub }: { sub: KycSubmissionV2 }) {
-  const status = sub.final_status as string;
+function FinalStatusPill(
+  props: { sub: KycSubmissionV2 } | { status: string; sub?: undefined }
+) {
+  // Backwards compatible: accept either a full submission OR just a status string.
+  // This guards against the previous crash where the drawer header passed `status`
+  // while the list-card passed `sub`, and the component only read one of them.
+  const sub = (props as any).sub as KycSubmissionV2 | undefined;
+  const rawStatus = sub
+    ? (sub.final_status as string)
+    : ((props as any).status as string | undefined);
+  const status = rawStatus || "pending";
 
-  // Terminal states first
   let cfg: { c: string; t: string };
   if (status === "approved") {
     cfg = { c: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", t: "Approved" };
@@ -248,17 +256,14 @@ function FinalStatusPill({ sub }: { sub: KycSubmissionV2 }) {
     cfg = { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" };
   } else if (status === "suspended") {
     cfg = { c: "bg-zinc-500/20 text-zinc-700 dark:text-zinc-300", t: "Suspended" };
-  } else {
-    // Derive who the queue is waiting on so admins don't see misleading "Pending"
-    // when the user simply hasn't submitted face/mobile yet.
+  } else if (sub) {
+    // Derive a meaningful actionable label from the pillar mix.
     const pillars = [sub.documents_status, sub.face_status, sub.mobile_status];
     const allApproved = pillars.every((s) => s === "approved");
     const adminNeedsToAct = pillars.some((s) => s === "pending_review");
-    // If ANY pillar is rejected or needs resubmission, the user must act first.
     const userMustResubmit = pillars.some(
       (s) => s === "rejected" || s === "needs_resubmission"
     );
-    const userNeedsToSubmit = pillars.some((s) => s === "not_submitted");
 
     if (allApproved) {
       cfg = { c: "bg-violet-500/15 text-violet-700 dark:text-violet-400", t: "Ready · Final" };
@@ -266,11 +271,13 @@ function FinalStatusPill({ sub }: { sub: KycSubmissionV2 }) {
       cfg = { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" };
     } else if (adminNeedsToAct) {
       cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Review" };
-    } else if (userNeedsToSubmit) {
-      cfg = { c: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300", t: "Awaiting User" };
     } else {
-      cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Pending" };
+      // No pillars submitted yet — not actionable; we only render this in
+      // the "All" view so a neutral label is fine.
+      cfg = { c: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300", t: "Inactive" };
     }
+  } else {
+    cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Pending" };
   }
   return <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", cfg.c)}>{cfg.t}</span>;
 }
