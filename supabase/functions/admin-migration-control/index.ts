@@ -260,32 +260,28 @@ async function rejectMigration(
     throw new Error('Rejection reason is mandatory');
   }
 
-  // Verify migration is in PENDING_ADMIN_APPROVAL
-  const { data: migration, error } = await supabase
-    .from('bsk_onchain_migrations')
-    .select('id, status, user_id, amount_requested')
-    .eq('id', migrationId)
-    .single();
-
-  if (error || !migration) throw new Error('Migration not found');
-  if (migration.status !== 'pending_admin_approval') {
-    throw new Error(`Cannot reject migration in status: ${migration.status}`);
+  // Atomic claim — guarantees only one admin/tab can transition pending -> rejected.
+  const { data: claim, error: claimErr } = await supabase.rpc(
+    'claim_bsk_migration_for_rejection',
+    {
+      p_migration_id: migrationId,
+      p_admin_id: adminId,
+      p_rejection_reason: rejectionReason.trim(),
+      p_admin_note: adminNote?.trim() || null,
+    }
+  );
+  if (claimErr) throw new Error(`Failed to reject: ${claimErr.message}`);
+  if (!claim?.claimed) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'already_processed',
+        message: 'This migration has already been actioned by another admin or tab.',
+      }),
+      { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
-
-  // Update migration — NO balance modification
-  const { error: updateError } = await supabase
-    .from('bsk_onchain_migrations')
-    .update({
-      status: 'rejected',
-      rejected_by: adminId,
-      rejected_at: new Date().toISOString(),
-      rejection_reason: rejectionReason.trim(),
-      admin_approval_note: adminNote?.trim() || null,
-      admin_notes: `Rejected by admin: ${rejectionReason.trim()}`,
-    })
-    .eq('id', migrationId);
-
-  if (updateError) throw new Error(`Failed to reject: ${updateError.message}`);
+  const migration = claim.migration;
 
   // Update batch
   await supabase
@@ -324,35 +320,40 @@ async function approveMigration(
   migrationId: string,
   adminNote?: string
 ): Promise<Response> {
-  // Verify migration is in PENDING_ADMIN_APPROVAL
-  const { data: migration, error } = await supabase
-    .from('bsk_onchain_migrations')
-    .select('*')
-    .eq('id', migrationId)
-    .single();
+  // Atomic claim — eliminates double-approval race entirely.
+  // Only one caller (across admins / tabs / retries) gets `claimed: true`.
+  const { data: claim, error: claimErr } = await supabase.rpc(
+    'claim_bsk_migration_for_approval',
+    {
+      p_migration_id: migrationId,
+      p_admin_id: adminId,
+      p_admin_note: adminNote?.trim() || null,
+    }
+  );
 
-  if (error || !migration) throw new Error('Migration not found');
-  if (migration.status !== 'pending_admin_approval') {
-    throw new Error(`Cannot approve migration in status: ${migration.status}`);
+  if (claimErr) {
+    console.error('[ADMIN-MIGRATION] Claim error:', claimErr);
+    throw new Error(`Failed to claim migration: ${claimErr.message}`);
   }
 
+  if (!claim?.claimed) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'already_processed',
+        message: 'This migration has already been approved or rejected by another admin or tab.',
+      }),
+      { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const migration = claim.migration;
   const userId = migration.user_id;
   const amountBsk = Number(migration.amount_requested);
   const walletAddress = migration.wallet_address;
   const gasDeductionBsk = Number(migration.gas_deduction_bsk || 5);
   const migrationFeeBsk = Number(migration.migration_fee_bsk || 0);
   const netAmountBsk = amountBsk - gasDeductionBsk - migrationFeeBsk;
-
-  // Mark as APPROVED_EXECUTING
-  await supabase
-    .from('bsk_onchain_migrations')
-    .update({
-      status: 'approved_executing',
-      approved_by: adminId,
-      approved_at: new Date().toISOString(),
-      admin_approval_note: adminNote?.trim() || null,
-    })
-    .eq('id', migrationId);
 
   // Log admin action
   await supabase.from('admin_actions_log').insert({
