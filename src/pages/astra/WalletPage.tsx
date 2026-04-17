@@ -32,6 +32,8 @@ import AssetLogo from "@/components/AssetLogo"
 import { formatCurrency } from "@/utils/formatters"
 import { cn } from "@/lib/utils"
 import { useTradingPairs } from "@/hooks/useTradingPairs"
+import { useTradingBalances } from "@/hooks/useTradingBalances"
+import { TradingBalancesCard } from "@/components/wallet/TradingBalancesCard"
 
 // ── Section label component
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -132,6 +134,7 @@ export function WalletPage() {
   const walletIntegrity = useWalletIntegrity(user?.id || null)
   const { portfolio, loading: portfolioLoading } = useWalletBalances()
   const { balances: onchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances()
+  const { data: tradingBalances, isLoading: tradingBalancesLoading } = useTradingBalances()
 
   const { balances: bep20Balances } = useBep20Balances()
   const onchainUsd = useMemo(() => {
@@ -407,6 +410,14 @@ export function WalletPage() {
         </button>
       </div>
 
+      {/* ── TRADING BALANCES ── */}
+      <div className="px-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        <TradingBalancesCard
+          balances={tradingBalances || []}
+          loading={tradingBalancesLoading}
+          onTransfer={() => navigate("/app/wallet/transfer")}
+        />
+      </div>
 
       {/* ── 3. BSC ADDRESS BLOCK ── */}
       <div className="px-4 space-y-3 animate-fade-in" style={{ animationDelay: '120ms' }}>
