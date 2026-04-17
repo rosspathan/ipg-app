@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { handleKycError } from '@/lib/kycErrorHandler';
 
 export type ReasonCode = 
   | 'OK'
@@ -189,6 +190,7 @@ export function useBSKMigration() {
       return data as MigrationResult;
     } catch (err: any) {
       console.error('[useBSKMigration] Migration error:', err);
+      if (handleKycError(err)) return null;
       toast.error(err.message || 'Migration failed');
       return null;
     } finally {

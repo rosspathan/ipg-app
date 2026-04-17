@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useBSKMigration, MigrationHistoryItem, ReasonCode } from "@/hooks/useBSKMigration"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { KycLockedBanner } from "@/components/kyc/KycLockedBanner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
@@ -187,6 +188,8 @@ export function BSKMigratePage() {
       </div>
 
       <div className="p-4 space-y-4 max-w-lg mx-auto">
+        {/* KYC gate banner */}
+        <KycLockedBanner action="migrate BSK to on-chain" />
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">

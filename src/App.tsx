@@ -261,6 +261,8 @@ import { ProfileHub } from "@/pages/ProfileHub";
 import { KYCPage } from "@/pages/KYCPage";
 import KYCSubmission from "@/pages/KYCSubmission";
 import KYCSubmissionSimple from "@/pages/KYCSubmissionSimple";
+const KycWizardV2 = React.lazy(() => import("@/pages/app/KycWizardV2"));
+const KYCReviewConsoleV2 = React.lazy(() => import("@/pages/admin/KYCReviewConsoleV2"));
 import { IDCardPage } from "@/pages/IDCardPage";
 import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
@@ -508,7 +510,8 @@ function AppContent() {
               
               {/* Profile Hub */}
               <Route path="profile" element={<ProfileHub />} />
-              <Route path="profile/kyc" element={<KYCSubmissionSimple />} />
+              <Route path="profile/kyc" element={<React.Suspense fallback={<LoadingFallback />}><KycWizardV2 /></React.Suspense>} />
+              <Route path="profile/kyc/legacy" element={<KYCSubmissionSimple />} />
               <Route path="profile/id-card" element={<IDCardPage />} />
               <Route path="profile/security" element={<SecurityPage />} />
               <Route path="profile/notify" element={<NotificationsPage />} />
@@ -689,8 +692,9 @@ function AppContent() {
                 <Route path="programs/config" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramConfigEditor /></React.Suspense>} />
                 <Route path="settings" element={<AdminSettingsClean />} />
                 <Route path="system/health" element={<React.Suspense fallback={<LoadingFallback />}><AdminSystemHealth /></React.Suspense>} />
-                <Route path="kyc" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewNew /></React.Suspense>} />
-                <Route path="kyc-review" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewNew /></React.Suspense>} />
+                <Route path="kyc" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewConsoleV2 /></React.Suspense>} />
+                <Route path="kyc-review" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewConsoleV2 /></React.Suspense>} />
+                <Route path="kyc/legacy" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewNew /></React.Suspense>} />
                 <Route path="kyc/settings" element={<React.Suspense fallback={<LoadingFallback />}><AdminKYCSettings /></React.Suspense>} />
                 
                 {/* Phase 5: Role & Badge Management */}

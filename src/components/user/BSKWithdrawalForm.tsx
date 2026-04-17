@@ -12,12 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Banknote, Bitcoin } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { KycLockedBanner } from '@/components/kyc/KycLockedBanner';
+import { useKycGate } from '@/hooks/useKycGate';
+import { handleKycError } from '@/lib/kycErrorHandler';
 
 export const BSKWithdrawalForm = () => {
   const { user } = useAuthUser();
   const { balances, loading } = useBSKLedgers();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const kyc = useKycGate();
 
   const [withdrawalType, setWithdrawalType] = useState<'bank' | 'crypto'>('bank');
   const [amount, setAmount] = useState('');
@@ -118,6 +122,10 @@ export const BSKWithdrawalForm = () => {
       navigate('/app/home');
     } catch (error: any) {
       console.error('Withdrawal request error:', error);
+      if (handleKycError(error)) {
+        setSubmitting(false);
+        return;
+      }
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit withdrawal request',
@@ -133,22 +141,24 @@ export const BSKWithdrawalForm = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Withdraw BSK</CardTitle>
-        <CardDescription>
-          Request to withdraw your BSK to bank account or crypto wallet
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Alert className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Available Balance:</strong> {balances?.withdrawable_balance || 0} BSK
-            <br />
-            Withdrawals are processed manually by admin. Please allow 1-3 business days.
-          </AlertDescription>
-        </Alert>
+    <div className="space-y-4">
+      <KycLockedBanner action="withdraw BSK" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Withdraw BSK</CardTitle>
+          <CardDescription>
+            Request to withdraw your BSK to bank account or crypto wallet
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Available Balance:</strong> {balances?.withdrawable_balance || 0} BSK
+              <br />
+              Withdrawals are processed manually by admin. Please allow 1-3 business days.
+            </AlertDescription>
+          </Alert>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -262,11 +272,12 @@ export const BSKWithdrawalForm = () => {
             </TabsContent>
           </Tabs>
 
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Submit Withdrawal Request'}
+          <Button type="submit" className="w-full" disabled={submitting || !kyc.approved}>
+            {!kyc.approved ? 'KYC required to withdraw' : submitting ? 'Submitting...' : 'Submit Withdrawal Request'}
           </Button>
         </form>
       </CardContent>
     </Card>
+    </div>
   );
 };
