@@ -56,7 +56,7 @@ export const KYCStepPersonal = ({ initialData, onNext }: KYCStepPersonalProps) =
     if (isPhoneInvalid) {
       form.setError("phone", {
         type: "manual",
-        message: validationResult.error || "This mobile number is already used for KYC."
+        message: validationResult.error || "This mobile number is already used in the new KYC system. Please use a different number or contact support."
       });
       return;
     }
@@ -186,7 +186,7 @@ export const KYCStepPersonal = ({ initialData, onNext }: KYCStepPersonalProps) =
                 {isPhoneInvalid && (
                   <p className="text-sm text-destructive flex items-center gap-1 mt-1">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    {validationResult.error || "This mobile number is already used for KYC. Please contact support."}
+                    {validationResult.error || "This mobile number is already used in the new KYC system. Please use a different number or contact support."}
                   </p>
                 )}
                 <FormMessage />
