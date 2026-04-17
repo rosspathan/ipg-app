@@ -6,28 +6,40 @@
  *   - Compact stat cards (mobile: 2-col grid, desktop: 4-col)
  *   - Filter chip-row + search
  *   - User cards (mobile-first, no horizontal-scroll tables)
- *   - Tap user → full-screen Sheet with sectioned accordion (Overview / Documents / Face / Mobile / Audit)
- *   - Floating expandable action button (Approve / Reject / Resubmit) per pillar
+ *   - Tap user → full-screen Sheet with sectioned premium cards:
+ *       Profile · Documents · Face · Mobile · Final · Audit
+ *   - Sticky bottom decision bar with Approve / Resubmit / Reject per pillar
+ *   - Reason is mandatory for Reject + Resubmit (validated in UI + RPC)
  */
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   ShieldCheck, Search, RefreshCw, FileText, Camera, Phone, X, Check,
-  Clock, AlertCircle, ChevronDown, History, User2, Loader2, Plus,
+  AlertCircle, History, User2, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useAdminKYCv2, type KycSubmissionV2, type KycQueueFilter, type KycAuditEntry, type PillarStatus } from "@/hooks/useAdminKYCv2";
+import {
+  useAdminKYCv2,
+  type KycSubmissionV2,
+  type KycQueueFilter,
+  type KycAuditEntry,
+  type PillarStatus,
+} from "@/hooks/useAdminKYCv2";
 import { cn } from "@/lib/utils";
+import { resolveKycSubmissionAssets } from "@/lib/kyc/resolveKycAsset";
+import { KycImageViewer } from "@/components/admin/kyc/KycImageViewer";
 
-const filterChips: { value: KycQueueFilter; label: string; statKey: "pendingAny" | "pendingDocs" | "pendingFace" | "pendingMobile" | "readyFinal" | "approved" | "rejected" | "suspended" | "total" }[] = [
+const filterChips: {
+  value: KycQueueFilter;
+  label: string;
+  statKey: "pendingAny" | "pendingDocs" | "pendingFace" | "pendingMobile" | "readyFinal" | "approved" | "rejected" | "suspended" | "total";
+}[] = [
   { value: "pending_any", label: "Pending", statKey: "pendingAny" },
   { value: "pending_documents", label: "Docs", statKey: "pendingDocs" },
   { value: "pending_face", label: "Face", statKey: "pendingFace" },
@@ -45,10 +57,17 @@ const statusDot = (s: PillarStatus) =>
     : s === "pending_review" ? "bg-sky-500"
     : "bg-muted-foreground/30";
 
-const PillarBadge = ({ s, label }: { s: PillarStatus; label: string }) => (
+const statusLabel = (s: PillarStatus) =>
+  s === "approved" ? "Approved"
+    : s === "rejected" ? "Rejected"
+    : s === "needs_resubmission" ? "Needs resubmit"
+    : s === "pending_review" ? "Pending review"
+    : "Not submitted";
+
+const PillarBadge = ({ s, label }: { s: PillarStatus; label?: string }) => (
   <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium">
     <span className={cn("h-1.5 w-1.5 rounded-full", statusDot(s))} />
-    {label}
+    {label ?? statusLabel(s)}
   </span>
 );
 
@@ -83,7 +102,7 @@ export default function KYCReviewConsoleV2() {
         </Button>
       </div>
 
-      {/* Stats — 2-col mobile, 4-col tablet+ */}
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <StatCard label="Pending docs" value={k.stats.pendingDocs} icon={FileText} tone="amber" />
         <StatCard label="Pending face" value={k.stats.pendingFace} icon={Camera} tone="sky" />
@@ -150,11 +169,11 @@ export default function KYCReviewConsoleV2() {
         </div>
       )}
 
-      {/* Full-screen review drawer — bottom sheet on mobile, side sheet on desktop */}
+      {/* Full-screen review drawer */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-2xl p-0 overflow-y-auto data-[state=open]:duration-300"
+          className="w-full sm:max-w-2xl p-0 overflow-hidden data-[state=open]:duration-300 flex flex-col"
         >
           {selected && <ReviewDrawer sub={selected} k={k} onClose={() => setSelected(null)} />}
         </SheetContent>
@@ -205,9 +224,9 @@ function UserCard({ sub, onOpen }: { sub: KycSubmissionV2; onOpen: () => void })
             <FinalStatusPill status={sub.final_status as any} />
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <PillarBadge s={sub.documents_status} label="Docs" />
-            <PillarBadge s={sub.face_status} label="Face" />
-            <PillarBadge s={sub.mobile_status} label="Mobile" />
+            <PillarBadge s={sub.documents_status} label={`Docs · ${statusLabel(sub.documents_status)}`} />
+            <PillarBadge s={sub.face_status} label={`Face · ${statusLabel(sub.face_status)}`} />
+            <PillarBadge s={sub.mobile_status} label={`Mobile · ${statusLabel(sub.mobile_status)}`} />
           </div>
         </div>
       </div>
@@ -224,34 +243,55 @@ function FinalStatusPill({ status }: { status: string }) {
   return <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", cfg.c)}>{cfg.t}</span>;
 }
 
+/* ============================================================
+   Review drawer — premium sectioned layout, sticky decision bar
+   ============================================================ */
+
+type Pillar = "documents" | "face" | "mobile" | "final";
+
 function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType<typeof useAdminKYCv2>; onClose: () => void }) {
   const name = sub.full_name_computed || sub.display_name || sub.username || "Unknown";
   const dataJson = sub.data_json || {};
-  const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
+
+  const [assets, setAssets] = useState<{
+    idFrontUrl: string | null;
+    idBackUrl: string | null;
+    selfieUrl: string | null;
+    addressProofUrl: string | null;
+  }>({ idFrontUrl: null, idBackUrl: null, selfieUrl: null, addressProofUrl: null });
+  const [assetsLoading, setAssetsLoading] = useState(true);
   const [audit, setAudit] = useState<KycAuditEntry[]>([]);
-  const [fabOpen, setFabOpen] = useState(false);
-  const [activePillar, setActivePillar] = useState<"documents" | "face" | "mobile" | "final">("documents");
+
+  const [activePillar, setActivePillar] = useState<Pillar>("documents");
   const [notes, setNotes] = useState("");
 
+  // Resolve all signed URLs once whenever the selected submission changes.
   useEffect(() => {
     let cancelled = false;
+    setAssetsLoading(true);
     (async () => {
-      const url = await k.getSelfieUrl(sub.face_selfie_path);
-      if (!cancelled) setSelfieUrl(url);
-      const a = await k.fetchAudit(sub.user_id);
-      if (!cancelled) setAudit(a);
+      const [resolved, a] = await Promise.all([
+        resolveKycSubmissionAssets(sub.data_json, sub.face_selfie_path),
+        k.fetchAudit(sub.user_id),
+      ]);
+      if (cancelled) return;
+      setAssets(resolved);
+      setAudit(a);
+      setAssetsLoading(false);
     })();
     return () => { cancelled = true; };
   }, [sub.id, sub.face_selfie_path, sub.user_id, k]);
 
-  const allGreen = sub.documents_status === "approved" && sub.face_status === "approved" && sub.mobile_status === "approved";
-  const reasonRequired = activePillar !== "final" || true; // reasons always recommended
+  const allGreen =
+    sub.documents_status === "approved" &&
+    sub.face_status === "approved" &&
+    sub.mobile_status === "approved";
   const finalBlocked = activePillar === "final" && !allGreen;
 
   const act = async (action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend") => {
-    if (action !== "approve" && !notes.trim()) {
+    if ((action === "reject" || action === "request_resubmission") && !notes.trim()) {
       toast.error("A reason is required", {
-        description: "Please enter a clear note so the user knows what to fix.",
+        description: "Please tell the user clearly what to fix.",
       });
       return;
     }
@@ -263,13 +303,15 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
     }
     await k.updatePillar(sub.user_id, activePillar, action, notes.trim() || undefined);
     setNotes("");
-    setFabOpen(false);
   };
+
+  const phone = sub.phone_computed || dataJson.phone || sub.mobile_number;
 
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <div className="flex items-center gap-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur shrink-0"
+        style={{ paddingTop: "max(env(safe-area-inset-top), 0.75rem)" }}>
         <Button size="icon" variant="ghost" onClick={onClose}><X className="h-5 w-5" /></Button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{name}</p>
@@ -278,223 +320,334 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
         <FinalStatusPill status={sub.final_status as any} />
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-3">
-        {/* Sticky pillar status row */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { key: "documents" as const, label: "Documents", icon: FileText, status: sub.documents_status },
-            { key: "face" as const, label: "Face", icon: Camera, status: sub.face_status },
-            { key: "mobile" as const, label: "Mobile", icon: Phone, status: sub.mobile_status },
-          ].map((p) => (
+      {/* Pillar tab strip — sticky, always visible */}
+      <div className="grid grid-cols-4 gap-1.5 border-b border-border bg-background/95 px-3 py-2.5 backdrop-blur shrink-0">
+        {(
+          [
+            { key: "documents", label: "Docs", icon: FileText, status: sub.documents_status },
+            { key: "face", label: "Face", icon: Camera, status: sub.face_status },
+            { key: "mobile", label: "Mobile", icon: Phone, status: sub.mobile_status },
+            { key: "final", label: "Final", icon: ShieldCheck, status: (allGreen ? "approved" : sub.final_status === "approved" ? "approved" : sub.final_status === "rejected" ? "rejected" : "pending_review") as PillarStatus },
+          ] as { key: Pillar; label: string; icon: any; status: PillarStatus }[]
+        ).map((p) => {
+          const active = activePillar === p.key;
+          const Icon = p.icon;
+          return (
             <button
               key={p.key}
               onClick={() => setActivePillar(p.key)}
               className={cn(
-                "rounded-xl border p-2.5 text-left transition-all",
-                activePillar === p.key ? "border-primary bg-primary/5" : "border-border/60 hover:bg-muted/30"
+                "rounded-lg border p-2 text-left transition-all",
+                active ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/60 hover:bg-muted/30"
               )}
             >
               <div className="flex items-center justify-between">
-                <p.icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
                 <span className={cn("h-2 w-2 rounded-full", statusDot(p.status))} />
               </div>
-              <p className="mt-1 text-xs font-semibold">{p.label}</p>
-              <p className="text-[10px] text-muted-foreground capitalize">{p.status.replace(/_/g, " ")}</p>
+              <p className="mt-1 text-[11px] font-semibold leading-none">{p.label}</p>
             </button>
-          ))}
-        </div>
-
-        <Accordion type="multiple" defaultValue={["overview", activePillar]} className="space-y-2">
-          {/* Overview */}
-          <AccordionItem value="overview" className="rounded-xl border border-border/60 bg-card px-3">
-            <AccordionTrigger className="py-3 hover:no-underline">
-              <div className="flex items-center gap-2"><User2 className="h-4 w-4" /> Profile</div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3">
-              <Field label="Full name" value={name} />
-              <Field label="Email" value={sub.email_computed || sub.profile_email} />
-              <Field label="Username" value={sub.username} />
-              <Field label="User ID" value={sub.user_id} mono />
-              <Field label="DOB" value={dataJson.date_of_birth} />
-              <Field label="Address" value={[dataJson.address_line1, dataJson.city, dataJson.postal_code].filter(Boolean).join(", ")} />
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Documents */}
-          <AccordionItem value="documents" className="rounded-xl border border-border/60 bg-card px-3">
-            <AccordionTrigger className="py-3 hover:no-underline">
-              <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex items-center gap-2"><FileText className="h-4 w-4" /> Documents</div>
-                <PillarBadge s={sub.documents_status} label="" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3 space-y-2">
-              <Field label="ID type" value={dataJson.id_type} />
-              <Field label="ID number" value={dataJson.id_number} mono />
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {dataJson.id_front_url && <DocPreview path={dataJson.id_front_url} label="Front" k={k} />}
-                {dataJson.id_back_url && <DocPreview path={dataJson.id_back_url} label="Back" k={k} />}
-              </div>
-              {sub.documents_notes && <NoteBlock text={sub.documents_notes} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Face */}
-          <AccordionItem value="face" className="rounded-xl border border-border/60 bg-card px-3">
-            <AccordionTrigger className="py-3 hover:no-underline">
-              <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex items-center gap-2"><Camera className="h-4 w-4" /> Face verification</div>
-                <PillarBadge s={sub.face_status} label="" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3 space-y-2">
-              {selfieUrl ? (
-                <img src={selfieUrl} alt="Selfie" className="aspect-square w-full max-w-xs mx-auto rounded-xl border border-border object-cover" />
-              ) : (
-                <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-                  {sub.face_selfie_path ? <Loader2 className="h-5 w-5 animate-spin" /> : "No selfie submitted yet"}
-                </div>
-              )}
-              <Field label="Captured" value={sub.face_captured_at ? format(new Date(sub.face_captured_at), "PPpp") : null} />
-              {sub.face_notes && <NoteBlock text={sub.face_notes} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Mobile */}
-          <AccordionItem value="mobile" className="rounded-xl border border-border/60 bg-card px-3">
-            <AccordionTrigger className="py-3 hover:no-underline">
-              <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> Mobile (manual)</div>
-                <PillarBadge s={sub.mobile_status} label="" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3 space-y-2">
-              <Field label="Number" value={sub.mobile_number} mono />
-              <Field label="Submitted" value={sub.mobile_submitted_at ? format(new Date(sub.mobile_submitted_at), "PPpp") : null} />
-              <Field label="Verified" value={sub.mobile_verified_at ? format(new Date(sub.mobile_verified_at), "PPpp") : null} />
-              {sub.mobile_notes && <NoteBlock text={sub.mobile_notes} />}
-              <p className="rounded-lg bg-muted/40 p-2 text-xs text-muted-foreground">
-                ⚠️ Manually verify by calling/SMS this number out-of-band before approving.
-              </p>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Final */}
-          <AccordionItem value="final" className="rounded-xl border border-border/60 bg-card px-3">
-            <AccordionTrigger className="py-3 hover:no-underline">
-              <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Final approval</div>
-                <FinalStatusPill status={sub.final_status as any} />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3">
-              <p className="text-sm">
-                {allGreen
-                  ? "✅ All 3 pillars are green — you can grant final approval."
-                  : "⏳ All 3 pillars must be approved before final approval."}
-              </p>
-              {sub.rejection_reason && <NoteBlock text={`Rejection: ${sub.rejection_reason}`} />}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Audit */}
-          <AccordionItem value="audit" className="rounded-xl border border-border/60 bg-card px-3">
-            <AccordionTrigger className="py-3 hover:no-underline">
-              <div className="flex items-center gap-2"><History className="h-4 w-4" /> Audit ({audit.length})</div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3">
-              {audit.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No history yet.</p>
-              ) : (
-                <ol className="space-y-2.5 border-l border-border/60 pl-3">
-                  {audit.map((a) => (
-                    <li key={a.id} className="relative">
-                      <span className="absolute -left-[15px] top-1.5 h-2 w-2 rounded-full bg-primary" />
-                      <p className="text-xs">
-                        <span className="font-semibold capitalize">{a.pillar}</span>
-                        <span className="mx-1 text-muted-foreground">→</span>
-                        <span className="capitalize">{a.action.replace(/_/g, " ")}</span>
-                        <span className="ml-2 text-[10px] text-muted-foreground">
-                          {a.status_before} → {a.status_after}
-                        </span>
-                      </p>
-                      {a.notes && <p className="text-xs text-muted-foreground mt-0.5">{a.notes}</p>}
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(a.created_at), "PPpp")}</p>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+          );
+        })}
       </div>
 
-      {/* Floating expandable action button */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        {fabOpen && (
-          <Card className="w-[min(94vw,24rem)] space-y-2.5 p-3 shadow-2xl border-primary/30">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold">
-                Action: <span className="capitalize text-primary">{activePillar}</span>
-              </p>
-              {finalBlocked && (
-                <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                  All 3 pillars required
-                </span>
-              )}
-              <Button size="icon" variant="ghost" className={cn("h-7 w-7", !finalBlocked && "ml-auto")} onClick={() => setFabOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <Textarea
-              placeholder={activePillar === "final" ? "Optional note (recommended)…" : "Reason — required for reject / resubmit"}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="text-sm resize-none"
-            />
-            <div className="grid grid-cols-3 gap-1.5">
-              <Button
-                size="sm"
-                onClick={() => act("approve")}
-                disabled={k.busy || finalBlocked}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white h-10"
-              >
-                <Check className="mr-1 h-3.5 w-3.5" /> Approve
-              </Button>
-              <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy} className="h-10">
-                <X className="mr-1 h-3.5 w-3.5" /> Reject
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => act("request_resubmission")} disabled={k.busy} className="h-10">
-                <AlertCircle className="mr-1 h-3.5 w-3.5" /> Resubmit
-              </Button>
-            </div>
-            {activePillar === "final" && sub.final_status === "approved" && (
-              <Button size="sm" variant="outline" className="w-full h-10" onClick={() => act("suspend")} disabled={k.busy}>
-                Suspend account
-              </Button>
-            )}
-            {activePillar === "final" && sub.final_status === "suspended" && (
-              <Button size="sm" variant="outline" className="w-full h-10" onClick={() => act("unsuspend")} disabled={k.busy}>
-                Unsuspend
-              </Button>
-            )}
-          </Card>
-        )}
-        <Button
-          size="lg"
-          onClick={() => setFabOpen((o) => !o)}
-          className={cn(
-            "h-14 w-14 rounded-full shadow-2xl transition-transform",
-            fabOpen && "rotate-45"
-          )}
-          aria-label={fabOpen ? "Close action panel" : "Open action panel"}
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-40 space-y-3">
+        {/* Profile */}
+        <SectionCard icon={User2} title="Profile">
+          <Field label="Full name" value={name} />
+          <Field label="Email" value={sub.email_computed || sub.profile_email} />
+          <Field label="Username" value={sub.username} />
+          <Field label="User ID" value={sub.user_id} mono />
+          <Field label="Date of birth" value={dataJson.date_of_birth} />
+          <Field
+            label="Address"
+            value={[
+              dataJson.address_line1,
+              dataJson.address_line2,
+              dataJson.city,
+              dataJson.state,
+              dataJson.postal_code,
+              dataJson.country,
+            ].filter(Boolean).join(", ")}
+          />
+          <Field label="Nationality" value={dataJson.nationality} />
+        </SectionCard>
+
+        {/* Documents */}
+        <SectionCard
+          icon={FileText}
+          title="Documents"
+          status={sub.documents_status}
+          highlighted={activePillar === "documents"}
+          onSelect={() => setActivePillar("documents")}
         >
-          <Plus className="h-6 w-6" />
-        </Button>
+          <Field label="ID type" value={dataJson.id_type} />
+          <Field label="ID number" value={dataJson.id_number} mono />
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <KycImageViewer
+              url={assets.idFrontUrl}
+              label="Front"
+              tone="primary"
+              aspect="card"
+              loading={assetsLoading}
+            />
+            <KycImageViewer
+              url={assets.idBackUrl}
+              label="Back"
+              tone="violet"
+              aspect="card"
+              loading={assetsLoading}
+            />
+            {assets.addressProofUrl && (
+              <KycImageViewer
+                url={assets.addressProofUrl}
+                label="Address proof"
+                tone="amber"
+                aspect="card"
+                loading={assetsLoading}
+                className="col-span-2"
+              />
+            )}
+          </div>
+
+          {sub.documents_notes && <NoteBlock label="Last admin note" text={sub.documents_notes} />}
+        </SectionCard>
+
+        {/* Face */}
+        <SectionCard
+          icon={Camera}
+          title="Face verification"
+          status={sub.face_status}
+          highlighted={activePillar === "face"}
+          onSelect={() => setActivePillar("face")}
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <KycImageViewer
+              url={assets.selfieUrl}
+              label="Selfie"
+              tone="sky"
+              aspect="square"
+              loading={assetsLoading}
+            />
+            <KycImageViewer
+              url={assets.idFrontUrl}
+              label="ID photo"
+              tone="primary"
+              aspect="square"
+              loading={assetsLoading}
+            />
+          </div>
+          <p className="mt-2 rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
+            Compare the selfie against the photo on the ID. Reject if it appears to be a printed
+            photo, a deepfake, or doesn't match.
+          </p>
+          <Field
+            label="Captured"
+            value={sub.face_captured_at ? format(new Date(sub.face_captured_at), "PPpp") : null}
+          />
+          {sub.face_notes && <NoteBlock label="Last admin note" text={sub.face_notes} />}
+        </SectionCard>
+
+        {/* Mobile */}
+        <SectionCard
+          icon={Phone}
+          title="Mobile (manual)"
+          status={sub.mobile_status}
+          highlighted={activePillar === "mobile"}
+          onSelect={() => setActivePillar("mobile")}
+        >
+          <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Number to verify</p>
+            <p className="mt-0.5 select-all font-mono text-base font-semibold">{phone || "—"}</p>
+          </div>
+          <Field
+            label="Submitted"
+            value={sub.mobile_submitted_at ? format(new Date(sub.mobile_submitted_at), "PPpp") : null}
+          />
+          <Field
+            label="Verified"
+            value={sub.mobile_verified_at ? format(new Date(sub.mobile_verified_at), "PPpp") : null}
+          />
+          {sub.mobile_notes && <NoteBlock label="Last admin note" text={sub.mobile_notes} />}
+          <p className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 p-2 text-[11px] text-amber-700 dark:text-amber-400">
+            ⚠️ Call or SMS this number out-of-band before approving. Reject if the number is
+            invalid or unreachable.
+          </p>
+        </SectionCard>
+
+        {/* Final */}
+        <SectionCard
+          icon={ShieldCheck}
+          title="Final approval"
+          highlighted={activePillar === "final"}
+          onSelect={() => setActivePillar("final")}
+        >
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Documents", status: sub.documents_status },
+              { label: "Face", status: sub.face_status },
+              { label: "Mobile", status: sub.mobile_status },
+            ].map((p) => (
+              <div key={p.label} className={cn(
+                "rounded-lg border p-2.5 text-center",
+                p.status === "approved"
+                  ? "border-emerald-500/30 bg-emerald-500/10"
+                  : "border-border bg-muted/30"
+              )}>
+                <span className={cn(
+                  "mx-auto mb-1 grid h-6 w-6 place-items-center rounded-full",
+                  p.status === "approved" ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
+                )}>
+                  {p.status === "approved" ? <Check className="h-3.5 w-3.5" /> : <Loader2 className="h-3 w-3" />}
+                </span>
+                <p className="text-[11px] font-semibold">{p.label}</p>
+                <p className="text-[10px] text-muted-foreground">{statusLabel(p.status)}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className={cn(
+            "mt-3 rounded-lg p-2.5 text-xs",
+            allGreen ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+          )}>
+            {allGreen
+              ? "✅ All 3 pillars are approved — you can grant final approval. The user will be unlocked instantly."
+              : "⏳ Approve all 3 pillars first. Final approval is blocked until docs, face and mobile are all green."}
+          </p>
+
+          {sub.rejection_reason && <NoteBlock label="Rejection reason" text={sub.rejection_reason} />}
+        </SectionCard>
+
+        {/* Audit */}
+        <SectionCard icon={History} title={`Audit history (${audit.length})`}>
+          {audit.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No history yet.</p>
+          ) : (
+            <ol className="space-y-2.5 border-l border-border/60 pl-3">
+              {audit.map((a) => (
+                <li key={a.id} className="relative">
+                  <span className="absolute -left-[15px] top-1.5 h-2 w-2 rounded-full bg-primary" />
+                  <p className="text-xs">
+                    <span className="font-semibold capitalize">{a.pillar}</span>
+                    <span className="mx-1 text-muted-foreground">→</span>
+                    <span className="capitalize">{a.action.replace(/_/g, " ")}</span>
+                    <span className="ml-2 text-[10px] text-muted-foreground">
+                      {a.status_before} → {a.status_after}
+                    </span>
+                  </p>
+                  {a.notes && <p className="mt-0.5 text-xs text-muted-foreground">"{a.notes}"</p>}
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">{format(new Date(a.created_at), "PPpp")}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </SectionCard>
+      </div>
+
+      {/* Sticky decision bar */}
+      <div
+        className="sticky bottom-0 left-0 right-0 z-10 border-t border-border bg-background/95 px-3 py-3 backdrop-blur shrink-0"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)" }}
+      >
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Action on</span>
+          <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold capitalize text-primary">
+            {activePillar}
+          </span>
+          {finalBlocked && (
+            <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+              All 3 pillars required
+            </span>
+          )}
+        </div>
+        <Textarea
+          placeholder={
+            activePillar === "final"
+              ? "Optional note (recommended for record)…"
+              : "Reason — required for Reject / Resubmit"
+          }
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          className="text-sm resize-none mb-2"
+        />
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button
+            size="sm"
+            onClick={() => act("approve")}
+            disabled={k.busy || finalBlocked}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white h-11"
+          >
+            <Check className="mr-1 h-3.5 w-3.5" /> Approve
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => act("request_resubmission")}
+            disabled={k.busy}
+            className="h-11 border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+          >
+            <AlertCircle className="mr-1 h-3.5 w-3.5" /> Resubmit
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy} className="h-11">
+            <X className="mr-1 h-3.5 w-3.5" /> Reject
+          </Button>
+        </div>
+        {activePillar === "final" && (sub.final_status === "approved" || sub.final_status === "suspended") && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2 w-full h-10"
+            onClick={() => act(sub.final_status === "approved" ? "suspend" : "unsuspend")}
+            disabled={k.busy}
+          >
+            {sub.final_status === "approved" ? "Suspend account" : "Unsuspend account"}
+          </Button>
+        )}
       </div>
     </div>
+  );
+}
+
+/* ----------------------------- helpers ---------------------------------- */
+
+function SectionCard({
+  icon: Icon,
+  title,
+  status,
+  highlighted,
+  onSelect,
+  children,
+}: {
+  icon: any;
+  title: string;
+  status?: PillarStatus;
+  highlighted?: boolean;
+  onSelect?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card
+      onClick={onSelect}
+      className={cn(
+        "relative overflow-hidden rounded-2xl border bg-card p-3.5 transition-all",
+        highlighted ? "border-primary/40 ring-1 ring-primary/30 shadow-sm" : "border-border/60",
+        onSelect && "cursor-pointer hover:border-primary/30"
+      )}
+    >
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <h3 className="text-sm font-semibold">{title}</h3>
+        </div>
+        {status && <PillarBadge s={status} />}
+      </div>
+      <div className="space-y-1">{children}</div>
+    </Card>
   );
 }
 
@@ -508,34 +661,11 @@ function Field({ label, value, mono }: { label: string; value: string | null | u
   );
 }
 
-function NoteBlock({ text }: { text: string }) {
+function NoteBlock({ label, text }: { label?: string; text: string }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-muted/30 p-2 text-xs">
-      <span className="font-medium">Note: </span>{text}
+    <div className="mt-2 rounded-lg border border-border/60 bg-muted/30 p-2 text-xs">
+      {label && <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>}
+      <p className="break-words">{text}</p>
     </div>
-  );
-}
-
-function DocPreview({ path, label, k }: { path: string; label: string; k: ReturnType<typeof useAdminKYCv2> }) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    (async () => {
-      // path may be a full URL or storage path in 'kyc' bucket
-      if (path.startsWith("http")) { setUrl(path); return; }
-      const { data } = await import("@/integrations/supabase/client").then((m) => m.supabase.storage.from("kyc").createSignedUrl(path, 1800));
-      setUrl(data?.signedUrl ?? null);
-    })();
-  }, [path]);
-  return (
-    <a href={url ?? "#"} target="_blank" rel="noreferrer" className="block rounded-lg border border-border overflow-hidden">
-      {url ? (
-        <img src={url} alt={label} className="aspect-[3/2] w-full object-cover" />
-      ) : (
-        <div className="aspect-[3/2] w-full grid place-items-center bg-muted">
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        </div>
-      )}
-      <div className="px-2 py-1 text-[11px] font-medium bg-muted/30">{label}</div>
-    </a>
   );
 }
