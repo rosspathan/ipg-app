@@ -14000,6 +14000,48 @@ export type Database = {
           },
         ]
       }
+      bsk_migrations_stuck_view: {
+        Row: {
+          amount_requested: number | null
+          broadcasted_at: string | null
+          created_at: string | null
+          debited_at: string | null
+          id: string | null
+          minutes_old: number | null
+          net_amount_migrated: number | null
+          status: string | null
+          tx_hash: string | null
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          amount_requested?: number | null
+          broadcasted_at?: string | null
+          created_at?: string | null
+          debited_at?: string | null
+          id?: string | null
+          minutes_old?: never
+          net_amount_migrated?: number | null
+          status?: string | null
+          tx_hash?: string | null
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          amount_requested?: number | null
+          broadcasted_at?: string | null
+          created_at?: string | null
+          debited_at?: string | null
+          id?: string | null
+          minutes_old?: never
+          net_amount_migrated?: number | null
+          status?: string | null
+          tx_hash?: string | null
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       crypto_transactions: {
         Row: {
           amount: number | null
@@ -14593,6 +14635,23 @@ export type Database = {
         Returns: Json
       }
       check_stuck_transfers: { Args: never; Returns: Json }
+      claim_bsk_migration_for_approval: {
+        Args: {
+          p_admin_id: string
+          p_admin_note?: string
+          p_migration_id: string
+        }
+        Returns: Json
+      }
+      claim_bsk_migration_for_rejection: {
+        Args: {
+          p_admin_id: string
+          p_admin_note?: string
+          p_migration_id: string
+          p_rejection_reason: string
+        }
+        Returns: Json
+      }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_order_rate_limits: { Args: never; Returns: undefined }
       clone_program_module: {
@@ -14603,6 +14662,15 @@ export type Database = {
           p_operator_id: string
         }
         Returns: string
+      }
+      complete_stuck_bsk_migration: {
+        Args: {
+          p_actual_gas_cost_bnb: number
+          p_block_number: number
+          p_gas_used: number
+          p_migration_id: string
+        }
+        Returns: Json
       }
       complete_withdrawal_balance_deduction: {
         Args: { p_amount: number; p_asset_id: string; p_user_id: string }
