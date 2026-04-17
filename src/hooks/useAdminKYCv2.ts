@@ -222,6 +222,7 @@ export function useAdminKYCv2() {
 
   const updatePillar = useCallback(
     async (userId: string, pillar: "documents" | "face" | "mobile" | "final", action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend" | "reset", notes?: string) => {
+      console.info("[AdminKYCv2] updatePillar →", { userId, pillar, action, hasNotes: !!notes });
       try {
         setBusy(true);
         const { data, error } = await supabase.rpc("admin_update_kyc_pillar", {
@@ -230,16 +231,30 @@ export function useAdminKYCv2() {
           p_action: action,
           p_notes: notes ?? null,
         });
-        if (error) throw error;
+        if (error) {
+          console.error("[AdminKYCv2] RPC error", error);
+          throw error;
+        }
+        console.info("[AdminKYCv2] RPC ok ←", data);
+        const verb = action === "approve" ? "approved"
+          : action === "reject" ? "rejected"
+          : action === "request_resubmission" ? "resubmission requested"
+          : action === "suspend" ? "suspended"
+          : action === "unsuspend" ? "unsuspended"
+          : "updated";
         toast({
-          title: pillar === "final" && action === "approve" ? "✅ Final approval granted" : "Updated",
-          description: `${pillar} → ${action}`,
+          title: pillar === "final" && action === "approve" ? "✅ Final approval granted" : `✅ ${pillar} ${verb}`,
+          description: notes ? `Reason: "${notes}"` : "User will see the new status instantly.",
         });
         await fetchAll();
         return data as any;
       } catch (e: any) {
         console.error("[AdminKYCv2] updatePillar error", e);
-        toast({ title: "Action failed", description: e?.message ?? "Unknown error", variant: "destructive" });
+        toast({
+          title: "Action failed",
+          description: e?.message ?? e?.error_description ?? "Unknown error — check console for details.",
+          variant: "destructive",
+        });
         throw e;
       } finally {
         setBusy(false);
