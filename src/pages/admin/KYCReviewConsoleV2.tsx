@@ -222,7 +222,7 @@ function UserCard({ sub, onOpen }: { sub: KycSubmissionV2; onOpen: () => void })
               <p className="truncate font-semibold leading-tight">{name}</p>
               <p className="truncate text-xs text-muted-foreground">{meta}</p>
             </div>
-            <FinalStatusPill status={sub.final_status as any} />
+            <FinalStatusPill sub={sub} />
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <PillarBadge s={sub.documents_status} label={`Docs · ${statusLabel(sub.documents_status)}`} />
@@ -235,13 +235,37 @@ function UserCard({ sub, onOpen }: { sub: KycSubmissionV2; onOpen: () => void })
   );
 }
 
-function FinalStatusPill({ status }: { status: string }) {
-  const cfg =
-    status === "approved" ? { c: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", t: "Approved" }
-      : status === "rejected" ? { c: "bg-rose-500/15 text-rose-700 dark:text-rose-400", t: "Rejected" }
-      : status === "needs_resubmission" ? { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" }
-      : status === "suspended" ? { c: "bg-zinc-500/20 text-zinc-700 dark:text-zinc-300", t: "Suspended" }
-      : { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Pending" };
+function FinalStatusPill({ sub }: { sub: KycSubmissionV2 }) {
+  const status = sub.final_status as string;
+
+  // Terminal states first
+  let cfg: { c: string; t: string };
+  if (status === "approved") {
+    cfg = { c: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", t: "Approved" };
+  } else if (status === "rejected") {
+    cfg = { c: "bg-rose-500/15 text-rose-700 dark:text-rose-400", t: "Rejected" };
+  } else if (status === "needs_resubmission") {
+    cfg = { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" };
+  } else if (status === "suspended") {
+    cfg = { c: "bg-zinc-500/20 text-zinc-700 dark:text-zinc-300", t: "Suspended" };
+  } else {
+    // Derive who the queue is waiting on so admins don't see misleading "Pending"
+    // when the user simply hasn't submitted face/mobile yet.
+    const pillars = [sub.documents_status, sub.face_status, sub.mobile_status];
+    const allApproved = pillars.every((s) => s === "approved");
+    const adminNeedsToAct = pillars.some((s) => s === "pending_review");
+    const userNeedsToSubmit = pillars.some((s) => s === "not_submitted");
+
+    if (allApproved) {
+      cfg = { c: "bg-violet-500/15 text-violet-700 dark:text-violet-400", t: "Ready · Final" };
+    } else if (adminNeedsToAct) {
+      cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Review" };
+    } else if (userNeedsToSubmit) {
+      cfg = { c: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300", t: "Awaiting User" };
+    } else {
+      cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Pending" };
+    }
+  }
   return <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", cfg.c)}>{cfg.t}</span>;
 }
 
