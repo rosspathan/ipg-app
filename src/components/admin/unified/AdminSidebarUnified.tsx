@@ -57,6 +57,7 @@ const mainNav: NavItem[] = [
   { title: "Trading Report", url: "/admin/trading-full-report", icon: FileText },
   { title: "Forensic Audit", url: "/admin/trading-forensic", icon: Shield },
   { title: "HW Live", url: "/admin/hot-wallet-live", icon: Activity },
+  { title: "HW Audit", url: "/admin/hot-wallet-audit", icon: Shield },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];
 
