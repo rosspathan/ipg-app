@@ -20,6 +20,12 @@ import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
 import { getStoredWallet, setWalletStorageUserId, storeWallet } from "@/utils/walletStorage";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 import PinEntryDialog from "@/components/profile/PinEntryDialog";
+import {
+  resolveAuthenticatedSigner,
+  describeSignerFailure,
+  logSignerAudit,
+  newSignerReferenceId,
+} from "@/lib/wallet/signerResolver";
 
 const MIN_WITHDRAWAL_BALANCE = 0.0001;
 
