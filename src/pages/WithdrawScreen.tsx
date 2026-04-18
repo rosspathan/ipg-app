@@ -550,7 +550,7 @@ const WithdrawScreen = () => {
         amountRequested: parseFloat(amount),
       });
 
-      if (resolution.ok) {
+      if (resolution.ok === true) {
         await executeWithdraw({
           type: "privateKey",
           privateKey: resolution.signer.privateKey,
