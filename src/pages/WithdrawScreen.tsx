@@ -251,6 +251,58 @@ const WithdrawScreen = () => {
         throw new Error("Amount after fee must be greater than 0");
       }
 
+      // === SIGNER ↔ DISPLAYED-WALLET INTEGRITY CHECK ===
+      // The UI shows the on-chain balance for the address stored in profiles.wallet_address.
+      // The signer must derive to the SAME address, otherwise the contract will revert with
+      // "transfer amount exceeds balance" (because the signer's wallet is empty).
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("wallet_address")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          const displayedWallet = (profile?.wallet_address || "").toLowerCase();
+
+          let derivedSignerAddress: string | null = null;
+          if (signer.type === "privateKey") {
+            try {
+              derivedSignerAddress = new ethers.Wallet(signer.privateKey).address.toLowerCase();
+            } catch {
+              throw new Error("Invalid signing key. Please re-import your wallet under Profile → Security.");
+            }
+          } else if (signer.type === "metamask" && typeof window !== "undefined" && window.ethereum) {
+            try {
+              const provider = new ethers.BrowserProvider(window.ethereum);
+              const s = await provider.getSigner();
+              derivedSignerAddress = (await s.getAddress()).toLowerCase();
+            } catch {
+              // Will be re-checked inside transferViaMetaMask; continue.
+            }
+          }
+
+          if (
+            displayedWallet &&
+            derivedSignerAddress &&
+            displayedWallet !== derivedSignerAddress
+          ) {
+            throw new Error(
+              `Wallet signer mismatch. Your app shows the balance for ${displayedWallet.slice(0, 8)}…${displayedWallet.slice(-4)}, but the active signing key belongs to ${derivedSignerAddress.slice(0, 8)}…${derivedSignerAddress.slice(-4)}. Please re-import your correct wallet under Profile → Security and try again.`
+            );
+          }
+        }
+      } catch (mismatchErr: any) {
+        // If this is our explicit mismatch error, surface it directly.
+        if (mismatchErr?.message?.includes("Wallet signer mismatch") || mismatchErr?.message?.includes("Invalid signing key")) {
+          throw mismatchErr;
+        }
+        console.warn("[WithdrawScreen] Signer/profile pre-check failed (non-fatal):", mismatchErr);
+      }
+
       const result =
         signer.type === "metamask"
           ? await transferViaMetaMask(
