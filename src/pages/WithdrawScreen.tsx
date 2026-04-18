@@ -362,18 +362,28 @@ const WithdrawScreen = () => {
     } catch (error: any) {
       console.error("[WithdrawScreen] Withdrawal error:", error);
 
-      // Parse common blockchain errors for user-friendly messages
+      // Parse common blockchain errors for user-friendly messages.
+      // transferERC20/transferBNB now return precise pre-flight messages that
+      // include the signer address and live balance — surface those verbatim.
       let errorTitle = "Withdrawal Failed";
       let errorDescription = error.message || "Failed to process withdrawal";
 
       const errMsg = (error.message || "").toLowerCase();
-      if (
+      if (errMsg.includes("wallet signer mismatch") || errMsg.includes("signing key does not match")) {
+        errorTitle = "Wallet Signer Mismatch";
+      } else if (errMsg.includes("live balance is lower") || errMsg.includes("token contract reported insufficient")) {
+        errorTitle = "Live Balance Too Low";
+      } else if (errMsg.includes("bnb gas balance is insufficient") || errMsg.includes("insufficient bnb")) {
+        errorTitle = "Insufficient BNB for Gas";
+      } else if (
         errMsg.includes("insufficient funds") ||
         errMsg.includes("insufficient balance")
       ) {
         errorTitle = "Insufficient BNB for Gas";
         errorDescription =
           "You need BNB in your wallet to pay for transaction fees. Please deposit some BNB first.";
+      } else if (errMsg.includes("token contract configuration error")) {
+        errorTitle = "Token Configuration Error";
       } else if (errMsg.includes("nonce") || errMsg.includes("replacement")) {
         errorTitle = "Transaction Pending";
         errorDescription =
@@ -391,6 +401,7 @@ const WithdrawScreen = () => {
         title: errorTitle,
         description: errorDescription,
         variant: "destructive",
+        duration: 8000,
       });
       setShowConfirmation(false);
     } finally {
