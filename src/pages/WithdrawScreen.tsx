@@ -251,6 +251,58 @@ const WithdrawScreen = () => {
         throw new Error("Amount after fee must be greater than 0");
       }
 
+      // === SIGNER ↔ DISPLAYED-WALLET INTEGRITY CHECK ===
+      // The UI shows the on-chain balance for the address stored in profiles.wallet_address.
+      // The signer must derive to the SAME address, otherwise the contract will revert with
+      // "transfer amount exceeds balance" (because the signer's wallet is empty).
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("wallet_address")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          const displayedWallet = (profile?.wallet_address || "").toLowerCase();
+
+          let derivedSignerAddress: string | null = null;
+          if (signer.type === "privateKey") {
+            try {
+              derivedSignerAddress = new ethers.Wallet(signer.privateKey).address.toLowerCase();
+            } catch {
+              throw new Error("Invalid signing key. Please re-import your wallet under Profile → Security.");
+            }
+          } else if (signer.type === "metamask" && typeof window !== "undefined" && window.ethereum) {
+            try {
+              const provider = new ethers.BrowserProvider(window.ethereum);
+              const s = await provider.getSigner();
+              derivedSignerAddress = (await s.getAddress()).toLowerCase();
+            } catch {
+              // Will be re-checked inside transferViaMetaMask; continue.
+            }
+          }
+
+          if (
+            displayedWallet &&
+            derivedSignerAddress &&
+            displayedWallet !== derivedSignerAddress
+          ) {
+            throw new Error(
+              `Wallet signer mismatch. Your app shows the balance for ${displayedWallet.slice(0, 8)}…${displayedWallet.slice(-4)}, but the active signing key belongs to ${derivedSignerAddress.slice(0, 8)}…${derivedSignerAddress.slice(-4)}. Please re-import your correct wallet under Profile → Security and try again.`
+            );
+          }
+        }
+      } catch (mismatchErr: any) {
+        // If this is our explicit mismatch error, surface it directly.
+        if (mismatchErr?.message?.includes("Wallet signer mismatch") || mismatchErr?.message?.includes("Invalid signing key")) {
+          throw mismatchErr;
+        }
+        console.warn("[WithdrawScreen] Signer/profile pre-check failed (non-fatal):", mismatchErr);
+      }
+
       const result =
         signer.type === "metamask"
           ? await transferViaMetaMask(
@@ -310,18 +362,28 @@ const WithdrawScreen = () => {
     } catch (error: any) {
       console.error("[WithdrawScreen] Withdrawal error:", error);
 
-      // Parse common blockchain errors for user-friendly messages
+      // Parse common blockchain errors for user-friendly messages.
+      // transferERC20/transferBNB now return precise pre-flight messages that
+      // include the signer address and live balance — surface those verbatim.
       let errorTitle = "Withdrawal Failed";
       let errorDescription = error.message || "Failed to process withdrawal";
 
       const errMsg = (error.message || "").toLowerCase();
-      if (
+      if (errMsg.includes("wallet signer mismatch") || errMsg.includes("signing key does not match")) {
+        errorTitle = "Wallet Signer Mismatch";
+      } else if (errMsg.includes("live balance is lower") || errMsg.includes("token contract reported insufficient")) {
+        errorTitle = "Live Balance Too Low";
+      } else if (errMsg.includes("bnb gas balance is insufficient") || errMsg.includes("insufficient bnb")) {
+        errorTitle = "Insufficient BNB for Gas";
+      } else if (
         errMsg.includes("insufficient funds") ||
         errMsg.includes("insufficient balance")
       ) {
         errorTitle = "Insufficient BNB for Gas";
         errorDescription =
           "You need BNB in your wallet to pay for transaction fees. Please deposit some BNB first.";
+      } else if (errMsg.includes("token contract configuration error")) {
+        errorTitle = "Token Configuration Error";
       } else if (errMsg.includes("nonce") || errMsg.includes("replacement")) {
         errorTitle = "Transaction Pending";
         errorDescription =
@@ -339,6 +401,7 @@ const WithdrawScreen = () => {
         title: errorTitle,
         description: errorDescription,
         variant: "destructive",
+        duration: 8000,
       });
       setShowConfirmation(false);
     } finally {
@@ -393,43 +456,13 @@ const WithdrawScreen = () => {
       console.warn("[WithdrawScreen] Failed to get user for wallet lookup", e);
     }
 
-    // 3) Fallback: try without user scope (legacy/anonymous)
-    const storedAnyScope = getStoredWallet();
-    if (storedAnyScope?.privateKey) {
-      console.log("[WithdrawScreen] Using privateKey from unscoped storage");
-      return storedAnyScope.privateKey;
-    }
-    if (storedAnyScope?.seedPhrase) {
-      const derived = deriveFromSeed(storedAnyScope.seedPhrase);
-      if (derived) {
-        console.log("[WithdrawScreen] Derived privateKey from unscoped seedPhrase");
-        return derived;
-      }
-    }
-
-    // 4) Legacy fallback: base64 JSON (ipg_wallet_data)
-    try {
-      const raw = localStorage.getItem("ipg_wallet_data");
-      if (raw) {
-        const parsed = JSON.parse(atob(raw));
-        if (parsed?.privateKey) {
-          console.log("[WithdrawScreen] Using privateKey from legacy ipg_wallet_data");
-          return parsed.privateKey;
-        }
-        if (parsed?.seedPhrase || parsed?.mnemonic) {
-          const seed = (parsed.seedPhrase || parsed.mnemonic) as string;
-          const derived = deriveFromSeed(seed);
-          if (derived) {
-            console.log("[WithdrawScreen] Derived privateKey from legacy ipg_wallet_data seed");
-            return derived;
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    console.warn("[WithdrawScreen] No privateKey found in any storage location");
+    // SECURITY: For authenticated users we DO NOT fall back to unscoped or legacy
+    // localStorage keys. Those can contain a different account's wallet (e.g. when
+    // multiple users share a device or after re-import) and would cause the signer
+    // to broadcast from a wallet whose balance is not what the UI shows — producing
+    // a confusing "transfer amount exceeds balance" failure. Mirrors the read-side
+    // hardening in getStoredEvmAddress().
+    console.warn("[WithdrawScreen] No privateKey found in user-scoped storage");
     return null;
   };
 
