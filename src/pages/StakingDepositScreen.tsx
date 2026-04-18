@@ -137,11 +137,12 @@ export default function StakingDepositScreen() {
       assetSymbol: 'IPG',
       network: 'BEP20',
     });
-    if (resolution.ok) return resolution.signer.privateKey;
-    if (resolution.failure.kind === 'mismatch') {
+    if (resolution.ok === true) return resolution.signer.privateKey;
+    const failure = resolution.failure;
+    if (failure.kind === 'mismatch') {
       toast({
         title: 'Wallet Mismatch Detected',
-        description: describeSignerFailure(resolution.failure),
+        description: describeSignerFailure(failure),
         variant: 'destructive',
         duration: 12000,
       });

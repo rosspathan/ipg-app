@@ -174,11 +174,12 @@ const TransferScreen = () => {
       assetSymbol: selectedAsset,
       amountRequested: parseFloat(amount || '0'),
     });
-    if (resolution.ok) return resolution.signer.privateKey;
+    if (resolution.ok === true) return resolution.signer.privateKey;
 
     const { describeSignerFailure } = await import('@/lib/wallet/signerResolver');
-    const message = describeSignerFailure(resolution.failure);
-    if (resolution.failure.kind === 'mismatch') {
+    const failure = resolution.failure;
+    const message = describeSignerFailure(failure);
+    if (failure.kind === 'mismatch') {
       toast({
         title: 'Wallet Mismatch Detected',
         description: message,
