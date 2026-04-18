@@ -14,45 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _kyc_workflow_proof: {
-        Row: {
-          action: string
-          after_status: Json | null
-          audit_log_created: boolean | null
-          before_status: Json | null
-          pass_fail: string | null
-          reward_bsk_after: number | null
-          reward_bsk_before: number | null
-          rpc_error: string | null
-          rpc_success: boolean | null
-          step_no: number
-        }
-        Insert: {
-          action: string
-          after_status?: Json | null
-          audit_log_created?: boolean | null
-          before_status?: Json | null
-          pass_fail?: string | null
-          reward_bsk_after?: number | null
-          reward_bsk_before?: number | null
-          rpc_error?: string | null
-          rpc_success?: boolean | null
-          step_no: number
-        }
-        Update: {
-          action?: string
-          after_status?: Json | null
-          audit_log_created?: boolean | null
-          before_status?: Json | null
-          pass_fail?: string | null
-          reward_bsk_after?: number | null
-          reward_bsk_before?: number | null
-          rpc_error?: string | null
-          rpc_success?: boolean | null
-          step_no?: number
-        }
-        Relationships: []
-      }
       ad_clicks: {
         Row: {
           ad_id: string
