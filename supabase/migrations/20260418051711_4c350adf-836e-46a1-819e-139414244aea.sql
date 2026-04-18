@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public._kyc_e2e_proof;
