@@ -127,34 +127,26 @@ export default function StakingDepositScreen() {
   };
 
   // ─── Private key resolution ───
+  // STRICT signer ↔ displayed-wallet integrity via centralized resolver.
+  // NO unsafe legacy fallbacks — prevents signer-mismatch failures.
   const resolvePrivateKey = async (): Promise<string | null> => {
-    const deriveFromSeed = (seedPhrase: string): string | null => {
-      try { return ethers.Wallet.fromPhrase(seedPhrase.trim()).privateKey; } catch { return null; }
-    };
-    if (wallet?.privateKey && wallet.privateKey.length > 0) return wallet.privateKey;
-    if (wallet?.seedPhrase) {
-      const derived = deriveFromSeed(wallet.seedPhrase);
-      if (derived) return derived;
+    const { resolveAuthenticatedSigner, describeSignerFailure } = await import(
+      '@/lib/wallet/signerResolver'
+    );
+    const resolution = await resolveAuthenticatedSigner(wallet, {
+      assetSymbol: 'IPG',
+      network: 'BEP20',
+    });
+    if (resolution.ok === true) return resolution.signer.privateKey;
+    const failure = resolution.failure;
+    if (failure.kind === 'mismatch') {
+      toast({
+        title: 'Wallet Mismatch Detected',
+        description: describeSignerFailure(failure),
+        variant: 'destructive',
+        duration: 12000,
+      });
     }
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const stored = getStoredWallet(authUser.id);
-        if (stored?.privateKey) return stored.privateKey;
-        if (stored?.seedPhrase) { const d = deriveFromSeed(stored.seedPhrase); if (d) return d; }
-      }
-    } catch {}
-    const storedAny = getStoredWallet();
-    if (storedAny?.privateKey) return storedAny.privateKey;
-    if (storedAny?.seedPhrase) { const d = deriveFromSeed(storedAny.seedPhrase); if (d) return d; }
-    try {
-      const raw = localStorage.getItem("ipg_wallet_data");
-      if (raw) {
-        const parsed = JSON.parse(atob(raw));
-        if (parsed?.privateKey) return parsed.privateKey;
-        if (parsed?.seedPhrase || parsed?.mnemonic) return deriveFromSeed((parsed.seedPhrase || parsed.mnemonic) as string);
-      }
-    } catch {}
     return null;
   };
 

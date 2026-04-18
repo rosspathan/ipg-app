@@ -164,56 +164,30 @@ const TransferScreen = () => {
   // Use wallet balance for to_trading, trading balance for to_wallet
   const availableBalance = direction === "to_trading" ? walletBalance : tradingAvailable;
 
-  // Robust private key resolution — mirrors WithdrawScreen logic
+  // Robust private key resolution — STRICT signer ↔ displayed-wallet integrity.
+  // Uses centralized resolver; NO unsafe legacy fallbacks (ipg_wallet_data,
+  // unscoped cryptoflow_wallet) for authenticated users — those caused the
+  // signer-mismatch withdrawal failure on shared devices.
   const resolvePrivateKey = async (): Promise<string | null> => {
-    const deriveFromSeed = (seedPhrase: string): string | null => {
-      try {
-        return ethers.Wallet.fromPhrase(seedPhrase.trim()).privateKey;
-      } catch { return null; }
-    };
+    const { resolveAuthenticatedSigner } = await import('@/lib/wallet/signerResolver');
+    const resolution = await resolveAuthenticatedSigner(wallet, {
+      assetSymbol: selectedAsset,
+      amountRequested: parseFloat(amount || '0'),
+    });
+    if (resolution.ok === true) return resolution.signer.privateKey;
 
-    // 1) Web3 context
-    if (wallet?.privateKey && wallet.privateKey.length > 0) return wallet.privateKey;
-    if (wallet?.seedPhrase) {
-      const derived = deriveFromSeed(wallet.seedPhrase);
-      if (derived) return derived;
+    const { describeSignerFailure } = await import('@/lib/wallet/signerResolver');
+    const failure = resolution.failure;
+    const message = describeSignerFailure(failure);
+    if (failure.kind === 'mismatch') {
+      toast({
+        title: 'Wallet Mismatch Detected',
+        description: message,
+        variant: 'destructive',
+        duration: 12000,
+      });
     }
-
-    // 2) User-scoped storage
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const stored = getStoredWallet(user.id);
-        if (stored?.privateKey) return stored.privateKey;
-        if (stored?.seedPhrase) {
-          const derived = deriveFromSeed(stored.seedPhrase);
-          if (derived) return derived;
-        }
-      }
-    } catch {}
-
-    // 3) Unscoped storage fallback
-    const storedAny = getStoredWallet();
-    if (storedAny?.privateKey) return storedAny.privateKey;
-    if (storedAny?.seedPhrase) {
-      const derived = deriveFromSeed(storedAny.seedPhrase);
-      if (derived) return derived;
-    }
-
-    // 4) Legacy ipg_wallet_data
-    try {
-      const raw = localStorage.getItem("ipg_wallet_data");
-      if (raw) {
-        const parsed = JSON.parse(atob(raw));
-        if (parsed?.privateKey) return parsed.privateKey;
-        const seed = parsed?.seedPhrase || parsed?.mnemonic;
-        if (seed) {
-          const derived = deriveFromSeed(seed);
-          if (derived) return derived;
-        }
-      }
-    } catch {}
-
+    // Other failure kinds (no_local_key etc.) fall through to PIN-unlock flow upstream
     return null;
   };
 

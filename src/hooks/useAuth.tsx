@@ -171,7 +171,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     // ✅ SECURITY: Clear wallet storage user ID before logout
     setWalletStorageUserId(null);
-    
+
+    // ✅ SECURITY: Clear legacy unscoped wallet keys to prevent cross-user
+    // signer leakage on shared devices. The next user's signer will be
+    // resolved exclusively from their own user-scoped storage.
+    try {
+      localStorage.removeItem('ipg_wallet_data');
+      localStorage.removeItem('cryptoflow_wallet');
+      localStorage.removeItem('cryptoflow_metamask_wallet');
+      localStorage.removeItem('pending_wallet_import');
+      localStorage.removeItem('wallet_data_recovery');
+    } catch (e) {
+      console.warn('[Auth] Failed to clear legacy wallet keys:', e);
+    }
+
     // Clear admin status
     setIsAdmin(false);
     await supabase.auth.signOut();

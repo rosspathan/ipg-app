@@ -20,6 +20,12 @@ import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
 import { getStoredWallet, setWalletStorageUserId, storeWallet } from "@/utils/walletStorage";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 import PinEntryDialog from "@/components/profile/PinEntryDialog";
+import {
+  resolveAuthenticatedSigner,
+  describeSignerFailure,
+  logSignerAudit,
+  newSignerReferenceId,
+} from "@/lib/wallet/signerResolver";
 
 const MIN_WITHDRAWAL_BALANCE = 0.0001;
 
@@ -234,11 +240,15 @@ const WithdrawScreen = () => {
   };
 
   type SigningMethod =
-    | { type: "privateKey"; privateKey: string }
+    | { type: "privateKey"; privateKey: string; signerAddress: string; displayedAddress: string }
     | { type: "metamask" };
 
   const executeWithdraw = async (signer: SigningMethod) => {
     setIsProcessing(true);
+    const referenceId = newSignerReferenceId("WD");
+    let userId: string | null = null;
+    let displayedAddressForAudit: string | null = null;
+    let signerAddressForAudit: string | null = null;
     try {
       const asset = assets.find((a) => a.symbol === selectedAsset);
       if (!asset) throw new Error("Asset not found");
@@ -251,56 +261,73 @@ const WithdrawScreen = () => {
         throw new Error("Amount after fee must be greater than 0");
       }
 
-      // === SIGNER ↔ DISPLAYED-WALLET INTEGRITY CHECK ===
-      // The UI shows the on-chain balance for the address stored in profiles.wallet_address.
-      // The signer must derive to the SAME address, otherwise the contract will revert with
-      // "transfer amount exceeds balance" (because the signer's wallet is empty).
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("wallet_address")
-            .eq("user_id", user.id)
-            .maybeSingle();
+      // === SIGNER ↔ DISPLAYED-WALLET INTEGRITY (final on-broadcast verification) ===
+      // For "privateKey" signing the equality has already been enforced by
+      // resolveAuthenticatedSigner() — re-verify here as a defense-in-depth check
+      // in case the wallet record changed between resolution and broadcast.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      userId = user?.id ?? null;
 
-          const displayedWallet = (profile?.wallet_address || "").toLowerCase();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("wallet_address")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const displayedWallet = (profile?.wallet_address || "").toLowerCase();
+        displayedAddressForAudit = displayedWallet || null;
 
-          let derivedSignerAddress: string | null = null;
-          if (signer.type === "privateKey") {
-            try {
-              derivedSignerAddress = new ethers.Wallet(signer.privateKey).address.toLowerCase();
-            } catch {
-              throw new Error("Invalid signing key. Please re-import your wallet under Profile → Security.");
-            }
-          } else if (signer.type === "metamask" && typeof window !== "undefined" && window.ethereum) {
-            try {
-              const provider = new ethers.BrowserProvider(window.ethereum);
-              const s = await provider.getSigner();
-              derivedSignerAddress = (await s.getAddress()).toLowerCase();
-            } catch {
-              // Will be re-checked inside transferViaMetaMask; continue.
-            }
-          }
-
-          if (
-            displayedWallet &&
-            derivedSignerAddress &&
-            displayedWallet !== derivedSignerAddress
-          ) {
+        let derivedSignerAddress: string | null = null;
+        if (signer.type === "privateKey") {
+          try {
+            derivedSignerAddress = new ethers.Wallet(signer.privateKey).address.toLowerCase();
+          } catch {
             throw new Error(
-              `Wallet signer mismatch. Your app shows the balance for ${displayedWallet.slice(0, 8)}…${displayedWallet.slice(-4)}, but the active signing key belongs to ${derivedSignerAddress.slice(0, 8)}…${derivedSignerAddress.slice(-4)}. Please re-import your correct wallet under Profile → Security and try again.`
+              "Invalid signing key. Please re-import your wallet under Profile → Security."
             );
           }
+        } else if (
+          signer.type === "metamask" &&
+          typeof window !== "undefined" &&
+          window.ethereum
+        ) {
+          try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const s = await provider.getSigner();
+            derivedSignerAddress = (await s.getAddress()).toLowerCase();
+          } catch {
+            // Will be re-checked inside transferViaMetaMask; continue.
+          }
         }
-      } catch (mismatchErr: any) {
-        // If this is our explicit mismatch error, surface it directly.
-        if (mismatchErr?.message?.includes("Wallet signer mismatch") || mismatchErr?.message?.includes("Invalid signing key")) {
-          throw mismatchErr;
+        signerAddressForAudit = derivedSignerAddress;
+
+        if (
+          displayedWallet &&
+          derivedSignerAddress &&
+          displayedWallet !== derivedSignerAddress
+        ) {
+          await logSignerAudit({
+            referenceId,
+            userId: user.id,
+            displayedAddress: displayedWallet,
+            signerAddress: derivedSignerAddress,
+            outcome: "signer_mismatch",
+            assetSymbol: selectedAsset,
+            network: selectedNetwork,
+            amountRequested: parseFloat(amount),
+            errorReason: "Pre-broadcast equality check failed",
+            metadata: { source: signer.type },
+          });
+          throw new Error(
+            `Wallet mismatch detected. The wallet used to sign does not match your displayed wallet address.\n\n` +
+              `Displayed: ${displayedWallet.slice(0, 8)}…${displayedWallet.slice(-4)}\n` +
+              `Signer:    ${derivedSignerAddress.slice(0, 8)}…${derivedSignerAddress.slice(-4)}\n\n` +
+              `Please reconnect or re-import your wallet under Profile → Security.\n` +
+              `Reference ID: ${referenceId}`
+          );
         }
-        console.warn("[WithdrawScreen] Signer/profile pre-check failed (non-fatal):", mismatchErr);
       }
 
       const result =
@@ -331,14 +358,38 @@ const WithdrawScreen = () => {
                   throw new Error("Token contract address not found");
                 })();
 
+      if (result.signerAddress) signerAddressForAudit = result.signerAddress.toLowerCase();
+
       if (!result.success) {
+        const reason = (result.error || "").toLowerCase();
+        const outcome: Parameters<typeof logSignerAudit>[0]["outcome"] = reason.includes(
+          "live balance is lower"
+        )
+          ? "insufficient_balance"
+          : reason.includes("gas")
+            ? "insufficient_gas"
+            : reason.includes("signing key does not match") || reason.includes("mismatch")
+              ? "signer_mismatch"
+              : "broadcast_failed";
+
+        if (userId) {
+          await logSignerAudit({
+            referenceId,
+            userId,
+            displayedAddress: displayedAddressForAudit,
+            signerAddress: signerAddressForAudit,
+            outcome,
+            assetSymbol: selectedAsset,
+            network: selectedNetwork,
+            amountRequested: parseFloat(amount),
+            signerLiveBalance: result.liveBalance ? Number(result.liveBalance) : null,
+            errorReason: result.error || "Unknown broadcast failure",
+          });
+        }
         throw new Error(result.error || "Transaction failed");
       }
 
-      // Record withdrawal in database for history
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Record successful withdrawal in database for history
       if (user) {
         await supabase.from("escrow_withdrawals").insert({
           user_id: user.id,
@@ -351,34 +402,41 @@ const WithdrawScreen = () => {
         });
       }
 
+      if (userId) {
+        await logSignerAudit({
+          referenceId,
+          userId,
+          displayedAddress: displayedAddressForAudit,
+          signerAddress: signerAddressForAudit,
+          outcome: "success",
+          assetSymbol: selectedAsset,
+          network: selectedNetwork,
+          amountRequested: parseFloat(amount),
+          txHash: result.txHash ?? null,
+        });
+      }
+
       toast({
         title: "Withdrawal Successful",
         description: `${netAmountValue} ${selectedAsset} sent to ${address.slice(0, 8)}...${address.slice(-6)}`,
       });
 
-      // Refresh on-chain balances
       refetchBalances();
       navigate("/app/wallet");
     } catch (error: any) {
       console.error("[WithdrawScreen] Withdrawal error:", error);
 
-      // Parse common blockchain errors for user-friendly messages.
-      // transferERC20/transferBNB now return precise pre-flight messages that
-      // include the signer address and live balance — surface those verbatim.
       let errorTitle = "Withdrawal Failed";
       let errorDescription = error.message || "Failed to process withdrawal";
 
       const errMsg = (error.message || "").toLowerCase();
-      if (errMsg.includes("wallet signer mismatch") || errMsg.includes("signing key does not match")) {
-        errorTitle = "Wallet Signer Mismatch";
+      if (errMsg.includes("wallet mismatch detected") || errMsg.includes("wallet signer mismatch") || errMsg.includes("signing key does not match")) {
+        errorTitle = "Wallet Mismatch Detected";
       } else if (errMsg.includes("live balance is lower") || errMsg.includes("token contract reported insufficient")) {
         errorTitle = "Live Balance Too Low";
       } else if (errMsg.includes("bnb gas balance is insufficient") || errMsg.includes("insufficient bnb")) {
         errorTitle = "Insufficient BNB for Gas";
-      } else if (
-        errMsg.includes("insufficient funds") ||
-        errMsg.includes("insufficient balance")
-      ) {
+      } else if (errMsg.includes("insufficient funds") || errMsg.includes("insufficient balance")) {
         errorTitle = "Insufficient BNB for Gas";
         errorDescription =
           "You need BNB in your wallet to pay for transaction fees. Please deposit some BNB first.";
@@ -401,7 +459,7 @@ const WithdrawScreen = () => {
         title: errorTitle,
         description: errorDescription,
         variant: "destructive",
-        duration: 8000,
+        duration: 9000,
       });
       setShowConfirmation(false);
     } finally {
@@ -409,62 +467,6 @@ const WithdrawScreen = () => {
     }
   };
 
-  const resolvePrivateKey = async (): Promise<string | null> => {
-    const deriveFromSeed = (seedPhrase: string): string | null => {
-      try {
-        return ethers.Wallet.fromPhrase(seedPhrase.trim()).privateKey;
-      } catch {
-        return null;
-      }
-    };
-
-    // 1) If Web3 context has a real private key, use it
-    if (wallet?.privateKey && wallet.privateKey.length > 0) {
-      console.log("[WithdrawScreen] Using privateKey from Web3Context");
-      return wallet.privateKey;
-    }
-
-    // 1b) If we have a seedPhrase in context, derive the private key (internal wallet restore)
-    if (wallet?.seedPhrase) {
-      const derived = deriveFromSeed(wallet.seedPhrase);
-      if (derived) {
-        console.log("[WithdrawScreen] Derived privateKey from Web3Context seedPhrase");
-        return derived;
-      }
-    }
-
-    // 2) Get user ID first, then try user-scoped storage
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const stored = getStoredWallet(user.id);
-        if (stored?.privateKey) {
-          console.log("[WithdrawScreen] Using privateKey from user-scoped storage");
-          return stored.privateKey;
-        }
-        if (stored?.seedPhrase) {
-          const derived = deriveFromSeed(stored.seedPhrase);
-          if (derived) {
-            console.log("[WithdrawScreen] Derived privateKey from user-scoped seedPhrase");
-            return derived;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("[WithdrawScreen] Failed to get user for wallet lookup", e);
-    }
-
-    // SECURITY: For authenticated users we DO NOT fall back to unscoped or legacy
-    // localStorage keys. Those can contain a different account's wallet (e.g. when
-    // multiple users share a device or after re-import) and would cause the signer
-    // to broadcast from a wallet whose balance is not what the UI shows — producing
-    // a confusing "transfer amount exceeds balance" failure. Mirrors the read-side
-    // hardening in getStoredEvmAddress().
-    console.warn("[WithdrawScreen] No privateKey found in user-scoped storage");
-    return null;
-  };
 
   const unlockFromBackupAndWithdraw = async (pin: string): Promise<boolean> => {
     // Decrypt from server backup and sign immediately
@@ -515,7 +517,12 @@ const WithdrawScreen = () => {
     );
     await refreshWallet();
 
-    await executeWithdraw({ type: "privateKey", privateKey: derivedWallet.privateKey });
+    await executeWithdraw({
+      type: "privateKey",
+      privateKey: derivedWallet.privateKey,
+      signerAddress: derivedWallet.address.toLowerCase(),
+      displayedAddress: (profile?.wallet_address || derivedWallet.address).toLowerCase(),
+    });
     return true;
   };
 
@@ -536,17 +543,40 @@ const WithdrawScreen = () => {
       // Try refreshing wallet first in case it was imported after context loaded
       await refreshWallet();
 
-      const privateKey = await resolvePrivateKey();
+      // === Centralized signer resolution with strict address-equality check ===
+      const resolution = await resolveAuthenticatedSigner(wallet, {
+        assetSymbol: selectedAsset,
+        network: selectedNetwork,
+        amountRequested: parseFloat(amount),
+      });
 
-      if (privateKey) {
-        await executeWithdraw({ type: "privateKey", privateKey });
+      if (resolution.ok === true) {
+        await executeWithdraw({
+          type: "privateKey",
+          privateKey: resolution.signer.privateKey,
+          signerAddress: resolution.signer.signerAddress,
+          displayedAddress: resolution.signer.displayedAddress,
+        });
         return;
       }
 
-      // Only use MetaMask signing if the *active wallet* is MetaMask.
-      // (Prevents auto-opening MetaMask when the user expects internal signing.)
+      const failure = resolution.failure;
+
+      // Strict mismatch — never broadcast, ever.
+      if (failure.kind === "mismatch") {
+        toast({
+          title: "Wallet Mismatch Detected",
+          description: describeSignerFailure(failure),
+          variant: "destructive",
+          duration: 12000,
+        });
+        return;
+      }
+
+      // For "no_local_key": MetaMask signing or PIN-unlock from encrypted backup.
       const isMetaMaskWallet = !!wallet && !wallet.privateKey && !wallet.seedPhrase;
       if (
+        failure.kind === "no_local_key" &&
         isMetaMaskWallet &&
         typeof window !== "undefined" &&
         typeof window.ethereum !== "undefined"
@@ -555,17 +585,22 @@ const WithdrawScreen = () => {
         return;
       }
 
-      const backupStatus = await checkBackupExists();
-      if (backupStatus.exists) {
-        setShowPinDialog(true);
-        return;
+      if (failure.kind === "no_local_key") {
+        const backupStatus = await checkBackupExists();
+        if (backupStatus.exists) {
+          setShowPinDialog(true);
+          return;
+        }
       }
 
       toast({
-        title: "Cannot Sign Internally",
-        description:
-          "Your internal wallet key isn't available on this device. Please re-import your wallet (Profile → Security) to sign inside the app.",
+        title:
+          failure.kind === "no_displayed_wallet"
+            ? "Wallet Not Set Up"
+            : "Cannot Sign Internally",
+        description: describeSignerFailure(failure),
         variant: "destructive",
+        duration: 9000,
       });
     } finally {
       setIsPreparingSigner(false);
