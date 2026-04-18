@@ -14458,6 +14458,16 @@ export type Database = {
       }
     }
     Functions: {
+      _test_kyc_run_as_admin: {
+        Args: {
+          p_action: string
+          p_admin_id: string
+          p_notes?: string
+          p_pillar: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_adjust_user_balance: {
         Args: {
           p_amount: number
