@@ -101,13 +101,19 @@ const isPillarPending = (s: PillarStatus) =>
   s === "pending_review";
 
 /**
- * A submission is "active pending" for the admin work-queue only if:
- *  - its `final_status` is still awaiting a decision (not terminal), AND
- *  - the user has actually submitted at least one pillar for review (so we
- *    don't flood the admin queue with "not_started" / passive accounts).
+ * A submission is "active pending" for the admin work-queue only if the admin
+ * actually has something to do:
  *
- * Terminal states (approved, rejected, needs_resubmission, suspended) and
- * accounts that have done nothing yet are excluded from the actionable queue.
+ *   (a) at least one pillar is in `pending_review` (admin must approve/reject), OR
+ *   (b) all 3 pillars are approved but `final_status` isn't terminal yet
+ *       (admin must grant final approval).
+ *
+ * Excluded:
+ *   - terminal final states (approved, rejected, needs_resubmission, suspended)
+ *   - "passive" rows where the user has only partially submitted and we are
+ *     simply waiting on them to upload the remaining pillars
+ *     (e.g. docs=approved + face=not_submitted + mobile=not_submitted)
+ *   - accounts that have done nothing yet (all 3 = not_submitted)
  */
 const isSubmissionPending = (s: {
   final_status: FinalStatus;
@@ -123,12 +129,13 @@ const isSubmissionPending = (s: {
   ) {
     return false;
   }
-  // At least one pillar must be actively in review or already approved
-  // for this submission to count as "actionable" for an admin.
   const pillars = [s.documents_status, s.face_status, s.mobile_status];
-  return pillars.some(
-    (p) => p === "pending_review" || p === "approved"
-  );
+  // (a) Any pillar awaiting admin decision → actionable
+  if (pillars.some((p) => p === "pending_review")) return true;
+  // (b) All 3 approved but no terminal final yet → ready for final
+  if (pillars.every((p) => p === "approved")) return true;
+  // Otherwise we're waiting on the user, not on the admin → NOT actionable.
+  return false;
 };
 
 export function useAdminKYCv2() {
