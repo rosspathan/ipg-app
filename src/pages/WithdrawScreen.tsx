@@ -456,43 +456,13 @@ const WithdrawScreen = () => {
       console.warn("[WithdrawScreen] Failed to get user for wallet lookup", e);
     }
 
-    // 3) Fallback: try without user scope (legacy/anonymous)
-    const storedAnyScope = getStoredWallet();
-    if (storedAnyScope?.privateKey) {
-      console.log("[WithdrawScreen] Using privateKey from unscoped storage");
-      return storedAnyScope.privateKey;
-    }
-    if (storedAnyScope?.seedPhrase) {
-      const derived = deriveFromSeed(storedAnyScope.seedPhrase);
-      if (derived) {
-        console.log("[WithdrawScreen] Derived privateKey from unscoped seedPhrase");
-        return derived;
-      }
-    }
-
-    // 4) Legacy fallback: base64 JSON (ipg_wallet_data)
-    try {
-      const raw = localStorage.getItem("ipg_wallet_data");
-      if (raw) {
-        const parsed = JSON.parse(atob(raw));
-        if (parsed?.privateKey) {
-          console.log("[WithdrawScreen] Using privateKey from legacy ipg_wallet_data");
-          return parsed.privateKey;
-        }
-        if (parsed?.seedPhrase || parsed?.mnemonic) {
-          const seed = (parsed.seedPhrase || parsed.mnemonic) as string;
-          const derived = deriveFromSeed(seed);
-          if (derived) {
-            console.log("[WithdrawScreen] Derived privateKey from legacy ipg_wallet_data seed");
-            return derived;
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    console.warn("[WithdrawScreen] No privateKey found in any storage location");
+    // SECURITY: For authenticated users we DO NOT fall back to unscoped or legacy
+    // localStorage keys. Those can contain a different account's wallet (e.g. when
+    // multiple users share a device or after re-import) and would cause the signer
+    // to broadcast from a wallet whose balance is not what the UI shows — producing
+    // a confusing "transfer amount exceeds balance" failure. Mirrors the read-side
+    // hardening in getStoredEvmAddress().
+    console.warn("[WithdrawScreen] No privateKey found in user-scoped storage");
     return null;
   };
 
