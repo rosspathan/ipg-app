@@ -517,7 +517,12 @@ const WithdrawScreen = () => {
     );
     await refreshWallet();
 
-    await executeWithdraw({ type: "privateKey", privateKey: derivedWallet.privateKey });
+    await executeWithdraw({
+      type: "privateKey",
+      privateKey: derivedWallet.privateKey,
+      signerAddress: derivedWallet.address.toLowerCase(),
+      displayedAddress: (profile?.wallet_address || derivedWallet.address).toLowerCase(),
+    });
     return true;
   };
 
@@ -538,17 +543,40 @@ const WithdrawScreen = () => {
       // Try refreshing wallet first in case it was imported after context loaded
       await refreshWallet();
 
-      const privateKey = await resolvePrivateKey();
+      // === Centralized signer resolution with strict address-equality check ===
+      const resolution = await resolveAuthenticatedSigner(wallet, {
+        assetSymbol: selectedAsset,
+        network: selectedNetwork,
+        amountRequested: parseFloat(amount),
+      });
 
-      if (privateKey) {
-        await executeWithdraw({ type: "privateKey", privateKey });
+      if (resolution.ok) {
+        await executeWithdraw({
+          type: "privateKey",
+          privateKey: resolution.signer.privateKey,
+          signerAddress: resolution.signer.signerAddress,
+          displayedAddress: resolution.signer.displayedAddress,
+        });
         return;
       }
 
-      // Only use MetaMask signing if the *active wallet* is MetaMask.
-      // (Prevents auto-opening MetaMask when the user expects internal signing.)
+      const failure = resolution.failure;
+
+      // Strict mismatch — never broadcast, ever.
+      if (failure.kind === "mismatch") {
+        toast({
+          title: "Wallet Mismatch Detected",
+          description: describeSignerFailure(failure),
+          variant: "destructive",
+          duration: 12000,
+        });
+        return;
+      }
+
+      // For "no_local_key": MetaMask signing or PIN-unlock from encrypted backup.
       const isMetaMaskWallet = !!wallet && !wallet.privateKey && !wallet.seedPhrase;
       if (
+        failure.kind === "no_local_key" &&
         isMetaMaskWallet &&
         typeof window !== "undefined" &&
         typeof window.ethereum !== "undefined"
@@ -557,17 +585,22 @@ const WithdrawScreen = () => {
         return;
       }
 
-      const backupStatus = await checkBackupExists();
-      if (backupStatus.exists) {
-        setShowPinDialog(true);
-        return;
+      if (failure.kind === "no_local_key") {
+        const backupStatus = await checkBackupExists();
+        if (backupStatus.exists) {
+          setShowPinDialog(true);
+          return;
+        }
       }
 
       toast({
-        title: "Cannot Sign Internally",
-        description:
-          "Your internal wallet key isn't available on this device. Please re-import your wallet (Profile → Security) to sign inside the app.",
+        title:
+          failure.kind === "no_displayed_wallet"
+            ? "Wallet Not Set Up"
+            : "Cannot Sign Internally",
+        description: describeSignerFailure(failure),
         variant: "destructive",
+        duration: 9000,
       });
     } finally {
       setIsPreparingSigner(false);
