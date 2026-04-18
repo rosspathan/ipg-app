@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      _kyc_e2e_proof: {
+        Row: {
+          action: string | null
+          audit_row_id: string | null
+          documents_after: string | null
+          documents_before: string | null
+          error_msg: string | null
+          face_after: string | null
+          face_before: string | null
+          final_after: string | null
+          final_before: string | null
+          mobile_after: string | null
+          mobile_before: string | null
+          notes_in: string | null
+          pillar: string | null
+          ran_at: string | null
+          rejection_reason_after: string | null
+          rpc_success: boolean | null
+          step_no: number | null
+          test_case: string | null
+        }
+        Insert: {
+          action?: string | null
+          audit_row_id?: string | null
+          documents_after?: string | null
+          documents_before?: string | null
+          error_msg?: string | null
+          face_after?: string | null
+          face_before?: string | null
+          final_after?: string | null
+          final_before?: string | null
+          mobile_after?: string | null
+          mobile_before?: string | null
+          notes_in?: string | null
+          pillar?: string | null
+          ran_at?: string | null
+          rejection_reason_after?: string | null
+          rpc_success?: boolean | null
+          step_no?: number | null
+          test_case?: string | null
+        }
+        Update: {
+          action?: string | null
+          audit_row_id?: string | null
+          documents_after?: string | null
+          documents_before?: string | null
+          error_msg?: string | null
+          face_after?: string | null
+          face_before?: string | null
+          final_after?: string | null
+          final_before?: string | null
+          mobile_after?: string | null
+          mobile_before?: string | null
+          notes_in?: string | null
+          pillar?: string | null
+          ran_at?: string | null
+          rejection_reason_after?: string | null
+          rpc_success?: boolean | null
+          step_no?: number | null
+          test_case?: string | null
+        }
+        Relationships: []
+      }
       ad_clicks: {
         Row: {
           ad_id: string
@@ -14458,16 +14521,6 @@ export type Database = {
       }
     }
     Functions: {
-      _test_kyc_run_as_admin: {
-        Args: {
-          p_action: string
-          p_admin_id: string
-          p_notes?: string
-          p_pillar: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
       admin_adjust_user_balance: {
         Args: {
           p_amount: number
