@@ -13901,6 +13901,66 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_signer_audit: {
+        Row: {
+          addresses_match: boolean
+          amount_requested: number | null
+          asset_symbol: string | null
+          created_at: string
+          displayed_wallet_address: string | null
+          error_reason: string | null
+          id: string
+          metadata: Json
+          network: string | null
+          outcome: string
+          reference_id: string
+          signer_bnb_balance: number | null
+          signer_live_balance: number | null
+          signer_wallet_address: string | null
+          tx_hash: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          addresses_match?: boolean
+          amount_requested?: number | null
+          asset_symbol?: string | null
+          created_at?: string
+          displayed_wallet_address?: string | null
+          error_reason?: string | null
+          id?: string
+          metadata?: Json
+          network?: string | null
+          outcome: string
+          reference_id: string
+          signer_bnb_balance?: number | null
+          signer_live_balance?: number | null
+          signer_wallet_address?: string | null
+          tx_hash?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          addresses_match?: boolean
+          amount_requested?: number | null
+          asset_symbol?: string | null
+          created_at?: string
+          displayed_wallet_address?: string | null
+          error_reason?: string | null
+          id?: string
+          metadata?: Json
+          network?: string | null
+          outcome?: string
+          reference_id?: string
+          signer_bnb_balance?: number | null
+          signer_live_balance?: number | null
+          signer_wallet_address?: string | null
+          tx_hash?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       withdrawals: {
         Row: {
           amount: number
