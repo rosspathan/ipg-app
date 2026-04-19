@@ -15654,6 +15654,10 @@ export type Database = {
           unlocked_amount: number
         }[]
       }
+      reconcile_stuck_custodial_deposits: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       reconcile_trading_balances: {
         Args: { p_user_id?: string }
         Returns: {
