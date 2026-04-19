@@ -625,6 +625,7 @@ function AppContent() {
                 <Route path="trading-forensic" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminTradingForensicAudit')))}</React.Suspense>} />
                 <Route path="hot-wallet-live" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminHotWalletLive')))}</React.Suspense>} />
                 <Route path="hot-wallet-audit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminHotWalletAudit')))}</React.Suspense>} />
+                <Route path="hot-wallet-solvency" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminHotWalletSolvency')))}</React.Suspense>} />
                 <Route path="phantom-report" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/PhantomAccountsReport')))}</React.Suspense>} />
                 
                 {/* BSK Management */}
