@@ -238,84 +238,63 @@ Deno.serve(async (req) => {
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
         if (receipt.status === 'success') {
-          // Update withdrawal as completed
-          await supabaseAdmin
-            .from('custodial_withdrawals')
-            .update({
+          // ✅ Ledger-first settle: writes WITHDRAWAL audit row + sets tx_hash atomically
+          const { data: settleResult, error: settleErr } = await supabaseAdmin.rpc(
+            'settle_custodial_withdrawal',
+            { p_withdrawal_id: withdrawal.id, p_tx_hash: hash }
+          );
+
+          if (settleErr || !(settleResult as any)?.success) {
+            console.error(`[process-custodial-withdrawal] settle RPC failed for ${withdrawal.id}:`, settleErr || settleResult);
+            // Tx was broadcast — DO NOT refund. Surface the error for manual reconciliation.
+            results.push({
+              withdrawal_id: withdrawal.id,
+              status: 'completed_settle_failed',
+              tx_hash: hash,
+              error: settleErr?.message || (settleResult as any)?.error || 'settle_rpc_failed',
+            });
+          } else {
+            console.log(`[process-custodial-withdrawal] ✓ Withdrawal settled: ${withdrawal.id} tx=${hash}`);
+            results.push({
+              withdrawal_id: withdrawal.id,
               status: 'completed',
               tx_hash: hash,
-              completed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', withdrawal.id);
-
-          console.log(`[process-custodial-withdrawal] ✓ Withdrawal completed: ${withdrawal.id}`);
-          results.push({
-            withdrawal_id: withdrawal.id,
-            status: 'completed',
-            tx_hash: hash,
-            amount: withdrawal.amount,
-            symbol: asset.symbol
-          });
+              amount: withdrawal.amount,
+              symbol: asset.symbol,
+            });
+          }
         } else {
           throw new Error('Transaction failed on-chain');
         }
 
       } catch (withdrawalError) {
-        console.error(`[process-custodial-withdrawal] Error processing ${withdrawal.id}:`, withdrawalError);
+        const errMsg = (withdrawalError as Error)?.message || String(withdrawalError);
+        console.error(`[process-custodial-withdrawal] Error processing ${withdrawal.id}:`, errMsg);
 
-        // Mark as failed
-        await supabaseAdmin
-          .from('custodial_withdrawals')
-          .update({
-            status: 'failed',
-            error_message: (withdrawalError as Error)?.message || String(withdrawalError),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', withdrawal.id);
+        // ✅ Ledger-first refund: marks failed, credits balance, writes REFUND ledger row atomically
+        const { data: refundResult, error: refundErr } = await supabaseAdmin.rpc(
+          'refund_custodial_withdrawal',
+          { p_withdrawal_id: withdrawal.id, p_reason: errMsg }
+        );
 
-        // Refund to wallet_balances (the correct trading balance table)
-        const { data: balance } = await supabaseAdmin
-          .from('wallet_balances')
-          .select('available, locked, total')
-          .eq('user_id', withdrawal.user_id)
-          .eq('asset_id', withdrawal.asset_id)
-          .single();
-
-        const refundAmount = withdrawal.amount + (withdrawal.fee_amount || 0);
-
-        if (balance) {
-          // Update existing balance (total is auto-calculated from available + locked)
-          await supabaseAdmin
-            .from('wallet_balances')
-            .update({
-              available: (balance.available || 0) + refundAmount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', withdrawal.user_id)
-            .eq('asset_id', withdrawal.asset_id);
-
-          console.log(`[process-custodial-withdrawal] Refunded ${refundAmount} to wallet_balances`);
+        if (refundErr || !(refundResult as any)?.success) {
+          console.error(`[process-custodial-withdrawal] CRITICAL: refund RPC failed for ${withdrawal.id}:`, refundErr || refundResult);
+          results.push({
+            withdrawal_id: withdrawal.id,
+            status: 'failed_refund_failed',
+            error: errMsg,
+            refund_error: refundErr?.message || (refundResult as any)?.error || 'refund_rpc_failed',
+          });
         } else {
-          // Insert new balance row if none exists (total is auto-calculated)
-          await supabaseAdmin
-            .from('wallet_balances')
-            .insert({
-              user_id: withdrawal.user_id,
-              asset_id: withdrawal.asset_id,
-              available: refundAmount,
-              locked: 0
-            });
-
-          console.log(`[process-custodial-withdrawal] Created new wallet_balance with refund ${refundAmount}`);
+          const status = (refundResult as any)?.status === 'already_refunded' ? 'already_refunded' : 'failed';
+          console.log(`[process-custodial-withdrawal] ↩ Refunded ${withdrawal.id} via ledger-first RPC (${status})`);
+          results.push({
+            withdrawal_id: withdrawal.id,
+            status: 'failed',
+            error: errMsg,
+            refunded: true,
+          });
         }
-
-        results.push({
-          withdrawal_id: withdrawal.id,
-          status: 'failed',
-          error: (withdrawalError as Error)?.message || String(withdrawalError),
-          refunded: true
-        });
       }
     }
 
