@@ -23,6 +23,7 @@ import {
   ScrollText,
   Download,
   Unlock,
+  ShieldAlert,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
