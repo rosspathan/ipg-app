@@ -15785,6 +15785,10 @@ export type Database = {
         Returns: string
       }
       refresh_bsk_balances_view: { Args: never; Returns: undefined }
+      refund_custodial_withdrawal: {
+        Args: { p_reason?: string; p_withdrawal_id: string }
+        Returns: Json
+      }
       refund_failed_badge_purchases: {
         Args: never
         Returns: {
@@ -15865,6 +15869,10 @@ export type Database = {
           p_reason: string
         }
         Returns: string
+      }
+      settle_custodial_withdrawal: {
+        Args: { p_tx_hash: string; p_withdrawal_id: string }
+        Returns: Json
       }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
       settle_trade:

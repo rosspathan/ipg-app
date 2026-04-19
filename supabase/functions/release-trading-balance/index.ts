@@ -47,6 +47,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ✅ KYC GATE — releasing funds from trading to on-chain wallet requires 3-pillar KYC
+    const { data: kycOk, error: kycErr } = await supabase.rpc('is_kyc_approved', { _user_id: user.id });
+    if (kycErr) {
+      console.error('[release-trading-balance] KYC check failed:', kycErr);
+      return new Response(
+        JSON.stringify({ success: false, error: 'KYC_CHECK_FAILED', message: 'Could not verify KYC status. Please try again.' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!kycOk) {
+      console.warn(`[release-trading-balance] Blocked — user ${user.id} not KYC approved`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'KYC_REQUIRED',
+          message: 'Complete the new 3-pillar KYC (documents, face, mobile) and final admin approval before releasing funds from trading to your on-chain wallet.',
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body: ReleaseRequest = await req.json();
     const { asset_symbol, amount } = body;
 
