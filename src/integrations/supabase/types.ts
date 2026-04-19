@@ -1244,6 +1244,77 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_drift_repairs: {
+        Row: {
+          after_available: number
+          after_locked: number
+          asset_id: string
+          asset_symbol: string
+          batch_id: string
+          before_available: number
+          before_locked: number
+          created_at: string
+          decision: string
+          drift_available: number
+          drift_locked: number
+          id: string
+          ledger_derived_available: number
+          ledger_derived_locked: number
+          ledger_entry_id: string | null
+          reason: string
+          repaired_by: string
+          user_id: string
+        }
+        Insert: {
+          after_available: number
+          after_locked: number
+          asset_id: string
+          asset_symbol: string
+          batch_id: string
+          before_available: number
+          before_locked: number
+          created_at?: string
+          decision: string
+          drift_available: number
+          drift_locked: number
+          id?: string
+          ledger_derived_available: number
+          ledger_derived_locked: number
+          ledger_entry_id?: string | null
+          reason: string
+          repaired_by: string
+          user_id: string
+        }
+        Update: {
+          after_available?: number
+          after_locked?: number
+          asset_id?: string
+          asset_symbol?: string
+          batch_id?: string
+          before_available?: number
+          before_locked?: number
+          created_at?: string
+          decision?: string
+          drift_available?: number
+          drift_locked?: number
+          id?: string
+          ledger_derived_available?: number
+          ledger_derived_locked?: number
+          ledger_entry_id?: string | null
+          reason?: string
+          repaired_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_drift_repairs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balance_reconciliation_reports: {
         Row: {
           asset_id: string
@@ -5931,6 +6002,128 @@ export type Database = {
         }
         Relationships: []
       }
+      hot_wallet_refills: {
+        Row: {
+          asset_id: string | null
+          asset_symbol: string
+          block_number: number | null
+          created_at: string
+          detected_amount: number | null
+          detected_at: string | null
+          expected_amount: number
+          from_address: string | null
+          id: string
+          initiated_by: string | null
+          notes: string | null
+          shortfall_before: number | null
+          status: string
+          surplus_after: number | null
+          tx_hash: string | null
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_symbol: string
+          block_number?: number | null
+          created_at?: string
+          detected_amount?: number | null
+          detected_at?: string | null
+          expected_amount: number
+          from_address?: string | null
+          id?: string
+          initiated_by?: string | null
+          notes?: string | null
+          shortfall_before?: number | null
+          status?: string
+          surplus_after?: number | null
+          tx_hash?: string | null
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          asset_id?: string | null
+          asset_symbol?: string
+          block_number?: number | null
+          created_at?: string
+          detected_amount?: number | null
+          detected_at?: string | null
+          expected_amount?: number
+          from_address?: string | null
+          id?: string
+          initiated_by?: string | null
+          notes?: string | null
+          shortfall_before?: number | null
+          status?: string
+          surplus_after?: number | null
+          tx_hash?: string | null
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hot_wallet_refills_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hot_wallet_solvency_snapshots: {
+        Row: {
+          actual_onchain_balance: number
+          asset_symbol: string
+          drift_users_count: number | null
+          id: string
+          metadata: Json | null
+          pending_withdrawals: number
+          platform_fees_owed: number
+          required_balance: number
+          snapshot_at: string
+          status: string
+          surplus_or_deficit: number
+          total_drift_amount: number | null
+          total_user_liability: number
+          user_available: number
+          user_locked: number
+        }
+        Insert: {
+          actual_onchain_balance?: number
+          asset_symbol: string
+          drift_users_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pending_withdrawals?: number
+          platform_fees_owed?: number
+          required_balance?: number
+          snapshot_at?: string
+          status: string
+          surplus_or_deficit?: number
+          total_drift_amount?: number | null
+          total_user_liability?: number
+          user_available?: number
+          user_locked?: number
+        }
+        Update: {
+          actual_onchain_balance?: number
+          asset_symbol?: string
+          drift_users_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pending_withdrawals?: number
+          platform_fees_owed?: number
+          required_balance?: number
+          snapshot_at?: string
+          status?: string
+          surplus_or_deficit?: number
+          total_drift_amount?: number | null
+          total_user_liability?: number
+          user_available?: number
+          user_locked?: number
+        }
+        Relationships: []
+      }
       hotwallet_security_alerts: {
         Row: {
           acknowledged: boolean
@@ -8362,6 +8555,45 @@ export type Database = {
           id?: string
           used?: boolean
           user_id?: string
+        }
+        Relationships: []
+      }
+      platform_fee_ledger: {
+        Row: {
+          amount: number
+          asset_symbol: string
+          created_at: string
+          id: string
+          reference_id: string | null
+          source: string
+          status: string
+          swept_at: string | null
+          swept_to_address: string | null
+          swept_tx_hash: string | null
+        }
+        Insert: {
+          amount: number
+          asset_symbol: string
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          source: string
+          status?: string
+          swept_at?: string | null
+          swept_to_address?: string | null
+          swept_tx_hash?: string | null
+        }
+        Update: {
+          amount?: number
+          asset_symbol?: string
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          source?: string
+          status?: string
+          swept_at?: string | null
+          swept_to_address?: string | null
+          swept_tx_hash?: string | null
         }
         Relationships: []
       }
@@ -14756,6 +14988,14 @@ export type Database = {
         Returns: Json
       }
       check_stuck_transfers: { Args: never; Returns: Json }
+      check_withdrawal_solvency: {
+        Args: {
+          p_actual_onchain_balance: number
+          p_asset_symbol: string
+          p_withdrawal_amount: number
+        }
+        Returns: Json
+      }
       claim_bsk_migration_for_approval: {
         Args: {
           p_admin_id: string
@@ -14797,6 +15037,21 @@ export type Database = {
         Args: { p_amount: number; p_asset_id: string; p_user_id: string }
         Returns: boolean
       }
+      compute_token_solvency: {
+        Args: { p_actual_onchain_balance: number; p_asset_symbol: string }
+        Returns: {
+          actual_onchain_balance: number
+          asset_symbol: string
+          pending_withdrawals: number
+          platform_fees_owed: number
+          required_balance: number
+          status: string
+          surplus_or_deficit: number
+          total_user_liability: number
+          user_available: number
+          user_locked: number
+        }[]
+      }
       convert_bsk_to_inr: { Args: { bsk_amount: number }; Returns: number }
       convert_inr_to_bsk: { Args: { inr_amount: number }; Returns: number }
       count_lucky_draw_tickets: {
@@ -14834,6 +15089,21 @@ export type Database = {
       credit_deposit_balance: {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
+      }
+      detect_balance_drift_users: {
+        Args: { p_asset_symbol: string }
+        Returns: {
+          asset_symbol: string
+          drift_available: number
+          drift_locked: number
+          ledger_available: number
+          ledger_locked: number
+          table_available: number
+          table_locked: number
+          total_drift: number
+          user_id: string
+          username: string
+        }[]
       }
       distribute_staking_rewards_batch: { Args: never; Returns: Json }
       execute_bsk_global_unlock: {
@@ -15071,6 +15341,15 @@ export type Database = {
           price_bsk: number
           purchased_at: string
           user_id: string
+        }[]
+      }
+      get_fee_ownership_report: {
+        Args: never
+        Returns: {
+          accrued_fees: number
+          asset_symbol: string
+          outstanding_fees: number
+          swept_fees: number
         }[]
       }
       get_inr_stats: {
@@ -15402,6 +15681,21 @@ export type Database = {
         }
         Returns: string
       }
+      record_hot_wallet_refill: {
+        Args: {
+          p_asset_symbol: string
+          p_block_number: number
+          p_detected_amount: number
+          p_expected_amount: number
+          p_from_address: string
+          p_notes?: string
+          p_shortfall_before: number
+          p_surplus_after: number
+          p_tx_hash: string
+          p_wallet_address: string
+        }
+        Returns: string
+      }
       record_program_participation: {
         Args: {
           p_amount_earned?: number
@@ -15446,6 +15740,16 @@ export type Database = {
         Args: { p_reason: string; p_target_user_id: string }
         Returns: Json
       }
+      repair_user_balance_drift: {
+        Args: {
+          p_asset_symbol: string
+          p_batch_id: string
+          p_decision: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       request_sensitive_admin_operation: {
         Args: {
           _delay_hours?: number
@@ -15475,6 +15779,16 @@ export type Database = {
       run_full_reconciliation_check: { Args: never; Returns: Json }
       scan_hotwallet_security_alerts: { Args: never; Returns: Json }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
+      set_withdrawal_circuit_breaker: {
+        Args: {
+          p_asset_symbol: string
+          p_drift_amount?: number
+          p_drift_percent?: number
+          p_freeze: boolean
+          p_reason: string
+        }
+        Returns: string
+      }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
       settle_trade:
         | {
