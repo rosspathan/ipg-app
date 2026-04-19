@@ -7551,6 +7551,66 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_legacy_archive: {
+        Row: {
+          archived_at: string
+          id: string
+          kyc_profile_id: string
+          original_data_json: Json | null
+          original_documents_reviewed_at: string | null
+          original_documents_status: string
+          original_face_reviewed_at: string | null
+          original_face_status: string
+          original_final_approved_at: string | null
+          original_final_approved_by: string | null
+          original_final_status: string
+          original_mobile_status: string
+          original_mobile_verified_at: string | null
+          reset_batch_id: string
+          restored_at: string | null
+          restored_by: string | null
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string
+          id?: string
+          kyc_profile_id: string
+          original_data_json?: Json | null
+          original_documents_reviewed_at?: string | null
+          original_documents_status: string
+          original_face_reviewed_at?: string | null
+          original_face_status: string
+          original_final_approved_at?: string | null
+          original_final_approved_by?: string | null
+          original_final_status: string
+          original_mobile_status: string
+          original_mobile_verified_at?: string | null
+          reset_batch_id: string
+          restored_at?: string | null
+          restored_by?: string | null
+          user_id: string
+        }
+        Update: {
+          archived_at?: string
+          id?: string
+          kyc_profile_id?: string
+          original_data_json?: Json | null
+          original_documents_reviewed_at?: string | null
+          original_documents_status?: string
+          original_face_reviewed_at?: string | null
+          original_face_status?: string
+          original_final_approved_at?: string | null
+          original_final_approved_by?: string | null
+          original_final_status?: string
+          original_mobile_status?: string
+          original_mobile_verified_at?: string | null
+          reset_batch_id?: string
+          restored_at?: string | null
+          restored_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       kyc_phone_override_log: {
         Row: {
           action: string
@@ -7652,6 +7712,10 @@ export type Database = {
           final_status: Database["public"]["Enums"]["kyc_status_v2"]
           full_name_computed: string | null
           id: string
+          is_legacy: boolean
+          kyc_version: number
+          legacy_reset_at: string | null
+          legacy_reset_batch_id: string | null
           level: string
           mobile_notes: string | null
           mobile_number: string | null
@@ -7690,6 +7754,10 @@ export type Database = {
           final_status?: Database["public"]["Enums"]["kyc_status_v2"]
           full_name_computed?: string | null
           id?: string
+          is_legacy?: boolean
+          kyc_version?: number
+          legacy_reset_at?: string | null
+          legacy_reset_batch_id?: string | null
           level: string
           mobile_notes?: string | null
           mobile_number?: string | null
@@ -7728,6 +7796,10 @@ export type Database = {
           final_status?: Database["public"]["Enums"]["kyc_status_v2"]
           full_name_computed?: string | null
           id?: string
+          is_legacy?: boolean
+          kyc_version?: number
+          legacy_reset_at?: string | null
+          legacy_reset_batch_id?: string | null
           level?: string
           mobile_notes?: string | null
           mobile_number?: string | null
@@ -15769,6 +15841,7 @@ export type Database = {
         Args: { p_error_id: string; p_resolution_notes?: string }
         Returns: boolean
       }
+      rollback_kyc_legacy_reset: { Args: { _batch_id?: string }; Returns: Json }
       run_balance_reconciliation: {
         Args: never
         Returns: {
