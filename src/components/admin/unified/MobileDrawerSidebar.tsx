@@ -28,6 +28,7 @@ const mainNav: NavItem[] = [
   { title: "Forensic Audit", url: "/admin/trading-forensic", icon: Shield },
   { title: "HW Live", url: "/admin/hot-wallet-live", icon: Activity },
   { title: "HW Audit", url: "/admin/hot-wallet-audit", icon: Shield },
+  { title: "HW Solvency", url: "/admin/hot-wallet-solvency", icon: ShieldAlert },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];
 
