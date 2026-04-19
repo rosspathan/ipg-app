@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, FolderKanban, TrendingUp, Settings, Shield,
   Wallet, FileText, DollarSign, Bell, BarChart3, Database, Coins,
   Crown, AlertTriangle, Link as LinkIcon, Activity, ClipboardList, Key,
-  ChevronDown, X, FileBarChart, ScrollText, Download,
+  ChevronDown, X, FileBarChart, ScrollText, Download, ShieldAlert,
 } from "lucide-react";
 
 interface NavItem {
