@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { KYCSubmissionWithUser } from '@/hooks/useAdminKYC';
 import { KYCDocumentViewer } from './KYCDocumentViewer';
 import { RejectModal } from './RejectModal';
-import { CheckCircle, XCircle, User, MapPin, FileText, Clock, Shield } from 'lucide-react';
+import { CheckCircle, XCircle, User, MapPin, FileText, Clock, Shield, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KYCReviewPanelProps {
-  submission: KYCSubmissionWithUser;
+  submission: KYCSubmissionWithUser & { final_approved_by?: string | null };
   onApprove: (adminNotes?: string) => Promise<void>;
   onReject: (reason: string) => Promise<void>;
 }
