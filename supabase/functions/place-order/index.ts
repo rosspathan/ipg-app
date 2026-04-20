@@ -234,8 +234,9 @@ serve(async (req) => {
 
       if (!conflictError && conflicting && conflicting.length > 0) {
         const conflictPrice = conflicting[0].price;
-        throw new Error(
-          `Self-trade prevention: You have a ${oppositeSide} order at ₮${conflictPrice} that would match this ${side} order at ₮${price}. Cancel your existing ${oppositeSide} order first.`
+        return businessError(
+          `Self-trade prevention: You have a ${oppositeSide} order at ₮${conflictPrice} that would match this ${side} order at ₮${price}. Cancel your existing ${oppositeSide} order first.`,
+          'SELF_TRADE_PREVENTED'
         );
       }
     }
@@ -266,11 +267,21 @@ serve(async (req) => {
 
     if (rpcError) {
       console.error('[place-order] RPC error:', rpcError);
-      throw new Error(`Order placement failed: ${rpcError.message}`);
+      // Translate common SQL errors into friendly messages
+      const msg = rpcError.message || '';
+      if (/insufficient.*balance/i.test(msg)) {
+        return businessError(msg, 'INSUFFICIENT_BALANCE');
+      }
+      if (/pair.*disabled|trading_disabled/i.test(msg)) {
+        return businessError('This trading pair is currently disabled.', 'PAIR_DISABLED');
+      }
+      return businessError(`Order could not be placed: ${msg}`, 'RPC_ERROR');
     }
 
     if (!result?.success) {
-      throw new Error(result?.error || 'Order placement failed');
+      const errMsg = result?.error || 'Order placement failed';
+      const code = /insufficient/i.test(errMsg) ? 'INSUFFICIENT_BALANCE' : 'ORDER_REJECTED';
+      return businessError(errMsg, code);
     }
 
     // Fetch the created order details
