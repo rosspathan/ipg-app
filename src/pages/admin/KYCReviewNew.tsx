@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,9 @@ import { useAdminKYC, KYCStatusFilter, KYCSubmissionWithUser } from '@/hooks/use
 import { KYCSubmissionList } from '@/components/admin/kyc/KYCSubmissionList';
 import { KYCReviewPanel } from '@/components/admin/kyc/KYCReviewPanel';
 import { KYCStatsDashboard } from '@/components/admin/kyc/KYCStatsDashboard';
-import { Search, FileText, Shield, CheckCircle, RefreshCw } from 'lucide-react';
+import { VerifiedUsersPanel } from '@/components/admin/kyc/VerifiedUsersPanel';
+import { KYCAccessDiagnostic } from '@/components/admin/kyc/KYCAccessDiagnostic';
+import { Search, FileText, Shield, CheckCircle, RefreshCw, ShieldCheck, Inbox } from 'lucide-react';
 
 export default function KYCReviewNew() {
   const {
