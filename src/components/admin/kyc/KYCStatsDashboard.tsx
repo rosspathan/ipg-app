@@ -1,73 +1,50 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileCheck, FileX, Clock, Users, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface KYCStatsDashboardProps {
+  stats: { total: number; pending: number; approved: number; rejected: number };
   onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
-export function KYCStatsDashboard({ onRefresh }: KYCStatsDashboardProps) {
-  const { data: stats, refetch, isRefetching } = useQuery({
-    queryKey: ['kyc-stats-deduplicated'],
-    queryFn: async () => {
-      // Use the deduplicated view for accurate stats (one row per user)
-      const { data, error } = await supabase
-        .from('kyc_admin_summary')
-        .select('status');
-
-      if (error) throw error;
-
-      const pending = data.filter(s => 
-        s.status === 'submitted' || s.status === 'pending' || s.status === 'in_review'
-      ).length;
-      const approved = data.filter(s => s.status === 'approved').length;
-      const rejected = data.filter(s => s.status === 'rejected').length;
-      const total = data.length;
-
-      return { pending, approved, rejected, total };
-    },
-    refetchInterval: 30000,
-  });
-
-  const handleRefresh = () => {
-    refetch();
-    onRefresh?.();
-  };
-
+export function KYCStatsDashboard({ stats, onRefresh, isRefreshing }: KYCStatsDashboardProps) {
   const cards = [
     {
-      title: 'Pending Review',
-      value: stats?.pending || 0,
-      icon: Clock,
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-500/10',
-      borderColor: 'border-l-amber-500',
-    },
-    {
-      title: 'Approved',
-      value: stats?.approved || 0,
-      icon: FileCheck,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10',
-      borderColor: 'border-l-emerald-500',
-    },
-    {
-      title: 'Rejected',
-      value: stats?.rejected || 0,
-      icon: FileX,
-      color: 'text-red-500',
-      bgColor: 'bg-red-500/10',
-      borderColor: 'border-l-red-500',
-    },
-    {
-      title: 'Total Users',
-      value: stats?.total || 0,
+      title: 'Total KYC Requests',
+      value: stats.total,
       icon: Users,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
       borderColor: 'border-l-primary',
+      hint: 'Unique users submitted',
+    },
+    {
+      title: 'Pending Review',
+      value: stats.pending,
+      icon: Clock,
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-500/10',
+      borderColor: 'border-l-amber-500',
+      hint: 'Awaiting admin action',
+    },
+    {
+      title: 'Approved',
+      value: stats.approved,
+      icon: FileCheck,
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10',
+      borderColor: 'border-l-emerald-500',
+      hint: 'Verified users',
+    },
+    {
+      title: 'Rejected',
+      value: stats.rejected,
+      icon: FileX,
+      color: 'text-red-500',
+      bgColor: 'bg-red-500/10',
+      borderColor: 'border-l-red-500',
+      hint: 'Declined / resubmission needed',
     },
   ];
 
@@ -75,15 +52,17 @@ export function KYCStatsDashboard({ onRefresh }: KYCStatsDashboardProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">KYC Statistics</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={isRefetching}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        {onRefresh && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        )}
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
@@ -98,9 +77,7 @@ export function KYCStatsDashboard({ onRefresh }: KYCStatsDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{card.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {card.title === 'Total Users' ? 'Unique users submitted' : 'submissions'}
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">{card.hint}</p>
             </CardContent>
           </Card>
         ))}

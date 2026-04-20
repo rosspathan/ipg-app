@@ -125,13 +125,27 @@ export function useAdminKYC() {
     };
   }, []);
 
+  const PENDING_STATUSES = ['pending', 'submitted', 'in_review', 'under_review', 'needs_action'];
+
   const approveSubmission = async (submissionId: string, adminNotes?: string) => {
     try {
       const submission = submissions.find(s => s.id === submissionId);
       const userId = submission?.user_id;
       const currentUser = await supabase.auth.getUser();
-      
-      const { error: updateError } = await supabase
+
+      // Guard: only approve if still pending (defense-in-depth against double-clicks / stale UI)
+      const effective = (submission?.display_status ?? submission?.status) as string | undefined;
+      if (effective && !PENDING_STATUSES.includes(effective)) {
+        toast({
+          title: 'Already finalized',
+          description: `This submission is already ${effective}. No further action required.`,
+          variant: 'destructive',
+        });
+        fetchSubmissions();
+        return;
+      }
+
+      const { data: updated, error: updateError } = await supabase
         .from('kyc_profiles_new')
         .update({
           status: 'approved',
@@ -139,9 +153,21 @@ export function useAdminKYC() {
           reviewer_id: currentUser.data.user?.id,
           review_notes: adminNotes,
         })
-        .eq('id', submissionId);
+        .eq('id', submissionId)
+        .in('status', PENDING_STATUSES)
+        .select('id');
 
       if (updateError) throw updateError;
+
+      if (!updated || updated.length === 0) {
+        toast({
+          title: 'Already finalized',
+          description: 'This KYC was already approved or rejected by another admin. Refreshing…',
+          variant: 'destructive',
+        });
+        fetchSubmissions();
+        return;
+      }
 
       // Audit log
       await supabase.from('kyc_audit_log').insert({
@@ -196,7 +222,18 @@ export function useAdminKYC() {
       const userId = submission?.user_id;
       const currentUser = await supabase.auth.getUser();
 
-      const { error: updateError } = await supabase
+      const effective = (submission?.display_status ?? submission?.status) as string | undefined;
+      if (effective && !PENDING_STATUSES.includes(effective)) {
+        toast({
+          title: 'Already finalized',
+          description: `This submission is already ${effective}. No further action required.`,
+          variant: 'destructive',
+        });
+        fetchSubmissions();
+        return;
+      }
+
+      const { data: updated, error: updateError } = await supabase
         .from('kyc_profiles_new')
         .update({
           status: 'rejected',
@@ -204,9 +241,21 @@ export function useAdminKYC() {
           reviewer_id: currentUser.data.user?.id,
           rejection_reason: reason,
         })
-        .eq('id', submissionId);
+        .eq('id', submissionId)
+        .in('status', PENDING_STATUSES)
+        .select('id');
 
       if (updateError) throw updateError;
+
+      if (!updated || updated.length === 0) {
+        toast({
+          title: 'Already finalized',
+          description: 'This KYC was already approved or rejected by another admin. Refreshing…',
+          variant: 'destructive',
+        });
+        fetchSubmissions();
+        return;
+      }
 
       // Audit log
       await supabase.from('kyc_audit_log').insert({

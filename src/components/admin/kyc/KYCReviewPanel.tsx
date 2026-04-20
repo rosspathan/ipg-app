@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { KYCSubmissionWithUser } from '@/hooks/useAdminKYC';
 import { KYCDocumentViewer } from './KYCDocumentViewer';
 import { RejectModal } from './RejectModal';
-import { CheckCircle, XCircle, User, MapPin, FileText, Clock, Shield } from 'lucide-react';
+import { CheckCircle, XCircle, User, MapPin, FileText, Clock, Shield, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KYCReviewPanelProps {
-  submission: KYCSubmissionWithUser;
+  submission: KYCSubmissionWithUser & { final_approved_by?: string | null };
   onApprove: (adminNotes?: string) => Promise<void>;
   onReject: (reason: string) => Promise<void>;
 }
@@ -20,12 +21,40 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   const [adminNotes, setAdminNotes] = useState('');
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [reviewerName, setReviewerName] = useState<string | null>(null);
+
+  const effectiveStatus = (submission.display_status ?? submission.status) as string;
+  const isPending = ['pending', 'submitted', 'in_review', 'under_review', 'needs_action'].includes(effectiveStatus);
+  const isApproved = effectiveStatus === 'approved';
+  const isRejected = effectiveStatus === 'rejected';
+
+  const reviewerId = (submission as any).final_approved_by || submission.reviewer_id;
+  const reviewedAt = (submission as any).final_approved_at || submission.reviewed_at;
+
+  // Resolve reviewer email/name from profiles for display
+  useEffect(() => {
+    let cancelled = false;
+    setReviewerName(null);
+    if (!reviewerId) return;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('email, display_name, username')
+        .eq('user_id', reviewerId)
+        .maybeSingle();
+      if (cancelled) return;
+      setReviewerName(data?.display_name || data?.username || data?.email || `${reviewerId.slice(0, 8)}…`);
+    })();
+    return () => { cancelled = true; };
+  }, [reviewerId]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'submitted':
       case 'pending':
       case 'in_review':
+      case 'under_review':
+      case 'needs_action':
         return { variant: 'default' as const, label: 'Pending Review', icon: Clock };
       case 'approved':
         return { variant: 'outline' as const, label: 'Approved', icon: CheckCircle };
@@ -37,12 +66,14 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   };
 
   const handleApprove = async () => {
+    if (!isPending) return;
     setLoading(true);
     await onApprove(adminNotes);
     setLoading(false);
   };
 
   const handleReject = async (reason: string) => {
+    if (!isPending) return;
     setLoading(true);
     await onReject(reason);
     setRejectModalOpen(false);
@@ -57,10 +88,8 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   const username = submission.username || '';
   const displayName = submission.display_name || fullName;
   const selfieUrl = dataJson?.selfie_url || dataJson?.documents?.selfie || '';
-  const statusConfig = getStatusConfig(submission.status);
+  const statusConfig = getStatusConfig(effectiveStatus);
   const StatusIcon = statusConfig.icon;
-
-  const isPending = ['pending', 'submitted', 'in_review'].includes(submission.status);
 
   return (
     <div className="space-y-6">
@@ -117,17 +146,90 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
                 {submission.submitted_at ? format(new Date(submission.submitted_at), 'PPpp') : 'N/A'}
               </p>
             </div>
-            {submission.reviewed_at && (
+            {reviewedAt && (
               <div className="col-span-2">
                 <Label className="text-xs text-muted-foreground">Reviewed</Label>
                 <p className="text-sm mt-1">
-                  {format(new Date(submission.reviewed_at), 'PPpp')}
+                  {format(new Date(reviewedAt), 'PPpp')}
                 </p>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Terminal Status Banner — visible whenever decision is final */}
+      {(isApproved || isRejected) && (
+        <Card
+          className={
+            isApproved
+              ? 'border-2 border-emerald-500/40 bg-emerald-500/5'
+              : 'border-2 border-red-500/40 bg-red-500/5'
+          }
+        >
+          <CardContent className="p-5">
+            <div className="flex items-start gap-4">
+              <div
+                className={
+                  'rounded-full p-3 shrink-0 ' +
+                  (isApproved ? 'bg-emerald-500/15' : 'bg-red-500/15')
+                }
+              >
+                {isApproved ? (
+                  <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3
+                    className={
+                      'text-lg font-bold ' +
+                      (isApproved
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-red-700 dark:text-red-300')
+                    }
+                  >
+                    {isApproved ? 'KYC Approved' : 'KYC Rejected'}
+                  </h3>
+                  <Badge variant="outline" className="text-[10px]">Final decision</Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      {isApproved ? 'Approved on' : 'Rejected on'}
+                    </Label>
+                    <p className="font-medium">
+                      {reviewedAt ? format(new Date(reviewedAt), 'PPpp') : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <UserCheck className="h-3 w-3" /> Admin
+                    </Label>
+                    <p className="font-medium truncate">
+                      {reviewerName ?? (reviewerId ? 'Loading…' : 'System')}
+                    </p>
+                  </div>
+                </div>
+                {isRejected && submission.rejection_reason && (
+                  <div className="mt-3 p-3 rounded-md bg-background/60 border border-red-500/30">
+                    <Label className="text-xs text-red-600 dark:text-red-400 font-semibold">Reason</Label>
+                    <p className="text-sm mt-1">{submission.rejection_reason}</p>
+                  </div>
+                )}
+                {isApproved && submission.review_notes && (
+                  <div className="mt-3 p-3 rounded-md bg-background/60 border border-emerald-500/30">
+                    <Label className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">Admin notes</Label>
+                    <p className="text-sm mt-1">{submission.review_notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Personal Details */}
       <Card>
@@ -234,20 +336,7 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
       {/* Document Viewer with enhanced preview */}
       <KYCDocumentViewer dataJson={dataJson} />
 
-      {/* Rejection reason if rejected */}
-      {submission.status === 'rejected' && submission.rejection_reason && (
-        <Card className="border-red-500/50 bg-red-500/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2 text-base">
-              <XCircle className="h-4 w-4" />
-              Rejection Reason
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{submission.rejection_reason}</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Rejection reason is shown in the terminal status banner above */}
 
       {/* BSK Reward Info for pending submissions */}
       {isPending && (
