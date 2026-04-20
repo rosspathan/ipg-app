@@ -258,31 +258,31 @@ function FinalStatusPill(
 
   let cfg: { c: string; t: string };
   if (status === "approved") {
-    cfg = { c: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", t: "Approved" };
+    cfg = { c: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", t: "Fully Approved" };
   } else if (status === "rejected") {
     cfg = { c: "bg-rose-500/15 text-rose-700 dark:text-rose-400", t: "Rejected" };
-  } else if (status === "needs_resubmission") {
-    cfg = { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" };
   } else if (status === "suspended") {
     cfg = { c: "bg-zinc-500/20 text-zinc-700 dark:text-zinc-300", t: "Suspended" };
   } else if (sub) {
-    // Derive a meaningful actionable label from the pillar mix.
+    // Derive a meaningful overall label from the pillar mix.
     const pillars = [sub.documents_status, sub.face_status, sub.mobile_status];
     const allApproved = pillars.every((s) => s === "approved");
-    const adminNeedsToAct = pillars.some((s) => s === "pending_review");
+    const anyApproved = pillars.some((s) => s === "approved");
     const userMustResubmit = pillars.some(
       (s) => s === "rejected" || s === "needs_resubmission"
     );
 
     if (allApproved) {
-      cfg = { c: "bg-violet-500/15 text-violet-700 dark:text-violet-400", t: "Ready · Final" };
+      cfg = { c: "bg-violet-500/15 text-violet-700 dark:text-violet-400", t: "Ready for Final" };
+    } else if (userMustResubmit && anyApproved) {
+      cfg = { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Partial · Resubmit" };
     } else if (userMustResubmit) {
       cfg = { c: "bg-amber-500/15 text-amber-700 dark:text-amber-400", t: "Resubmit" };
-    } else if (adminNeedsToAct) {
-      cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Review" };
+    } else if (anyApproved) {
+      cfg = { c: "bg-blue-500/15 text-blue-700 dark:text-blue-400", t: "Partially Approved" };
+    } else if (pillars.some((s) => s === "pending_review")) {
+      cfg = { c: "bg-sky-500/15 text-sky-700 dark:text-sky-400", t: "Pending" };
     } else {
-      // No pillars submitted yet — not actionable; we only render this in
-      // the "All" view so a neutral label is fine.
       cfg = { c: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300", t: "Inactive" };
     }
   } else {
