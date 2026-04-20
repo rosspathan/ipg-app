@@ -414,7 +414,7 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           <p className="truncate font-semibold">{name}</p>
           <p className="truncate text-xs text-muted-foreground">{sub.email_computed || sub.user_id}</p>
         </div>
-        <FinalStatusPill status={sub.final_status as any} />
+        <FinalStatusPill sub={sub} />
       </div>
 
       {/* Pillar tab strip — sticky, always visible */}
