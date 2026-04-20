@@ -44,18 +44,22 @@ export function useAdminKYC() {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<OverallKYCStats>({
     total: 0,
     pending: 0,
-    approved: 0,
-    rejected: 0
+    partial: 0,
+    fully_approved: 0,
+    rejected: 0,
+    pending_docs: 0,
+    pending_face: 0,
+    pending_mobile: 0,
+    ready_for_final: 0,
   });
 
   const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Use the admin summary view
       const { data: kycData, error: kycError } = await supabase
         .from('kyc_admin_summary')
         .select('*')
@@ -69,24 +73,7 @@ export function useAdminKYC() {
       const allSubmissions = (kycData || []) as KYCSubmissionWithUser[];
       setSubmissions(allSubmissions);
 
-      // Use canonical display_status (3-pillar truth) instead of legacy status
-      const isApproved = (s: KYCSubmissionWithUser) => (s.display_status ?? s.status) === 'approved';
-      const isRejected = (s: KYCSubmissionWithUser) => (s.display_status ?? s.status) === 'rejected';
-      const isPending = (s: KYCSubmissionWithUser) => {
-        const ds = s.display_status ?? s.status;
-        return ds === 'under_review' || ds === 'pending' || ds === 'submitted' || ds === 'in_review' || ds === 'needs_action';
-      };
-
-      const pending = allSubmissions.filter(isPending).length;
-      const approved = allSubmissions.filter(isApproved).length;
-      const rejected = allSubmissions.filter(isRejected).length;
-      
-      setStats({
-        total: allSubmissions.length,
-        pending,
-        approved,
-        rejected
-      });
+      setStats(computeOverallStats(allSubmissions));
     } catch (error) {
       console.error('[AdminKYC] Error:', error);
       toast({
