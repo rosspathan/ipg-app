@@ -471,20 +471,41 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       </div>
 
-      {hasInsufficientBalance && (
+      {hasInsufficientBalance && kycApproved && (
         <div className={cn("text-[#FF4D4F] text-center bg-[#FF4D4F]/8 rounded-md font-bold", compact ? "text-[9px] py-1" : "text-[10px] py-1.5")}>
           Insufficient {balanceCurrency}
+        </div>
+      )}
+
+      {!kycApproved && (
+        <div className={cn(
+          "rounded-md border border-warning/40 bg-warning/10 text-warning px-2 py-1.5 flex items-center justify-between gap-2",
+          compact ? "text-[10px]" : "text-[11px]"
+        )}>
+          <div className="flex items-center gap-1.5 font-semibold">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            <span>{kycHeadline || 'KYC approval required before trading'}</span>
+          </div>
+          {onOpenKyc && (
+            <button
+              onClick={onOpenKyc}
+              className="underline font-bold whitespace-nowrap hover:text-warning/80"
+            >
+              Verify now
+            </button>
+          )}
         </div>
       )}
 
       {/* ── CTA Button ── */}
       <button
         onClick={handleSubmit}
-        disabled={isPlacingOrder || numAmount <= 0}
+        disabled={isPlacingOrder || numAmount <= 0 || !kycApproved}
         className={cn(
           "w-full rounded-xl font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
           compact ? "h-[42px] text-[13px]" : "h-[44px] text-[13px]",
+          !kycApproved ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
@@ -492,7 +513,11 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             : "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_4px_20px_rgba(255,77,79,0.35)]"
         )}
       >
-        {isPlacingOrder ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
+        {!kycApproved
+          ? 'KYC Required'
+          : isPlacingOrder
+            ? <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+            : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
       </button>
     </div>
   );
