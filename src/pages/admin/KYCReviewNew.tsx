@@ -121,14 +121,14 @@ export default function KYCReviewNew() {
             onValueChange={(v) => setStatusFilter(v as KYCStatusFilter)} 
             className="w-full sm:w-auto"
           >
-            <TabsList className="grid grid-cols-4 w-full sm:w-auto">
-              <TabsTrigger value="all" className="relative">
+            <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full sm:w-auto h-auto">
+              <TabsTrigger value="all" className="relative text-xs">
                 All
                 <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
                   {stats.total}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="pending" className="relative">
+              <TabsTrigger value="pending" className="relative text-xs">
                 Pending
                 {stats.pending > 0 && (
                   <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-amber-500">
@@ -136,13 +136,29 @@ export default function KYCReviewNew() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="approved">
+              <TabsTrigger value="partial" className="relative text-xs">
+                Partial
+                {stats.partial > 0 && (
+                  <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-blue-500">
+                    {stats.partial}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="ready_for_final" className="relative text-xs">
+                Ready
+                {stats.ready_for_final > 0 && (
+                  <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-violet-500">
+                    {stats.ready_for_final}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="fully_approved" className="text-xs">
                 Approved
                 <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px] bg-emerald-500/20 text-emerald-600">
-                  {stats.approved}
+                  {stats.fully_approved}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="rejected">
+              <TabsTrigger value="rejected" className="text-xs">
                 Rejected
                 <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px] bg-red-500/20 text-red-600">
                   {stats.rejected}
@@ -212,7 +228,7 @@ export default function KYCReviewNew() {
                 <div className="mt-6 flex items-center gap-2 text-amber-600">
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">
-                    {stats.pending} submission{stats.pending === 1 ? '' : 's'} awaiting review
+                    {stats.pending} user{stats.pending === 1 ? '' : 's'} awaiting first review
                   </span>
                 </div>
               )}
