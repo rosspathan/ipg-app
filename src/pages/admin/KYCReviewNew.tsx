@@ -29,6 +29,7 @@ export default function KYCReviewNew() {
 
   const [selectedSubmission, setSelectedSubmission] = useState<KYCSubmissionWithUser | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [topTab, setTopTab] = useState<'queue' | 'verified'>('queue');
 
   // Auto-update selected submission when data refreshes
   useEffect(() => {
