@@ -114,20 +114,24 @@ serve(async (req) => {
     // STRICT INPUT VALIDATION
     // ================================================================
     if (!symbol || typeof symbol !== 'string' || !/^[A-Z0-9_/-]{1,20}$/i.test(symbol)) {
-      throw new Error('Invalid trading pair symbol.');
+      return businessError('Invalid trading pair symbol.', 'INVALID_SYMBOL');
     }
-    if (!side || (side !== 'buy' && side !== 'sell')) throw new Error('Please select Buy or Sell.');
-    if (!type || (type !== 'market' && type !== 'limit')) throw new Error('Please select order type (Market or Limit).');
+    if (!side || (side !== 'buy' && side !== 'sell')) {
+      return businessError('Please select Buy or Sell.', 'INVALID_SIDE');
+    }
+    if (!type || (type !== 'market' && type !== 'limit')) {
+      return businessError('Please select order type (Market or Limit).', 'INVALID_TYPE');
+    }
     if (quantity === undefined || typeof quantity !== 'number' || !isFinite(quantity) || quantity <= 0 || quantity > 1e12) {
-      throw new Error('Please enter a valid quantity greater than 0.');
+      return businessError('Please enter a valid quantity greater than 0.', 'INVALID_QUANTITY');
     }
     if (type === 'limit') {
       if (price === undefined || typeof price !== 'number' || !isFinite(price) || price <= 0 || price > 1e12) {
-        throw new Error('Limit orders require a valid positive price.');
+        return businessError('Limit orders require a valid positive price.', 'INVALID_PRICE');
       }
     }
     if (trading_type !== undefined && trading_type !== null && !['spot', 'margin'].includes(trading_type)) {
-      throw new Error('Invalid trading type.');
+      return businessError('Invalid trading type.', 'INVALID_TRADING_TYPE');
     }
 
     // ================================================================
