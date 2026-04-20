@@ -41,7 +41,10 @@ serve(async (req) => {
     const token = authHeader?.replace('Bearer ', '').trim();
     
     if (!token) {
-      throw new Error('Unauthorized: No token provided');
+      return new Response(
+        JSON.stringify({ success: false, error: 'You must be logged in to place orders.', error_code: 'NO_TOKEN' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabaseClient = createClient(
@@ -62,7 +65,10 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
       console.error('[place-order] Auth error:', userError);
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Your session expired. Please sign in again.', error_code: 'INVALID_SESSION' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // ================================================================
