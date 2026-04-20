@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  computeOverallKYCStatus,
+  computeOverallStats,
+  type OverallKYCStats,
+} from '@/lib/kyc/overallStatus';
 
 export interface KYCSubmissionWithUser {
   id: string;
@@ -30,7 +35,13 @@ export interface KYCSubmissionWithUser {
   display_status?: string; // canonical display status from DB
 }
 
-export type KYCStatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
+export type KYCStatusFilter =
+  | 'all'
+  | 'pending'
+  | 'partial'
+  | 'fully_approved'
+  | 'rejected'
+  | 'ready_for_final';
 
 export function useAdminKYC() {
   const [submissions, setSubmissions] = useState<KYCSubmissionWithUser[]>([]);
@@ -39,18 +50,22 @@ export function useAdminKYC() {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<OverallKYCStats>({
     total: 0,
     pending: 0,
-    approved: 0,
-    rejected: 0
+    partial: 0,
+    fully_approved: 0,
+    rejected: 0,
+    pending_docs: 0,
+    pending_face: 0,
+    pending_mobile: 0,
+    ready_for_final: 0,
   });
 
   const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Use the admin summary view
       const { data: kycData, error: kycError } = await supabase
         .from('kyc_admin_summary')
         .select('*')
@@ -64,24 +79,7 @@ export function useAdminKYC() {
       const allSubmissions = (kycData || []) as KYCSubmissionWithUser[];
       setSubmissions(allSubmissions);
 
-      // Use canonical display_status (3-pillar truth) instead of legacy status
-      const isApproved = (s: KYCSubmissionWithUser) => (s.display_status ?? s.status) === 'approved';
-      const isRejected = (s: KYCSubmissionWithUser) => (s.display_status ?? s.status) === 'rejected';
-      const isPending = (s: KYCSubmissionWithUser) => {
-        const ds = s.display_status ?? s.status;
-        return ds === 'under_review' || ds === 'pending' || ds === 'submitted' || ds === 'in_review' || ds === 'needs_action';
-      };
-
-      const pending = allSubmissions.filter(isPending).length;
-      const approved = allSubmissions.filter(isApproved).length;
-      const rejected = allSubmissions.filter(isRejected).length;
-      
-      setStats({
-        total: allSubmissions.length,
-        pending,
-        approved,
-        rejected
-      });
+      setStats(computeOverallStats(allSubmissions));
     } catch (error) {
       console.error('[AdminKYC] Error:', error);
       toast({
@@ -289,14 +287,22 @@ export function useAdminKYC() {
     }
   };
 
-  // Filter and search — uses canonical display_status (3-pillar truth)
+  // Filter and search — uses 3-pillar OVERALL status (docs+face+mobile)
   const filteredSubmissions = submissions.filter((submission) => {
-    const effectiveStatus = submission.display_status ?? submission.status;
-    if (statusFilter === 'pending') {
-      if (!['pending', 'submitted', 'in_review', 'under_review', 'needs_action'].includes(effectiveStatus)) return false;
-    } else if (statusFilter !== 'all' && effectiveStatus !== statusFilter) {
-      return false;
-    }
+    const overall = computeOverallKYCStatus(submission);
+    const allApproved =
+      submission.documents_status === 'approved' &&
+      submission.face_status === 'approved' &&
+      submission.mobile_status === 'approved';
+    const finalDone =
+      submission.final_status === 'approved' ||
+      submission.final_status === 'rejected';
+
+    if (statusFilter === 'pending' && overall !== 'pending') return false;
+    if (statusFilter === 'partial' && overall !== 'partial') return false;
+    if (statusFilter === 'fully_approved' && overall !== 'fully_approved') return false;
+    if (statusFilter === 'rejected' && overall !== 'rejected') return false;
+    if (statusFilter === 'ready_for_final' && !(allApproved && !finalDone)) return false;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -306,7 +312,7 @@ export function useAdminKYC() {
         submission.phone_computed, submission.username,
         submission.data_json?.full_name, submission.data_json?.phone,
       ].filter(Boolean).map(s => s!.toLowerCase());
-      
+
       return searchFields.some(f => f.includes(query));
     }
 
