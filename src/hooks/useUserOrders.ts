@@ -45,7 +45,8 @@ export const useUserOrders = (symbol?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Call the place-order edge function which handles balance locking atomically
+      // Call the place-order edge function. The function ALWAYS returns
+      // HTTP 200 — business errors come back as { success: false, error, error_code }.
       const { data: orderResult, error } = await supabase.functions.invoke('place-order', {
         body: {
           symbol: params.symbol,
@@ -58,30 +59,29 @@ export const useUserOrders = (symbol?: string) => {
         }
       });
 
+      // Network / unexpected non-2xx — try to read the body for context
       if (error) {
-        // Extract the actual error message from the edge function response
         let errorMessage = error.message || 'Failed to place order';
-        
-        // Try to parse error body for detailed message
         try {
-          const bodyText = error.context?.body
-            ? (typeof error.context.body.text === 'function' 
-                ? await error.context.body.text() 
-                : String(error.context.body))
-            : null;
-          if (bodyText) {
+          const ctx: any = (error as any).context;
+          if (ctx?.body) {
+            const bodyText = typeof ctx.body.text === 'function'
+              ? await ctx.body.text()
+              : String(ctx.body);
             const parsed = JSON.parse(bodyText);
             if (parsed?.error) errorMessage = parsed.error;
           }
         } catch {
-          // Keep original error message if parsing fails
+          // keep original
         }
-        
         throw new Error(errorMessage);
       }
 
+      // Business error returned with HTTP 200
       if (!orderResult?.success) {
-        throw new Error(orderResult?.error || 'Failed to place order');
+        const err: any = new Error(orderResult?.error || 'Failed to place order');
+        err.code = orderResult?.error_code;
+        throw err;
       }
 
       return orderResult.order;
