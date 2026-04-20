@@ -72,19 +72,16 @@ serve(async (req) => {
       const { data: kycOk, error: kycErr } = await adminClient.rpc('is_kyc_approved', { _user_id: user.id });
       if (kycErr) {
         console.error('[place-order] KYC check failed:', kycErr);
-        return new Response(
-          JSON.stringify({ error: 'KYC_REQUIRED: Could not verify KYC status. Please try again.' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return businessError(
+          'Could not verify your KYC status. Please try again in a moment.',
+          'KYC_CHECK_FAILED'
         );
       }
       if (!kycOk) {
         console.warn(`[place-order] Blocked — user ${user.id} not KYC approved`);
-        return new Response(
-          JSON.stringify({
-            error: 'KYC_REQUIRED',
-            message: 'KYC approval is required before trading. Complete document verification, face verification, and admin mobile verification to continue.',
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return businessError(
+          'KYC approval required before trading. Complete document verification, face verification, and admin mobile verification to continue.',
+          'KYC_REQUIRED'
         );
       }
     }
@@ -99,7 +96,7 @@ serve(async (req) => {
         .eq('key', idempotencyKey)
         .eq('user_id', user.id)
         .eq('operation_type', 'order')
-        .single();
+        .maybeSingle();
       
       if (existing) {
         console.log('[place-order] Returning cached idempotent response');
