@@ -21,12 +21,40 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   const [adminNotes, setAdminNotes] = useState('');
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [reviewerName, setReviewerName] = useState<string | null>(null);
+
+  const effectiveStatus = (submission.display_status ?? submission.status) as string;
+  const isPending = ['pending', 'submitted', 'in_review', 'under_review', 'needs_action'].includes(effectiveStatus);
+  const isApproved = effectiveStatus === 'approved';
+  const isRejected = effectiveStatus === 'rejected';
+
+  const reviewerId = (submission as any).final_approved_by || submission.reviewer_id;
+  const reviewedAt = (submission as any).final_approved_at || submission.reviewed_at;
+
+  // Resolve reviewer email/name from profiles for display
+  useEffect(() => {
+    let cancelled = false;
+    setReviewerName(null);
+    if (!reviewerId) return;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('email, display_name, username')
+        .eq('user_id', reviewerId)
+        .maybeSingle();
+      if (cancelled) return;
+      setReviewerName(data?.display_name || data?.username || data?.email || `${reviewerId.slice(0, 8)}…`);
+    })();
+    return () => { cancelled = true; };
+  }, [reviewerId]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'submitted':
       case 'pending':
       case 'in_review':
+      case 'under_review':
+      case 'needs_action':
         return { variant: 'default' as const, label: 'Pending Review', icon: Clock };
       case 'approved':
         return { variant: 'outline' as const, label: 'Approved', icon: CheckCircle };
@@ -38,12 +66,14 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   };
 
   const handleApprove = async () => {
+    if (!isPending) return;
     setLoading(true);
     await onApprove(adminNotes);
     setLoading(false);
   };
 
   const handleReject = async (reason: string) => {
+    if (!isPending) return;
     setLoading(true);
     await onReject(reason);
     setRejectModalOpen(false);
@@ -58,10 +88,8 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   const username = submission.username || '';
   const displayName = submission.display_name || fullName;
   const selfieUrl = dataJson?.selfie_url || dataJson?.documents?.selfie || '';
-  const statusConfig = getStatusConfig(submission.status);
+  const statusConfig = getStatusConfig(effectiveStatus);
   const StatusIcon = statusConfig.icon;
-
-  const isPending = ['pending', 'submitted', 'in_review'].includes(submission.status);
 
   return (
     <div className="space-y-6">
