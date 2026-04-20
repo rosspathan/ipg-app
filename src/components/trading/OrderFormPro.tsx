@@ -188,6 +188,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   baseCurrency, quoteCurrency, availableBase, availableQuote, currentPrice, lastTradePrice,
   tickSize = 0.00000001, lotSize = 0.0001, onPlaceOrder, isPlacingOrder = false,
   bestBid = 0, bestAsk = 0, selectedPrice, compact = false, asks = [], bids = [],
+  kycApproved = true, kycHeadline, onOpenKyc,
 }) => {
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('limit');
