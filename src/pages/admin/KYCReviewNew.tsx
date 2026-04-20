@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,9 @@ import { useAdminKYC, KYCStatusFilter, KYCSubmissionWithUser } from '@/hooks/use
 import { KYCSubmissionList } from '@/components/admin/kyc/KYCSubmissionList';
 import { KYCReviewPanel } from '@/components/admin/kyc/KYCReviewPanel';
 import { KYCStatsDashboard } from '@/components/admin/kyc/KYCStatsDashboard';
-import { Search, FileText, Shield, CheckCircle, RefreshCw } from 'lucide-react';
+import { VerifiedUsersPanel } from '@/components/admin/kyc/VerifiedUsersPanel';
+import { KYCAccessDiagnostic } from '@/components/admin/kyc/KYCAccessDiagnostic';
+import { Search, FileText, Shield, CheckCircle, RefreshCw, ShieldCheck, Inbox } from 'lucide-react';
 
 export default function KYCReviewNew() {
   const {
@@ -27,6 +29,7 @@ export default function KYCReviewNew() {
 
   const [selectedSubmission, setSelectedSubmission] = useState<KYCSubmissionWithUser | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [topTab, setTopTab] = useState<'queue' | 'verified'>('queue');
 
   // Auto-update selected submission when data refreshes
   useEffect(() => {
@@ -101,141 +104,175 @@ export default function KYCReviewNew() {
         </Button>
       </div>
 
-      {/* Stats Dashboard */}
-      <KYCStatsDashboard stats={stats} onRefresh={handleRefresh} isRefreshing={refreshing} />
+      {/* Top-level tabs: Action Queue vs Verified Users */}
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'queue' | 'verified')}>
+        <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+          <TabsTrigger value="queue" className="gap-2">
+            <Inbox className="h-4 w-4" />
+            <span>Action Queue</span>
+            {stats.pending + stats.partial + stats.ready_for_final > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                {stats.pending + stats.partial + stats.ready_for_final}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="verified" className="gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            <span>Verified Users</span>
+            {stats.fully_approved > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                {stats.fully_approved}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Filters */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mt-2 pt-2 border-b">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, phone, or username..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Tabs 
-            value={statusFilter} 
-            onValueChange={(v) => setStatusFilter(v as KYCStatusFilter)} 
-            className="w-full sm:w-auto"
-          >
-            <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full sm:w-auto h-auto">
-              <TabsTrigger value="all" className="relative text-xs">
-                All
-                <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
-                  {stats.total}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="relative text-xs">
-                Pending
-                {stats.pending > 0 && (
-                  <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-amber-500">
-                    {stats.pending}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="partial" className="relative text-xs">
-                Partial
-                {stats.partial > 0 && (
-                  <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-blue-500">
-                    {stats.partial}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="ready_for_final" className="relative text-xs">
-                Ready
-                {stats.ready_for_final > 0 && (
-                  <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-violet-500">
-                    {stats.ready_for_final}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="fully_approved" className="text-xs">
-                Approved
-                <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px] bg-emerald-500/20 text-emerald-600">
-                  {stats.fully_approved}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="rejected" className="text-xs">
-                Rejected
-                <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px] bg-red-500/20 text-red-600">
-                  {stats.rejected}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
+        {/* ===== ACTION QUEUE TAB ===== */}
+        <TabsContent value="queue" className="space-y-6 mt-4">
+          {/* Stats Dashboard */}
+          <KYCStatsDashboard stats={stats} onRefresh={handleRefresh} isRefreshing={refreshing} />
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Submissions List */}
-        <Card className="lg:col-span-1 p-4 max-h-[calc(100vh-380px)] overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">Submissions</h2>
-            <Badge variant="outline">
-              {submissions.length} {submissions.length === 1 ? 'user' : 'users'}
-            </Badge>
-          </div>
-          
-          {submissions.length === 0 ? (
-            <div className="text-center py-12 px-4">
-              <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="text-muted-foreground font-medium mb-1">No submissions found</p>
-              <p className="text-sm text-muted-foreground">
-                {statusFilter !== 'all' 
-                  ? `No ${statusFilter} submissions. Try "All" filter.` 
-                  : searchQuery 
-                    ? 'No results for your search' 
-                    : 'New KYC submissions will appear here'}
-              </p>
-            </div>
-          ) : (
-            <KYCSubmissionList
-              submissions={submissions}
-              selectedId={selectedSubmission?.id}
-              onSelect={setSelectedSubmission}
-            />
-          )}
-        </Card>
-
-        {/* Review Panel */}
-        <div className="lg:col-span-2">
-          {selectedSubmission ? (
-            <KYCReviewPanel
-              submission={selectedSubmission}
-              onApprove={async (notes) => {
-                await approveSubmission(selectedSubmission.id, notes);
-                // keep selection so admin sees the terminal status banner & timestamps
-              }}
-              onReject={async (reason) => {
-                await rejectSubmission(selectedSubmission.id, reason);
-                // keep selection so admin sees the terminal status banner & reason
-              }}
-            />
-          ) : (
-            <Card className="p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
-              <div className="rounded-full bg-muted p-6 mb-4">
-                <FileText className="h-12 w-12 text-muted-foreground/50" />
+          {/* Filters */}
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mt-2 pt-2 border-b">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, phone, or username..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              <p className="text-lg font-medium mb-1">Select a submission to review</p>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Choose a KYC submission from the list to view details and approve or reject
-              </p>
-              {stats.pending > 0 && (
-                <div className="mt-6 flex items-center gap-2 text-amber-600">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    {stats.pending} user{stats.pending === 1 ? '' : 's'} awaiting first review
-                  </span>
+              <Tabs
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as KYCStatusFilter)}
+                className="w-full sm:w-auto"
+              >
+                <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full sm:w-auto h-auto">
+                  <TabsTrigger value="all" className="relative text-xs">
+                    All
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                      {stats.total}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="pending" className="relative text-xs">
+                    Pending
+                    {stats.pending > 0 && (
+                      <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-amber-500">
+                        {stats.pending}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="partial" className="relative text-xs">
+                    Partial
+                    {stats.partial > 0 && (
+                      <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-blue-500">
+                        {stats.partial}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="ready_for_final" className="relative text-xs">
+                    Ready
+                    {stats.ready_for_final > 0 && (
+                      <Badge className="ml-1.5 h-5 px-1.5 text-[10px] bg-violet-500">
+                        {stats.ready_for_final}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="fully_approved" className="text-xs">
+                    Approved
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px] bg-emerald-500/20 text-emerald-600">
+                      {stats.fully_approved}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="rejected" className="text-xs">
+                    Rejected
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px] bg-red-500/20 text-red-600">
+                      {stats.rejected}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Submissions List */}
+            <Card className="lg:col-span-1 p-4 max-h-[calc(100vh-380px)] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold">Submissions</h2>
+                <Badge variant="outline">
+                  {submissions.length} {submissions.length === 1 ? 'user' : 'users'}
+                </Badge>
+              </div>
+
+              {submissions.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground font-medium mb-1">No submissions found</p>
+                  <p className="text-sm text-muted-foreground">
+                    {statusFilter !== 'all'
+                      ? `No ${statusFilter} submissions. Try "All" filter.`
+                      : searchQuery
+                        ? 'No results for your search'
+                        : 'New KYC submissions will appear here'}
+                  </p>
                 </div>
+              ) : (
+                <KYCSubmissionList
+                  submissions={submissions}
+                  selectedId={selectedSubmission?.id}
+                  onSelect={setSelectedSubmission}
+                />
               )}
             </Card>
-          )}
-        </div>
-      </div>
+
+            {/* Review Panel + diagnostic */}
+            <div className="lg:col-span-2 space-y-4">
+              {selectedSubmission ? (
+                <>
+                  {/* Live "why blocked / why allowed" diagnostic */}
+                  <KYCAccessDiagnostic userId={selectedSubmission.user_id} />
+                  <KYCReviewPanel
+                    submission={selectedSubmission}
+                    onApprove={async (notes) => {
+                      await approveSubmission(selectedSubmission.id, notes);
+                    }}
+                    onReject={async (reason) => {
+                      await rejectSubmission(selectedSubmission.id, reason);
+                    }}
+                  />
+                </>
+              ) : (
+                <Card className="p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
+                  <div className="rounded-full bg-muted p-6 mb-4">
+                    <FileText className="h-12 w-12 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-lg font-medium mb-1">Select a submission to review</p>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Choose a KYC submission from the list to view details and approve or reject
+                  </p>
+                  {stats.pending > 0 && (
+                    <div className="mt-6 flex items-center gap-2 text-amber-600">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        {stats.pending} user{stats.pending === 1 ? '' : 's'} awaiting first review
+                      </span>
+                    </div>
+                  )}
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ===== VERIFIED USERS TAB ===== */}
+        <TabsContent value="verified" className="mt-4">
+          <VerifiedUsersPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

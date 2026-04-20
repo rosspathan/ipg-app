@@ -15594,6 +15594,7 @@ export type Database = {
         Args: { _address: string; _scope?: string }
         Returns: boolean
       }
+      kyc_access_diagnostic: { Args: { _user_id: string }; Returns: Json }
       lock_balance_for_order:
         | {
             Args: { p_amount: number; p_asset_id: string; p_user_id: string }
