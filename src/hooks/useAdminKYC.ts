@@ -35,7 +35,13 @@ export interface KYCSubmissionWithUser {
   display_status?: string; // canonical display status from DB
 }
 
-export type KYCStatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
+export type KYCStatusFilter =
+  | 'all'
+  | 'pending'
+  | 'partial'
+  | 'fully_approved'
+  | 'rejected'
+  | 'ready_for_final';
 
 export function useAdminKYC() {
   const [submissions, setSubmissions] = useState<KYCSubmissionWithUser[]>([]);
@@ -281,14 +287,22 @@ export function useAdminKYC() {
     }
   };
 
-  // Filter and search — uses canonical display_status (3-pillar truth)
+  // Filter and search — uses 3-pillar OVERALL status (docs+face+mobile)
   const filteredSubmissions = submissions.filter((submission) => {
-    const effectiveStatus = submission.display_status ?? submission.status;
-    if (statusFilter === 'pending') {
-      if (!['pending', 'submitted', 'in_review', 'under_review', 'needs_action'].includes(effectiveStatus)) return false;
-    } else if (statusFilter !== 'all' && effectiveStatus !== statusFilter) {
-      return false;
-    }
+    const overall = computeOverallKYCStatus(submission);
+    const allApproved =
+      submission.documents_status === 'approved' &&
+      submission.face_status === 'approved' &&
+      submission.mobile_status === 'approved';
+    const finalDone =
+      submission.final_status === 'approved' ||
+      submission.final_status === 'rejected';
+
+    if (statusFilter === 'pending' && overall !== 'pending') return false;
+    if (statusFilter === 'partial' && overall !== 'partial') return false;
+    if (statusFilter === 'fully_approved' && overall !== 'fully_approved') return false;
+    if (statusFilter === 'rejected' && overall !== 'rejected') return false;
+    if (statusFilter === 'ready_for_final' && !(allApproved && !finalDone)) return false;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -298,7 +312,7 @@ export function useAdminKYC() {
         submission.phone_computed, submission.username,
         submission.data_json?.full_name, submission.data_json?.phone,
       ].filter(Boolean).map(s => s!.toLowerCase());
-      
+
       return searchFields.some(f => f.includes(query));
     }
 
