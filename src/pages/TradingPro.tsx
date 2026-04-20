@@ -32,6 +32,7 @@ const TradingPro: React.FC = () => {
   const { data: tradingPairs, isLoading: pairsLoading } = useTradingPairs();
   const { data: balances } = useUserBalance(undefined, true);
   const { orders, placeOrder, cancelOrder, isPlacingOrder } = useUserOrders(selectedPair);
+  const { data: kycStatus } = useKYCStatus();
 
   const [base, quote] = selectedPair.split('/');
   const binanceSymbol = `${base}${quote}`.toLowerCase();
