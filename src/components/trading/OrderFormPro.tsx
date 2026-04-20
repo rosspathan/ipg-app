@@ -261,9 +261,13 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   const handleSubmit = () => {
+    if (!kycApproved) {
+      toast.error('KYC approval required', { description: kycHeadline || 'Complete document, face and admin mobile verification to start trading.' });
+      return;
+    }
     if (numAmount <= 0) return;
     if (hasInsufficientBalance) {
-      toast.error('Insufficient balance');
+      toast.error(`Insufficient ${balanceCurrency}`);
       return;
     }
     onPlaceOrder({ side, type: orderType, price: orderType === 'market' ? undefined : numPrice, quantity: numAmount });
