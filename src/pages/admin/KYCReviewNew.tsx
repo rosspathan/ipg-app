@@ -102,7 +102,7 @@ export default function KYCReviewNew() {
       </div>
 
       {/* Stats Dashboard */}
-      <KYCStatsDashboard onRefresh={refetch} />
+      <KYCStatsDashboard stats={stats} onRefresh={handleRefresh} isRefreshing={refreshing} />
 
       {/* Filters */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mt-2 pt-2 border-b">
