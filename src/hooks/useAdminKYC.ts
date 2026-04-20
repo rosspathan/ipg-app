@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  computeOverallKYCStatus,
+  computeOverallStats,
+  type OverallKYCStats,
+} from '@/lib/kyc/overallStatus';
 
 export interface KYCSubmissionWithUser {
   id: string;
