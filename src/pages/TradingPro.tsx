@@ -173,6 +173,9 @@ const TradingPro: React.FC = () => {
             currentPrice={currentPrice}
             onPlaceOrder={handlePlaceOrder}
             isPlacingOrder={isPlacingOrder}
+            kycApproved={kycStatus?.isApproved ?? true}
+            kycHeadline={kycStatus?.headline}
+            onOpenKyc={() => navigate('/app/profile/kyc')}
           />
         </div>
 
