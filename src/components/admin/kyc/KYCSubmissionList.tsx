@@ -18,20 +18,22 @@ export function KYCSubmissionList({ submissions, selectedId, onSelect }: KYCSubm
       case 'submitted':
       case 'pending':
       case 'in_review':
+      case 'under_review':
+      case 'needs_action':
         return {
-          color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+          color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 font-bold',
           icon: Clock,
           label: 'Pending Review'
         };
       case 'approved':
         return {
-          color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+          color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 font-bold',
           icon: CheckCircle2,
           label: 'Approved'
         };
       case 'rejected':
         return {
-          color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+          color: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/40 font-bold',
           icon: XCircle,
           label: 'Rejected'
         };
@@ -66,7 +68,8 @@ export function KYCSubmissionList({ submissions, selectedId, onSelect }: KYCSubm
         const email = submission.profile_email || submission.email_computed || dataJson?.email || '';
         const phone = submission.phone_computed || dataJson?.phone || '';
         const country = dataJson?.country || dataJson?.nationality || '';
-        const statusConfig = getStatusConfig(submission.status);
+        const effectiveStatus = submission.display_status ?? submission.status;
+        const statusConfig = getStatusConfig(effectiveStatus);
         const StatusIcon = statusConfig.icon;
         
         // Get selfie for avatar
