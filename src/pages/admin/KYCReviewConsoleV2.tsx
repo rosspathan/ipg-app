@@ -643,65 +643,125 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
         </SectionCard>
       </div>
 
-      {/* Sticky decision bar */}
+      {/* Sticky decision bar — STATE-AWARE per active pillar */}
       <div
         className="sticky bottom-0 left-0 right-0 z-10 border-t border-border bg-background/95 px-3 py-3 backdrop-blur shrink-0"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)" }}
       >
-        <div className="mb-2 flex items-center gap-2">
+        <div className="mb-2 flex items-center gap-2 flex-wrap">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Action on</span>
           <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold capitalize text-primary">
             {activePillar}
           </span>
+          <PillarBadge s={activePillarStatus} />
           {finalApproveBlocked && (
             <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
               All 3 pillars required for approval
             </span>
           )}
         </div>
-        <Textarea
-          placeholder={
-            activePillar === "final"
-              ? "Optional note (recommended for record)…"
-              : "Reason — required for Reject / Resubmit"
-          }
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={2}
-          className="text-sm resize-none mb-2"
-        />
-        <div className="grid grid-cols-3 gap-1.5">
-          <Button
-            size="sm"
-            onClick={() => act("approve")}
-            disabled={k.busy || finalApproveBlocked}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white h-11"
+
+        {isPillarLocked ? (
+          <div
+            className={cn(
+              "rounded-xl border p-3",
+              isPillarApproved
+                ? "border-emerald-500/40 bg-emerald-500/10"
+                : "border-rose-500/40 bg-rose-500/10"
+            )}
           >
-            <Check className="mr-1 h-3.5 w-3.5" /> Approve
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => act("request_resubmission")}
-            disabled={k.busy}
-            className="h-11 border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
-          >
-            <AlertCircle className="mr-1 h-3.5 w-3.5" /> Resubmit
-          </Button>
-          <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy} className="h-11">
-            <X className="mr-1 h-3.5 w-3.5" /> Reject
-          </Button>
-        </div>
-        {activePillar === "final" && (sub.final_status === "approved" || sub.final_status === "suspended") && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2 w-full h-10"
-            onClick={() => act(sub.final_status === "approved" ? "suspend" : "unsuspend")}
-            disabled={k.busy}
-          >
-            {sub.final_status === "approved" ? "Suspend account" : "Unsuspend account"}
-          </Button>
+            <div className="flex items-start gap-2.5">
+              <div
+                className={cn(
+                  "grid h-9 w-9 shrink-0 place-items-center rounded-full",
+                  isPillarApproved ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+                )}
+              >
+                {isPillarApproved ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={cn(
+                    "text-sm font-bold capitalize",
+                    isPillarApproved
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : "text-rose-700 dark:text-rose-300"
+                  )}
+                >
+                  {activePillar} {isPillarApproved ? "approved" : "rejected"} — locked
+                </p>
+                <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                  {lastDecision?.created_at && (
+                    <p>
+                      <span className="opacity-70">When · </span>
+                      {format(new Date(lastDecision.created_at), "PPpp")}
+                    </p>
+                  )}
+                  {lastDecision?.admin_id && (
+                    <p className="truncate">
+                      <span className="opacity-70">By admin · </span>
+                      <span className="font-mono">{lastDecision.admin_id.slice(0, 8)}…</span>
+                    </p>
+                  )}
+                </div>
+                {lastDecision?.notes && (
+                  <p className="mt-1.5 rounded-md bg-background/60 p-2 text-[11px] break-words">
+                    "{lastDecision.notes}"
+                  </p>
+                )}
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  This step is final. Approve / Reject / Resubmit are disabled to prevent duplicate decisions.
+                </p>
+              </div>
+            </div>
+            {activePillar === "final" && (sub.final_status === "approved" || sub.final_status === "suspended") && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3 w-full h-10"
+                onClick={() => act(sub.final_status === "approved" ? "suspend" : "unsuspend")}
+                disabled={k.busy}
+              >
+                {sub.final_status === "approved" ? "Suspend account" : "Unsuspend account"}
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <Textarea
+              placeholder={
+                activePillar === "final"
+                  ? "Optional note (recommended for record)…"
+                  : "Reason — required for Reject / Resubmit"
+              }
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className="text-sm resize-none mb-2"
+            />
+            <div className="grid grid-cols-3 gap-1.5">
+              <Button
+                size="sm"
+                onClick={() => act("approve")}
+                disabled={k.busy || finalApproveBlocked}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-11"
+              >
+                <Check className="mr-1 h-3.5 w-3.5" /> Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => act("request_resubmission")}
+                disabled={k.busy}
+                className="h-11 border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+              >
+                <AlertCircle className="mr-1 h-3.5 w-3.5" /> Resubmit
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy} className="h-11">
+                <X className="mr-1 h-3.5 w-3.5" /> Reject
+              </Button>
+            </div>
+          </>
         )}
       </div>
     </div>
