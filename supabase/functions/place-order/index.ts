@@ -17,6 +17,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, idempotency-key',
 };
 
+/**
+ * Always return HTTP 200 for business / validation errors so the Supabase
+ * SDK doesn't throw a generic FunctionsHttpError on the client. The client
+ * inspects { success: false, error, error_code } in the body.
+ *
+ * Reserve non-2xx for true infrastructure failures (auth missing, server crash).
+ */
+function businessError(error: string, error_code?: string, extra: Record<string, unknown> = {}) {
+  return new Response(
+    JSON.stringify({ success: false, error, error_code, ...extra }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
