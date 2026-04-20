@@ -336,20 +336,7 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
       {/* Document Viewer with enhanced preview */}
       <KYCDocumentViewer dataJson={dataJson} />
 
-      {/* Rejection reason if rejected */}
-      {submission.status === 'rejected' && submission.rejection_reason && (
-        <Card className="border-red-500/50 bg-red-500/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2 text-base">
-              <XCircle className="h-4 w-4" />
-              Rejection Reason
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{submission.rejection_reason}</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Rejection reason is shown in the terminal status banner above */}
 
       {/* BSK Reward Info for pending submissions */}
       {isPending && (
