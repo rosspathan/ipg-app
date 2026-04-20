@@ -289,7 +289,7 @@ serve(async (req) => {
       .from('orders')
       .select('*')
       .eq('id', result.order_id)
-      .single();
+      .maybeSingle();
 
     // ================================================================
     // TRIGGER MATCHING ENGINE
@@ -326,7 +326,7 @@ serve(async (req) => {
       .from('orders')
       .select('*')
       .eq('id', result.order_id)
-      .single();
+      .maybeSingle();
 
     const finalOrder = updatedOrder || order;
 
@@ -384,10 +384,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[place-order] Error:', error);
+    console.error('[place-order] Unhandled error:', error);
+    // Still return 200 so client can read the message reliably
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: false,
+        error: error?.message || 'Unexpected error placing order',
+        error_code: 'UNHANDLED_EXCEPTION',
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
