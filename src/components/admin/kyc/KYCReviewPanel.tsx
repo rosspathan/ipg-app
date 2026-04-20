@@ -118,17 +118,90 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
                 {submission.submitted_at ? format(new Date(submission.submitted_at), 'PPpp') : 'N/A'}
               </p>
             </div>
-            {submission.reviewed_at && (
+            {reviewedAt && (
               <div className="col-span-2">
                 <Label className="text-xs text-muted-foreground">Reviewed</Label>
                 <p className="text-sm mt-1">
-                  {format(new Date(submission.reviewed_at), 'PPpp')}
+                  {format(new Date(reviewedAt), 'PPpp')}
                 </p>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Terminal Status Banner — visible whenever decision is final */}
+      {(isApproved || isRejected) && (
+        <Card
+          className={
+            isApproved
+              ? 'border-2 border-emerald-500/40 bg-emerald-500/5'
+              : 'border-2 border-red-500/40 bg-red-500/5'
+          }
+        >
+          <CardContent className="p-5">
+            <div className="flex items-start gap-4">
+              <div
+                className={
+                  'rounded-full p-3 shrink-0 ' +
+                  (isApproved ? 'bg-emerald-500/15' : 'bg-red-500/15')
+                }
+              >
+                {isApproved ? (
+                  <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3
+                    className={
+                      'text-lg font-bold ' +
+                      (isApproved
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-red-700 dark:text-red-300')
+                    }
+                  >
+                    {isApproved ? 'KYC Approved' : 'KYC Rejected'}
+                  </h3>
+                  <Badge variant="outline" className="text-[10px]">Final decision</Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      {isApproved ? 'Approved on' : 'Rejected on'}
+                    </Label>
+                    <p className="font-medium">
+                      {reviewedAt ? format(new Date(reviewedAt), 'PPpp') : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <UserCheck className="h-3 w-3" /> Admin
+                    </Label>
+                    <p className="font-medium truncate">
+                      {reviewerName ?? (reviewerId ? 'Loading…' : 'System')}
+                    </p>
+                  </div>
+                </div>
+                {isRejected && submission.rejection_reason && (
+                  <div className="mt-3 p-3 rounded-md bg-background/60 border border-red-500/30">
+                    <Label className="text-xs text-red-600 dark:text-red-400 font-semibold">Reason</Label>
+                    <p className="text-sm mt-1">{submission.rejection_reason}</p>
+                  </div>
+                )}
+                {isApproved && submission.review_notes && (
+                  <div className="mt-3 p-3 rounded-md bg-background/60 border border-emerald-500/30">
+                    <Label className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">Admin notes</Label>
+                    <p className="text-sm mt-1">{submission.review_notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Personal Details */}
       <Card>
