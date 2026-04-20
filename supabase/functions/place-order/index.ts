@@ -161,12 +161,10 @@ serve(async (req) => {
 
     if (currentCount >= maxOrdersPerMinute) {
       console.warn(`[place-order] Rate limit exceeded for user ${user.id}: ${currentCount}/${maxOrdersPerMinute} orders/min`);
-      return new Response(
-        JSON.stringify({ 
-          error: `Rate limit exceeded: Maximum ${maxOrdersPerMinute} orders per minute. Please wait before placing more orders.`,
-          retry_after: 60 - (Math.floor(Date.now() / 1000) % 60)
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      return businessError(
+        `Rate limit exceeded: Maximum ${maxOrdersPerMinute} orders per minute. Please wait before placing more orders.`,
+        'RATE_LIMITED',
+        { retry_after: 60 - (Math.floor(Date.now() / 1000) % 60) }
       );
     }
 
@@ -178,10 +176,16 @@ serve(async (req) => {
       const maxSize = pairSettings.max_order_size ? Number(pairSettings.max_order_size) : null;
 
       if (quantity < minSize) {
-        throw new Error(`Minimum order size for ${symbol} is ${minSize}. Your order (${quantity}) is too small.`);
+        return businessError(
+          `Minimum order size for ${symbol} is ${minSize}. Your order (${quantity}) is too small.`,
+          'BELOW_MIN_ORDER_SIZE'
+        );
       }
       if (maxSize && quantity > maxSize) {
-        throw new Error(`Maximum order size for ${symbol} is ${maxSize}. Your order (${quantity}) exceeds the limit.`);
+        return businessError(
+          `Maximum order size for ${symbol} is ${maxSize}. Your order (${quantity}) exceeds the limit.`,
+          'ABOVE_MAX_ORDER_SIZE'
+        );
       }
     }
 
@@ -197,13 +201,10 @@ serve(async (req) => {
 
       if (cbResult && !cbResult.allowed) {
         console.warn(`[place-order] Circuit breaker triggered for ${symbol}: ${cbResult.reason}`);
-        return new Response(
-          JSON.stringify({
-            error: cbResult.reason || `Circuit breaker active for ${symbol}. Trading halted due to excessive price movement.`,
-            circuit_breaker: true,
-            change_pct: cbResult.change_pct
-          }),
-          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return businessError(
+          cbResult.reason || `Circuit breaker active for ${symbol}. Trading halted due to excessive price movement.`,
+          'CIRCUIT_BREAKER',
+          { circuit_breaker: true, change_pct: cbResult.change_pct }
         );
       }
     }
