@@ -51,36 +51,34 @@ export const useTradingAPI = () => {
         body: params
       });
 
+      // True transport / non-2xx error
       if (error) {
-        // Try to extract the actual error message from the edge function response
         let errorMessage = error.message || 'Failed to place order';
-        
-        // The error.context?.body often contains the JSON response from the edge function
-        if (error.context?.body) {
+        const ctx: any = (error as any).context;
+        if (ctx?.body) {
           try {
-            const bodyText = await error.context.body.text?.() || error.context.body;
-            const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
-            if (parsed?.error) {
-              errorMessage = parsed.error;
-            }
+            const bodyText = typeof ctx.body.text === 'function'
+              ? await ctx.body.text()
+              : String(ctx.body);
+            const parsed = JSON.parse(bodyText);
+            if (parsed?.error) errorMessage = parsed.error;
           } catch {
-            // If parsing fails, check if error already has a meaningful message
+            // keep original
           }
         }
-        
         throw new Error(errorMessage);
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to place order');
+      // Business error returned with HTTP 200
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to place order');
       }
 
-      // Return full result including post-match status
       return { success: true, order: data.order, matched: data.matched || 0 };
 
     } catch (error: any) {
       console.error('Place order error:', error);
-      
+
       toast({
         title: "Order Failed",
         description: error.message || 'Failed to place order',
