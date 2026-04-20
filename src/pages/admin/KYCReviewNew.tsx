@@ -192,11 +192,11 @@ export default function KYCReviewNew() {
               submission={selectedSubmission}
               onApprove={async (notes) => {
                 await approveSubmission(selectedSubmission.id, notes);
-                setSelectedSubmission(null);
+                // keep selection so admin sees the terminal status banner & timestamps
               }}
               onReject={async (reason) => {
                 await rejectSubmission(selectedSubmission.id, reason);
-                setSelectedSubmission(null);
+                // keep selection so admin sees the terminal status banner & reason
               }}
             />
           ) : (
