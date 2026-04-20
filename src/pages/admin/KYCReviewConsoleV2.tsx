@@ -339,12 +339,45 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
     sub.documents_status === "approved" &&
     sub.face_status === "approved" &&
     sub.mobile_status === "approved";
-  // Only Approve on the FINAL pillar requires all 3 green. Reject / Resubmit
-  // / Suspend / Unsuspend on the final pillar must remain available.
+
+  // Status of the currently selected pillar — drives footer button visibility.
+  const activePillarStatus: PillarStatus =
+    activePillar === "documents" ? sub.documents_status
+      : activePillar === "face" ? sub.face_status
+      : activePillar === "mobile" ? sub.mobile_status
+      : (sub.final_status === "approved" ? "approved"
+          : sub.final_status === "rejected" ? "rejected"
+          : sub.final_status === "suspended" ? "approved" // suspended is post-approval
+          : allGreen ? "pending_review" : "not_submitted");
+
+  const isPillarApproved = activePillarStatus === "approved";
+  const isPillarRejected = activePillarStatus === "rejected";
+  // A "locked" pillar = decision already taken (approved or rejected). Action
+  // buttons are hidden so admin cannot duplicate-approve / re-reject.
+  // Exception: the FINAL pillar keeps Suspend/Unsuspend controls (rendered separately).
+  const isPillarLocked = isPillarApproved || isPillarRejected;
+
+  // Find the most-recent audit entry for the active pillar (for "approved by")
+  const lastDecision = useMemo(() => {
+    return audit.find(
+      (a) => a.pillar === activePillar && (a.action === "approve" || a.action === "reject")
+    );
+  }, [audit, activePillar]);
+
+  // Final approve still requires all 3 green
   const finalApproveBlocked = activePillar === "final" && !allGreen;
 
   const act = async (action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend") => {
     console.info("[KYCReview] act()", { user: sub.user_id, pillar: activePillar, action, hasNotes: !!notes.trim() });
+
+    // Guard: prevent duplicate decisions on a locked pillar
+    if (isPillarLocked && (action === "approve" || action === "reject" || action === "request_resubmission")) {
+      toast.error(`${activePillar} already ${isPillarApproved ? "approved" : "rejected"}`, {
+        description: "This step is locked. Reset or reopen via support workflow if change is needed.",
+        duration: 4500,
+      });
+      return;
+    }
 
     if ((action === "reject" || action === "request_resubmission") && !notes.trim()) {
       toast.error("A reason is required", {
