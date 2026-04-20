@@ -29,6 +29,12 @@ interface OrderFormProProps {
   compact?: boolean;
   asks?: { price: number; quantity: number }[];
   bids?: { price: number; quantity: number }[];
+  /** When false, the order CTA is locked and a KYC banner is shown */
+  kycApproved?: boolean;
+  /** Optional friendly KYC banner text (e.g. "KYC pending admin review") */
+  kycHeadline?: string;
+  /** Called when user taps "Verify now" in the KYC banner */
+  onOpenKyc?: () => void;
 }
 
 type OrderSide = 'buy' | 'sell';
