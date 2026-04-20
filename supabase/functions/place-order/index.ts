@@ -17,6 +17,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, idempotency-key',
 };
 
+/**
+ * Always return HTTP 200 for business / validation errors so the Supabase
+ * SDK doesn't throw a generic FunctionsHttpError on the client. The client
+ * inspects { success: false, error, error_code } in the body.
+ *
+ * Reserve non-2xx for true infrastructure failures (auth missing, server crash).
+ */
+function businessError(error: string, error_code?: string, extra: Record<string, unknown> = {}) {
+  return new Response(
+    JSON.stringify({ success: false, error, error_code, ...extra }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,7 +41,10 @@ serve(async (req) => {
     const token = authHeader?.replace('Bearer ', '').trim();
     
     if (!token) {
-      throw new Error('Unauthorized: No token provided');
+      return new Response(
+        JSON.stringify({ success: false, error: 'You must be logged in to place orders.', error_code: 'NO_TOKEN' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabaseClient = createClient(
@@ -48,7 +65,10 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
       console.error('[place-order] Auth error:', userError);
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Your session expired. Please sign in again.', error_code: 'INVALID_SESSION' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // ================================================================
@@ -58,19 +78,16 @@ serve(async (req) => {
       const { data: kycOk, error: kycErr } = await adminClient.rpc('is_kyc_approved', { _user_id: user.id });
       if (kycErr) {
         console.error('[place-order] KYC check failed:', kycErr);
-        return new Response(
-          JSON.stringify({ error: 'KYC_REQUIRED: Could not verify KYC status. Please try again.' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return businessError(
+          'Could not verify your KYC status. Please try again in a moment.',
+          'KYC_CHECK_FAILED'
         );
       }
       if (!kycOk) {
         console.warn(`[place-order] Blocked — user ${user.id} not KYC approved`);
-        return new Response(
-          JSON.stringify({
-            error: 'KYC_REQUIRED',
-            message: 'KYC approval is required before trading. Complete document verification, face verification, and admin mobile verification to continue.',
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return businessError(
+          'KYC approval required before trading. Complete document verification, face verification, and admin mobile verification to continue.',
+          'KYC_REQUIRED'
         );
       }
     }
@@ -85,7 +102,7 @@ serve(async (req) => {
         .eq('key', idempotencyKey)
         .eq('user_id', user.id)
         .eq('operation_type', 'order')
-        .single();
+        .maybeSingle();
       
       if (existing) {
         console.log('[place-order] Returning cached idempotent response');
@@ -103,20 +120,24 @@ serve(async (req) => {
     // STRICT INPUT VALIDATION
     // ================================================================
     if (!symbol || typeof symbol !== 'string' || !/^[A-Z0-9_/-]{1,20}$/i.test(symbol)) {
-      throw new Error('Invalid trading pair symbol.');
+      return businessError('Invalid trading pair symbol.', 'INVALID_SYMBOL');
     }
-    if (!side || (side !== 'buy' && side !== 'sell')) throw new Error('Please select Buy or Sell.');
-    if (!type || (type !== 'market' && type !== 'limit')) throw new Error('Please select order type (Market or Limit).');
+    if (!side || (side !== 'buy' && side !== 'sell')) {
+      return businessError('Please select Buy or Sell.', 'INVALID_SIDE');
+    }
+    if (!type || (type !== 'market' && type !== 'limit')) {
+      return businessError('Please select order type (Market or Limit).', 'INVALID_TYPE');
+    }
     if (quantity === undefined || typeof quantity !== 'number' || !isFinite(quantity) || quantity <= 0 || quantity > 1e12) {
-      throw new Error('Please enter a valid quantity greater than 0.');
+      return businessError('Please enter a valid quantity greater than 0.', 'INVALID_QUANTITY');
     }
     if (type === 'limit') {
       if (price === undefined || typeof price !== 'number' || !isFinite(price) || price <= 0 || price > 1e12) {
-        throw new Error('Limit orders require a valid positive price.');
+        return businessError('Limit orders require a valid positive price.', 'INVALID_PRICE');
       }
     }
     if (trading_type !== undefined && trading_type !== null && !['spot', 'margin'].includes(trading_type)) {
-      throw new Error('Invalid trading type.');
+      return businessError('Invalid trading type.', 'INVALID_TRADING_TYPE');
     }
 
     // ================================================================
@@ -146,12 +167,10 @@ serve(async (req) => {
 
     if (currentCount >= maxOrdersPerMinute) {
       console.warn(`[place-order] Rate limit exceeded for user ${user.id}: ${currentCount}/${maxOrdersPerMinute} orders/min`);
-      return new Response(
-        JSON.stringify({ 
-          error: `Rate limit exceeded: Maximum ${maxOrdersPerMinute} orders per minute. Please wait before placing more orders.`,
-          retry_after: 60 - (Math.floor(Date.now() / 1000) % 60)
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      return businessError(
+        `Rate limit exceeded: Maximum ${maxOrdersPerMinute} orders per minute. Please wait before placing more orders.`,
+        'RATE_LIMITED',
+        { retry_after: 60 - (Math.floor(Date.now() / 1000) % 60) }
       );
     }
 
@@ -163,10 +182,16 @@ serve(async (req) => {
       const maxSize = pairSettings.max_order_size ? Number(pairSettings.max_order_size) : null;
 
       if (quantity < minSize) {
-        throw new Error(`Minimum order size for ${symbol} is ${minSize}. Your order (${quantity}) is too small.`);
+        return businessError(
+          `Minimum order size for ${symbol} is ${minSize}. Your order (${quantity}) is too small.`,
+          'BELOW_MIN_ORDER_SIZE'
+        );
       }
       if (maxSize && quantity > maxSize) {
-        throw new Error(`Maximum order size for ${symbol} is ${maxSize}. Your order (${quantity}) exceeds the limit.`);
+        return businessError(
+          `Maximum order size for ${symbol} is ${maxSize}. Your order (${quantity}) exceeds the limit.`,
+          'ABOVE_MAX_ORDER_SIZE'
+        );
       }
     }
 
@@ -182,13 +207,10 @@ serve(async (req) => {
 
       if (cbResult && !cbResult.allowed) {
         console.warn(`[place-order] Circuit breaker triggered for ${symbol}: ${cbResult.reason}`);
-        return new Response(
-          JSON.stringify({
-            error: cbResult.reason || `Circuit breaker active for ${symbol}. Trading halted due to excessive price movement.`,
-            circuit_breaker: true,
-            change_pct: cbResult.change_pct
-          }),
-          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return businessError(
+          cbResult.reason || `Circuit breaker active for ${symbol}. Trading halted due to excessive price movement.`,
+          'CIRCUIT_BREAKER',
+          { circuit_breaker: true, change_pct: cbResult.change_pct }
         );
       }
     }
@@ -218,8 +240,9 @@ serve(async (req) => {
 
       if (!conflictError && conflicting && conflicting.length > 0) {
         const conflictPrice = conflicting[0].price;
-        throw new Error(
-          `Self-trade prevention: You have a ${oppositeSide} order at ₮${conflictPrice} that would match this ${side} order at ₮${price}. Cancel your existing ${oppositeSide} order first.`
+        return businessError(
+          `Self-trade prevention: You have a ${oppositeSide} order at ₮${conflictPrice} that would match this ${side} order at ₮${price}. Cancel your existing ${oppositeSide} order first.`,
+          'SELF_TRADE_PREVENTED'
         );
       }
     }
@@ -250,11 +273,21 @@ serve(async (req) => {
 
     if (rpcError) {
       console.error('[place-order] RPC error:', rpcError);
-      throw new Error(`Order placement failed: ${rpcError.message}`);
+      // Translate common SQL errors into friendly messages
+      const msg = rpcError.message || '';
+      if (/insufficient.*balance/i.test(msg)) {
+        return businessError(msg, 'INSUFFICIENT_BALANCE');
+      }
+      if (/pair.*disabled|trading_disabled/i.test(msg)) {
+        return businessError('This trading pair is currently disabled.', 'PAIR_DISABLED');
+      }
+      return businessError(`Order could not be placed: ${msg}`, 'RPC_ERROR');
     }
 
     if (!result?.success) {
-      throw new Error(result?.error || 'Order placement failed');
+      const errMsg = result?.error || 'Order placement failed';
+      const code = /insufficient/i.test(errMsg) ? 'INSUFFICIENT_BALANCE' : 'ORDER_REJECTED';
+      return businessError(errMsg, code);
     }
 
     // Fetch the created order details
@@ -262,7 +295,7 @@ serve(async (req) => {
       .from('orders')
       .select('*')
       .eq('id', result.order_id)
-      .single();
+      .maybeSingle();
 
     // ================================================================
     // TRIGGER MATCHING ENGINE
@@ -299,7 +332,7 @@ serve(async (req) => {
       .from('orders')
       .select('*')
       .eq('id', result.order_id)
-      .single();
+      .maybeSingle();
 
     const finalOrder = updatedOrder || order;
 
@@ -357,10 +390,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[place-order] Error:', error);
+    console.error('[place-order] Unhandled error:', error);
+    // Still return 200 so client can read the message reliably
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: false,
+        error: error?.message || 'Unexpected error placing order',
+        error_code: 'UNHANDLED_EXCEPTION',
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -8,6 +8,7 @@ import { OpenOrderCard } from '@/components/trading/OpenOrderCard';
 import { useTradingPairs } from '@/hooks/useTradingPairs';
 import { useUserBalance } from '@/hooks/useUserBalance';
 import { useUserOrders } from '@/hooks/useUserOrders';
+import { useKYCStatus } from '@/hooks/useKYCStatus';
 import { useMarketStore, useMarketOrderBook, useMarketTicker } from '@/hooks/useMarketStore';
 import { useAutoSyncDeposits } from '@/hooks/useAutoSyncDeposits';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ const TradingPro: React.FC = () => {
   const { data: tradingPairs, isLoading: pairsLoading } = useTradingPairs();
   const { data: balances } = useUserBalance(undefined, true);
   const { orders, placeOrder, cancelOrder, isPlacingOrder } = useUserOrders(selectedPair);
+  const { data: kycStatus } = useKYCStatus();
 
   const [base, quote] = selectedPair.split('/');
   const binanceSymbol = `${base}${quote}`.toLowerCase();
@@ -171,6 +173,9 @@ const TradingPro: React.FC = () => {
             currentPrice={currentPrice}
             onPlaceOrder={handlePlaceOrder}
             isPlacingOrder={isPlacingOrder}
+            kycApproved={kycStatus?.isApproved ?? true}
+            kycHeadline={kycStatus?.headline}
+            onOpenKyc={() => navigate('/app/profile/kyc')}
           />
         </div>
 

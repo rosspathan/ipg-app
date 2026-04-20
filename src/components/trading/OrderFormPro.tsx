@@ -29,6 +29,12 @@ interface OrderFormProProps {
   compact?: boolean;
   asks?: { price: number; quantity: number }[];
   bids?: { price: number; quantity: number }[];
+  /** When false, the order CTA is locked and a KYC banner is shown */
+  kycApproved?: boolean;
+  /** Optional friendly KYC banner text (e.g. "KYC pending admin review") */
+  kycHeadline?: string;
+  /** Called when user taps "Verify now" in the KYC banner */
+  onOpenKyc?: () => void;
 }
 
 type OrderSide = 'buy' | 'sell';
@@ -182,6 +188,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   baseCurrency, quoteCurrency, availableBase, availableQuote, currentPrice, lastTradePrice,
   tickSize = 0.00000001, lotSize = 0.0001, onPlaceOrder, isPlacingOrder = false,
   bestBid = 0, bestAsk = 0, selectedPrice, compact = false, asks = [], bids = [],
+  kycApproved = true, kycHeadline, onOpenKyc,
 }) => {
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('limit');
@@ -254,9 +261,13 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   const handleSubmit = () => {
+    if (!kycApproved) {
+      toast.error('KYC approval required', { description: kycHeadline || 'Complete document, face and admin mobile verification to start trading.' });
+      return;
+    }
     if (numAmount <= 0) return;
     if (hasInsufficientBalance) {
-      toast.error('Insufficient balance');
+      toast.error(`Insufficient ${balanceCurrency}`);
       return;
     }
     onPlaceOrder({ side, type: orderType, price: orderType === 'market' ? undefined : numPrice, quantity: numAmount });
@@ -460,20 +471,41 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       </div>
 
-      {hasInsufficientBalance && (
+      {hasInsufficientBalance && kycApproved && (
         <div className={cn("text-[#FF4D4F] text-center bg-[#FF4D4F]/8 rounded-md font-bold", compact ? "text-[9px] py-1" : "text-[10px] py-1.5")}>
           Insufficient {balanceCurrency}
+        </div>
+      )}
+
+      {!kycApproved && (
+        <div className={cn(
+          "rounded-md border border-warning/40 bg-warning/10 text-warning px-2 py-1.5 flex items-center justify-between gap-2",
+          compact ? "text-[10px]" : "text-[11px]"
+        )}>
+          <div className="flex items-center gap-1.5 font-semibold">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            <span>{kycHeadline || 'KYC approval required before trading'}</span>
+          </div>
+          {onOpenKyc && (
+            <button
+              onClick={onOpenKyc}
+              className="underline font-bold whitespace-nowrap hover:text-warning/80"
+            >
+              Verify now
+            </button>
+          )}
         </div>
       )}
 
       {/* ── CTA Button ── */}
       <button
         onClick={handleSubmit}
-        disabled={isPlacingOrder || numAmount <= 0}
+        disabled={isPlacingOrder || numAmount <= 0 || !kycApproved}
         className={cn(
           "w-full rounded-xl font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
           compact ? "h-[42px] text-[13px]" : "h-[44px] text-[13px]",
+          !kycApproved ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
@@ -481,7 +513,11 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             : "bg-[#FF4D4F] text-[#FFFFFF] shadow-[0_4px_20px_rgba(255,77,79,0.35)]"
         )}
       >
-        {isPlacingOrder ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
+        {!kycApproved
+          ? 'KYC Required'
+          : isPlacingOrder
+            ? <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+            : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
       </button>
     </div>
   );
