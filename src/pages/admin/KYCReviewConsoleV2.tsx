@@ -372,10 +372,20 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
   // Final approve still requires all 3 green
   const finalApproveBlocked = activePillar === "final" && !allGreen;
 
-  const act = async (action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend") => {
-    console.info("[KYCReview] act()", { user: sub.user_id, pillar: activePillar, action, hasNotes: !!notes.trim() });
+  /**
+   * Direct RPC call. Used for both the sticky-footer flow (which routes
+   * approve/reject/resubmit through the bottom sheet) AND for inline
+   * suspend/unsuspend/reset actions.
+   *
+   * For approve/reject/resubmit, callers MUST go through `requestDecision()`
+   * so the user is prompted for a reason via the premium bottom sheet.
+   */
+  const act = async (
+    action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend",
+    reason?: string,
+  ) => {
+    console.info("[KYCReview] act()", { user: sub.user_id, pillar: activePillar, action, hasReason: !!reason });
 
-    // Guard: prevent duplicate decisions on a locked pillar
     if (isPillarLocked && (action === "approve" || action === "reject" || action === "request_resubmission")) {
       toast.error(`${activePillar} already ${isPillarApproved ? "approved" : "rejected"}`, {
         description: "This step is locked. Reset or reopen via support workflow if change is needed.",
@@ -383,12 +393,8 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
       });
       return;
     }
-
-    if ((action === "reject" || action === "request_resubmission") && !notes.trim()) {
-      toast.error("A reason is required", {
-        description: "Please tell the user clearly what to fix in the textarea above.",
-        duration: 4500,
-      });
+    if ((action === "reject" || action === "request_resubmission") && !reason?.trim()) {
+      toast.error("A reason is required");
       return;
     }
     if (finalApproveBlocked && action === "approve") {
@@ -398,12 +404,36 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
       });
       return;
     }
+    await k.updatePillar(sub.user_id, activePillar, action, reason?.trim() || undefined);
+  };
+
+  /** Open the premium bottom sheet for the given intent. */
+  const requestDecision = (intent: DecisionIntent) => {
+    if (isPillarLocked) {
+      toast.error(`${activePillar} already ${isPillarApproved ? "approved" : "rejected"}`);
+      return;
+    }
+    if (intent === "approve" && finalApproveBlocked) {
+      toast.error("Final approval blocked", {
+        description: "Approve all 3 pillars first.",
+      });
+      return;
+    }
+    setPendingIntent(intent);
+  };
+
+  const confirmDecision = async (reason: string) => {
+    if (!pendingIntent) return;
+    const action =
+      pendingIntent === "approve" ? "approve"
+      : pendingIntent === "reject" ? "reject"
+      : "request_resubmission";
     try {
-      await k.updatePillar(sub.user_id, activePillar, action, notes.trim() || undefined);
-      setNotes("");
+      await act(action as any, reason);
+      setPendingIntent(null);
     } catch (err) {
-      // useAdminKYCv2 already shows a toast; we still log for diagnostics.
-      console.error("[KYCReview] act() failed", err);
+      // toast already shown by hook; keep sheet open so admin can retry.
+      console.error("[KYCReview] confirmDecision failed", err);
     }
   };
 
