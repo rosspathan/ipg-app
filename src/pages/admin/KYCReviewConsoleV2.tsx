@@ -315,7 +315,8 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
   const [audit, setAudit] = useState<KycAuditEntry[]>([]);
 
   const [activePillar, setActivePillar] = useState<Pillar>("documents");
-  const [notes, setNotes] = useState("");
+  // Decision sheet state — drives the premium bottom sheet.
+  const [pendingIntent, setPendingIntent] = useState<DecisionIntent | null>(null);
 
   // Resolve all signed URLs once whenever the selected submission changes.
   // CRITICAL: depend ONLY on stable primitive identifiers — depending on `k`
