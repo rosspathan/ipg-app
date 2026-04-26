@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAdminKYCv2,
@@ -35,6 +35,10 @@ import { cn } from "@/lib/utils";
 import { resolveKycSubmissionAssets } from "@/lib/kyc/resolveKycAsset";
 import { KycImageViewer } from "@/components/admin/kyc/KycImageViewer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import {
+  KycDecisionSheet,
+  type DecisionIntent,
+} from "@/components/admin/kyc/KycDecisionSheet";
 
 const filterChips: {
   value: KycQueueFilter;
@@ -311,7 +315,8 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
   const [audit, setAudit] = useState<KycAuditEntry[]>([]);
 
   const [activePillar, setActivePillar] = useState<Pillar>("documents");
-  const [notes, setNotes] = useState("");
+  // Decision sheet state — drives the premium bottom sheet.
+  const [pendingIntent, setPendingIntent] = useState<DecisionIntent | null>(null);
 
   // Resolve all signed URLs once whenever the selected submission changes.
   // CRITICAL: depend ONLY on stable primitive identifiers — depending on `k`
@@ -367,10 +372,20 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
   // Final approve still requires all 3 green
   const finalApproveBlocked = activePillar === "final" && !allGreen;
 
-  const act = async (action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend") => {
-    console.info("[KYCReview] act()", { user: sub.user_id, pillar: activePillar, action, hasNotes: !!notes.trim() });
+  /**
+   * Direct RPC call. Used for both the sticky-footer flow (which routes
+   * approve/reject/resubmit through the bottom sheet) AND for inline
+   * suspend/unsuspend/reset actions.
+   *
+   * For approve/reject/resubmit, callers MUST go through `requestDecision()`
+   * so the user is prompted for a reason via the premium bottom sheet.
+   */
+  const act = async (
+    action: "approve" | "reject" | "request_resubmission" | "suspend" | "unsuspend",
+    reason?: string,
+  ) => {
+    console.info("[KYCReview] act()", { user: sub.user_id, pillar: activePillar, action, hasReason: !!reason });
 
-    // Guard: prevent duplicate decisions on a locked pillar
     if (isPillarLocked && (action === "approve" || action === "reject" || action === "request_resubmission")) {
       toast.error(`${activePillar} already ${isPillarApproved ? "approved" : "rejected"}`, {
         description: "This step is locked. Reset or reopen via support workflow if change is needed.",
@@ -378,12 +393,8 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
       });
       return;
     }
-
-    if ((action === "reject" || action === "request_resubmission") && !notes.trim()) {
-      toast.error("A reason is required", {
-        description: "Please tell the user clearly what to fix in the textarea above.",
-        duration: 4500,
-      });
+    if ((action === "reject" || action === "request_resubmission") && !reason?.trim()) {
+      toast.error("A reason is required");
       return;
     }
     if (finalApproveBlocked && action === "approve") {
@@ -393,12 +404,36 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
       });
       return;
     }
+    await k.updatePillar(sub.user_id, activePillar, action, reason?.trim() || undefined);
+  };
+
+  /** Open the premium bottom sheet for the given intent. */
+  const requestDecision = (intent: DecisionIntent) => {
+    if (isPillarLocked) {
+      toast.error(`${activePillar} already ${isPillarApproved ? "approved" : "rejected"}`);
+      return;
+    }
+    if (intent === "approve" && finalApproveBlocked) {
+      toast.error("Final approval blocked", {
+        description: "Approve all 3 pillars first.",
+      });
+      return;
+    }
+    setPendingIntent(intent);
+  };
+
+  const confirmDecision = async (reason: string) => {
+    if (!pendingIntent) return;
+    const action =
+      pendingIntent === "approve" ? "approve"
+      : pendingIntent === "reject" ? "reject"
+      : "request_resubmission";
     try {
-      await k.updatePillar(sub.user_id, activePillar, action, notes.trim() || undefined);
-      setNotes("");
+      await act(action as any, reason);
+      setPendingIntent(null);
     } catch (err) {
-      // useAdminKYCv2 already shows a toast; we still log for diagnostics.
-      console.error("[KYCReview] act() failed", err);
+      // toast already shown by hook; keep sheet open so admin can retry.
+      console.error("[KYCReview] confirmDecision failed", err);
     }
   };
 
@@ -728,42 +763,50 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           </div>
         ) : (
           <>
-            <Textarea
-              placeholder={
-                activePillar === "final"
-                  ? "Optional note (recommended for record)…"
-                  : "Reason — required for Reject / Resubmit"
-              }
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="text-sm resize-none mb-2"
-            />
-            <div className="grid grid-cols-3 gap-1.5">
+            <p className="mb-2 text-[11px] text-muted-foreground">
+              {activePillar === "final"
+                ? "Approve unlocks the user. Reject is final."
+                : "Tap an action — you'll be asked to confirm and (for Reject / Resubmit) to provide a reason."}
+            </p>
+            {/* Reject is the most-requested action and gets equal visual weight,
+                so admins can never miss it. Three large, full-height buttons. */}
+            <div className="grid grid-cols-3 gap-2">
               <Button
-                size="sm"
-                onClick={() => act("approve")}
+                onClick={() => requestDecision("approve")}
                 disabled={k.busy || finalApproveBlocked}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white h-11"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-sm font-semibold shadow-sm"
               >
-                <Check className="mr-1 h-3.5 w-3.5" /> Approve
+                <Check className="mr-1.5 h-4 w-4" /> Approve
               </Button>
               <Button
-                size="sm"
-                variant="outline"
-                onClick={() => act("request_resubmission")}
+                onClick={() => requestDecision("resubmit")}
                 disabled={k.busy}
-                className="h-11 border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+                className="h-12 text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
               >
-                <AlertCircle className="mr-1 h-3.5 w-3.5" /> Resubmit
+                <AlertCircle className="mr-1.5 h-4 w-4" /> Resubmit
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy} className="h-11">
-                <X className="mr-1 h-3.5 w-3.5" /> Reject
+              <Button
+                onClick={() => requestDecision("reject")}
+                disabled={k.busy}
+                className="h-12 text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+              >
+                <X className="mr-1.5 h-4 w-4" /> Reject
               </Button>
             </div>
           </>
         )}
       </div>
+
+      {/* Premium decision bottom sheet — mandatory reason for reject/resubmit */}
+      <KycDecisionSheet
+        open={!!pendingIntent}
+        intent={pendingIntent}
+        pillar={activePillar}
+        userName={name}
+        busy={k.busy}
+        onConfirm={confirmDecision}
+        onClose={() => setPendingIntent(null)}
+      />
     </div>
   );
 }
