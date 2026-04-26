@@ -796,6 +796,17 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           </>
         )}
       </div>
+
+      {/* Premium decision bottom sheet — mandatory reason for reject/resubmit */}
+      <KycDecisionSheet
+        open={!!pendingIntent}
+        intent={pendingIntent}
+        pillar={activePillar}
+        userName={name}
+        busy={k.busy}
+        onConfirm={confirmDecision}
+        onClose={() => setPendingIntent(null)}
+      />
     </div>
   );
 }
