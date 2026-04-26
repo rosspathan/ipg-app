@@ -35,6 +35,10 @@ import { cn } from "@/lib/utils";
 import { resolveKycSubmissionAssets } from "@/lib/kyc/resolveKycAsset";
 import { KycImageViewer } from "@/components/admin/kyc/KycImageViewer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import {
+  KycDecisionSheet,
+  type DecisionIntent,
+} from "@/components/admin/kyc/KycDecisionSheet";
 
 const filterChips: {
   value: KycQueueFilter;
