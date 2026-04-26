@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAdminKYCv2,
