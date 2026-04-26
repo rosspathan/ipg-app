@@ -763,37 +763,34 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           </div>
         ) : (
           <>
-            <Textarea
-              placeholder={
-                activePillar === "final"
-                  ? "Optional note (recommended for record)…"
-                  : "Reason — required for Reject / Resubmit"
-              }
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="text-sm resize-none mb-2"
-            />
-            <div className="grid grid-cols-3 gap-1.5">
+            <p className="mb-2 text-[11px] text-muted-foreground">
+              {activePillar === "final"
+                ? "Approve unlocks the user. Reject is final."
+                : "Tap an action — you'll be asked to confirm and (for Reject / Resubmit) to provide a reason."}
+            </p>
+            {/* Reject is the most-requested action and gets equal visual weight,
+                so admins can never miss it. Three large, full-height buttons. */}
+            <div className="grid grid-cols-3 gap-2">
               <Button
-                size="sm"
-                onClick={() => act("approve")}
+                onClick={() => requestDecision("approve")}
                 disabled={k.busy || finalApproveBlocked}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white h-11"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-sm font-semibold shadow-sm"
               >
-                <Check className="mr-1 h-3.5 w-3.5" /> Approve
+                <Check className="mr-1.5 h-4 w-4" /> Approve
               </Button>
               <Button
-                size="sm"
-                variant="outline"
-                onClick={() => act("request_resubmission")}
+                onClick={() => requestDecision("resubmit")}
                 disabled={k.busy}
-                className="h-11 border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+                className="h-12 text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
               >
-                <AlertCircle className="mr-1 h-3.5 w-3.5" /> Resubmit
+                <AlertCircle className="mr-1.5 h-4 w-4" /> Resubmit
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => act("reject")} disabled={k.busy} className="h-11">
-                <X className="mr-1 h-3.5 w-3.5" /> Reject
+              <Button
+                onClick={() => requestDecision("reject")}
+                disabled={k.busy}
+                className="h-12 text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+              >
+                <X className="mr-1.5 h-4 w-4" /> Reject
               </Button>
             </div>
           </>
