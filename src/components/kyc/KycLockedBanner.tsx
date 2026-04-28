@@ -79,24 +79,51 @@ export function KycLockedBanner({ action = "use this feature", className, compac
           </p>
           <p className="mt-1 text-xs text-muted-foreground/80">{gate.reason}</p>
 
-          {/* Pillar status chips */}
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          {/* Pillar status chips + per-pillar reasons so the user knows exactly what to fix */}
+          <div className="mt-3 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { key: "documents", label: "Documents", status: gate.documentsStatus, notes: gate.documentsNotes },
+                { key: "face", label: "Face", status: gate.faceStatus, notes: gate.faceNotes },
+                { key: "mobile", label: "Mobile", status: gate.mobileStatus, notes: gate.mobileNotes },
+              ].map((p) => (
+                <div
+                  key={p.key}
+                  className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2.5 py-1 text-xs"
+                >
+                  <span className={cn("h-1.5 w-1.5 rounded-full", dotClass(p.status))} />
+                  <span className="font-medium">{p.label}</span>
+                  <span className="text-muted-foreground capitalize">
+                    {p.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Per-pillar rejection / resubmit reasons */}
             {[
-              { key: "documents", label: "Documents", status: gate.documentsStatus },
-              { key: "face", label: "Face", status: gate.faceStatus },
-              { key: "mobile", label: "Mobile", status: gate.mobileStatus },
-            ].map((p) => (
-              <div
-                key={p.key}
-                className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2.5 py-1 text-xs"
-              >
-                <span className={cn("h-1.5 w-1.5 rounded-full", dotClass(p.status))} />
-                <span className="font-medium">{p.label}</span>
-                <span className="text-muted-foreground capitalize">
-                  {p.status.replace(/_/g, " ")}
-                </span>
+              { label: "Documents", status: gate.documentsStatus, notes: gate.documentsNotes },
+              { label: "Face", status: gate.faceStatus, notes: gate.faceNotes },
+              { label: "Mobile", status: gate.mobileStatus, notes: gate.mobileNotes },
+            ]
+              .filter((p) => (p.status === "rejected" || p.status === "needs_resubmission") && p.notes)
+              .map((p) => (
+                <div
+                  key={p.label}
+                  className="rounded-md border border-rose-500/30 bg-rose-500/5 px-2.5 py-1.5 text-xs"
+                >
+                  <span className="font-semibold text-rose-300">{p.label} — fix required:</span>{" "}
+                  <span className="text-foreground/90">{p.notes}</span>
+                </div>
+              ))}
+
+            {/* Final-stage rejection reason */}
+            {gate.finalStatus === "rejected" && gate.rejectionReason && (
+              <div className="rounded-md border border-rose-500/30 bg-rose-500/5 px-2.5 py-1.5 text-xs">
+                <span className="font-semibold text-rose-300">Admin decision:</span>{" "}
+                <span className="text-foreground/90">{gate.rejectionReason}</span>
               </div>
-            ))}
+            )}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
