@@ -263,6 +263,7 @@ import KYCSubmission from "@/pages/KYCSubmission";
 import KYCSubmissionSimple from "@/pages/KYCSubmissionSimple";
 const KycWizardV2 = React.lazy(() => import("@/pages/app/KycWizardV2"));
 const KYCReviewConsoleV2 = React.lazy(() => import("@/pages/admin/KYCReviewConsoleV2"));
+const AdminVerifiedUsers = React.lazy(() => import("@/pages/admin/AdminVerifiedUsers"));
 import { IDCardPage } from "@/pages/IDCardPage";
 import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
@@ -697,6 +698,7 @@ function AppContent() {
                 <Route path="kyc-review" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewConsoleV2 /></React.Suspense>} />
                 <Route path="kyc/legacy" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewNew /></React.Suspense>} />
                 <Route path="kyc/settings" element={<React.Suspense fallback={<LoadingFallback />}><AdminKYCSettings /></React.Suspense>} />
+                <Route path="kyc/verified" element={<React.Suspense fallback={<LoadingFallback />}><AdminVerifiedUsers /></React.Suspense>} />
                 
                 {/* Phase 5: Role & Badge Management */}
                 <Route path="roles" element={<React.Suspense fallback={<LoadingFallback />}><AdminRoleManagement /></React.Suspense>} />
