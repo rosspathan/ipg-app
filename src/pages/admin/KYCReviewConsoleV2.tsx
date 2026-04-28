@@ -103,10 +103,18 @@ export default function KYCReviewConsoleV2() {
             3-pillar review · documents · face · admin-verified mobile
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={k.refetch} disabled={k.loading}>
-          <RefreshCw className={cn("h-4 w-4", k.loading && "animate-spin")} />
-          <span className="ml-2 hidden sm:inline">Refresh</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <a href="/admin/kyc/verified">
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <span className="ml-2 hidden sm:inline">Verified</span>
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" onClick={k.refetch} disabled={k.loading}>
+            <RefreshCw className={cn("h-4 w-4", k.loading && "animate-spin")} />
+            <span className="ml-2 hidden sm:inline">Refresh</span>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
