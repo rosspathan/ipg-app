@@ -492,7 +492,8 @@ async function checkEligibility(supabase: any, userId: string) {
     system_message: availability.user_message,
     wallet_linked: !!walletAddress,
     wallet_address: walletAddress || null,
-    kyc_approved: profile.kyc_status === 'approved',
+    // Use authoritative 4-pillar gate, not the legacy display field on profiles
+    kyc_approved: ((await supabase.rpc('is_kyc_approved', { _user_id: userId })).data === true),
     account_active: profile.account_status === 'active',
     withdrawable_balance: withdrawableBalance,
     min_amount: Math.max(Number(settings.min_amount_bsk), minValidAmount),

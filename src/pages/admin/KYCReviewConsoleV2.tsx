@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { KycDiagnosticsPanel } from "@/components/admin/kyc/KycDiagnosticsPanel";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -505,6 +506,9 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
           />
           <Field label="Nationality" value={dataJson.nationality} />
         </SectionCard>
+
+        {/* Diagnostics — instant verdict on what this user can/can't do */}
+        <KycDiagnosticsPanel userId={sub.user_id} />
 
         {/* Documents */}
         <SectionCard
