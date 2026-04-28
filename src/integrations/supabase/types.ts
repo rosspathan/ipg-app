@@ -14872,6 +14872,10 @@ export type Database = {
       }
       admin_has_valid_session: { Args: { _admin_id: string }; Returns: boolean }
       admin_import_genesis_crypto_balances: { Args: never; Returns: Json }
+      admin_kyc_access_check: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       admin_mint_bsk: {
         Args: {
           p_admin_id: string
