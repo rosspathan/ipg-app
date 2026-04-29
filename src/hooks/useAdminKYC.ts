@@ -183,20 +183,8 @@ export function useAdminKYC() {
           .eq('user_id', userId);
       }
 
-      // Credit BSK reward
-      if (userId) {
-        try {
-          const { error: rewardError } = await supabase.functions.invoke(
-            'process-kyc-user-reward',
-            { body: { user_id: userId, reward_bsk: 5 } }
-          );
-          if (rewardError) {
-            console.error('KYC reward failed:', rewardError);
-          }
-        } catch (rewardError) {
-          console.error('Error crediting KYC reward:', rewardError);
-        }
-      }
+      // KYC bonus permanently removed (compliance-only). No BSK is credited
+      // for KYC submission, approval, or referral. Do not re-add.
 
       toast({
         title: '✅ Approved',

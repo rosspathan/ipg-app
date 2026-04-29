@@ -59,17 +59,9 @@ export default function AdminKYCSimple() {
 
       if (updateError) throw updateError;
 
-      // Call commission distribution edge function
-      const { error: commissionError } = await supabase.functions.invoke('process-kyc-commissions', {
-        body: { user_id: selectedSubmission.user_id },
-      });
-
-      if (commissionError) {
-        console.error('Commission distribution error:', commissionError);
-        toast.error('KYC approved but commission distribution failed');
-      } else {
-        toast.success('KYC approved! 5 BSK credited + commissions distributed');
-      }
+      // KYC bonuses and KYC referral commissions are permanently disabled
+      // (compliance-only). Do not invoke any reward/commission edge function.
+      toast.success('KYC approved');
 
       setSelectedSubmission(null);
       setAdminNotes('');

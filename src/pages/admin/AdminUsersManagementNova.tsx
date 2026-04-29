@@ -286,7 +286,9 @@ export default function AdminUsersManagementNova() {
 
   const handleApproveKYC = async (userId: string) => {
     try {
-      // 1. Update KYC status to approved
+      // Update KYC status to approved. KYC bonuses/referrals are permanently
+      // disabled (compliance-only) — do NOT credit BSK or invoke any
+      // KYC reward / KYC commission edge function here.
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ kyc_status: 'approved' })
@@ -294,49 +296,22 @@ export default function AdminUsersManagementNova() {
 
       if (updateError) throw updateError;
 
-      // 2. Credit 5 BSK to user's withdrawable (Tradable) balance via atomic RPC
-      const { error: balanceError } = await supabase.rpc('record_bsk_transaction', {
-        p_user_id: userId,
-        p_idempotency_key: `kyc_approval_credit_${userId}`,
-        p_tx_type: 'credit',
-        p_tx_subtype: 'kyc_completion',
-        p_balance_type: 'withdrawable',
-        p_amount_bsk: 5,
-        p_notes: 'KYC approval reward',
-        p_meta_json: { reward_type: 'kyc_approval' },
-      });
-
-      if (balanceError) throw balanceError;
-
-      // 3. Distribute team income to upline via edge function
-      const { error: commissionError } = await supabase.functions.invoke('process-kyc-commissions', {
-        body: { 
-          user_id: userId, 
-          kyc_reward_bsk: 5 
-        }
-      });
-
-      if (commissionError) {
-        console.error('Commission distribution error:', commissionError);
-        // Don't fail the whole operation if commission distribution fails
-      }
-
-      // 4. Invalidate queries to refresh UI
+      // Refresh UI
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['user-bsk-balance', userId] });
       refetchKyc();
 
-      toast({ 
-        title: "KYC Approved Successfully", 
-        description: "User received 5 BSK reward and team income was distributed to upline members."
+      toast({
+        title: "KYC Approved",
+        description: "User KYC marked as approved. (No bonus credited — KYC is compliance-only.)"
       });
-      
+
     } catch (error: any) {
       console.error('KYC approval error:', error);
-      toast({ 
-        title: "Failed to approve KYC", 
+      toast({
+        title: "Failed to approve KYC",
         description: error.message,
-        variant: "destructive" 
+        variant: "destructive"
       });
     }
   };
