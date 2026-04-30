@@ -256,17 +256,38 @@ export const useKYCNew = () => {
       return upserted as KYCProfile;
     } catch (error: any) {
       console.error('[KYC] Error updating KYC level:', error);
-      
-      if (error?.message?.includes('PHONE_ALREADY_USED')) {
+      const msg: string = error?.message || '';
+
+      if (msg.includes('PHONE_ALREADY_USED')) {
         toast({
           title: "Phone Number Already Used",
           description: "This mobile number is already used in the new KYC system. Please use a different number or contact support.",
           variant: "destructive",
         });
+      } else if (msg.includes('missing required fields')) {
+        toast({
+          title: "Missing Required Fields",
+          description: msg.replace('KYC submission ', ''),
+          variant: "destructive",
+        });
+      } else if (msg.includes('already has a KYC submission')) {
+        toast({
+          title: "KYC Already In Progress",
+          description: "You already have a KYC submission in review. Please wait for it to be reviewed before resubmitting.",
+          variant: "destructive",
+        });
+      } else if (msg.includes('Cannot submit new KYC while another is pending')) {
+        toast({
+          title: "Pending Review",
+          description: "Your previous KYC is still under review. Please wait until it is processed.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Save Failed",
-          description: "Failed to save your information. Please try again.",
+          description: msg
+            ? `Failed to save: ${msg}`
+            : "Failed to save your information. Please try again.",
           variant: "destructive",
         });
       }
