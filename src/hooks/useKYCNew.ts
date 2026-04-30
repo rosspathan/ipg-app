@@ -332,9 +332,13 @@ export const useKYCNew = () => {
       await fetchKYC();
     } catch (error: any) {
       console.error('[KYC] Error submitting KYC:', error);
+      const msg: string = error?.message || '';
+      const ref = (error?.code ? `Ref: ${error.code}` : `Ref: ${Date.now().toString(36).toUpperCase()}`);
       toast({
         title: "Submission Failed",
-        description: "Failed to submit your KYC. Please try again.",
+        description: msg
+          ? `${msg} (${ref})`
+          : `KYC submission failed due to a server issue. Please try again. (${ref})`,
         variant: "destructive",
       });
       throw error;
