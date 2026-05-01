@@ -337,11 +337,24 @@ export function useAdminKYCv2() {
         return data as any;
       } catch (e: any) {
         console.error("[AdminKYCv2] updatePillar error", e);
-        toast({
-          title: "Action failed",
-          description: e?.message ?? e?.error_description ?? "Unknown error — check console for details.",
-          variant: "destructive",
-        });
+        const rawMsg: string = e?.message ?? e?.error_description ?? "Unknown error — check console for details.";
+        const isPhoneDup = /PHONE_ALREADY_USED/i.test(rawMsg);
+        if (isPhoneDup) {
+          // Strip the "PHONE_ALREADY_USED: " prefix for a cleaner message
+          const cleaned = rawMsg.replace(/^.*PHONE_ALREADY_USED:\s*/i, "").trim();
+          toast({
+            title: "⚠️ Mobile number already exists",
+            description: cleaned || "This mobile number is already linked to another KYC profile. Reject one of the duplicate profiles before approving.",
+            variant: "destructive",
+            duration: 12000,
+          });
+        } else {
+          toast({
+            title: "Action failed",
+            description: rawMsg,
+            variant: "destructive",
+          });
+        }
         throw e;
       } finally {
         setBusy(false);
