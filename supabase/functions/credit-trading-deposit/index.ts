@@ -249,10 +249,23 @@ Deno.serve(async (req) => {
 
     console.log(`[CreditDeposit] Verifying on-chain: asset=${asset.symbol}, contract=${asset.contract_address}, hotWallet=${hotWallet.address}`);
 
-    // Verify the transaction on-chain
+    // KYC pre-check (server-side enforcement)
+    const { data: kyc } = await supabase
+      .from("kyc_profiles_new")
+      .select("final_status")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (kyc?.final_status !== "approved") {
+      return new Response(
+        JSON.stringify({ status: "kyc_required", error: "KYC_REQUIRED — approval needed before crediting trading balance" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify the transaction on-chain (null contract = native BNB)
     const verification = await verifyOnChainTransfer(
       tx_hash,
-      asset.contract_address || "0x0000000000000000000000000000000000000000",
+      asset.contract_address || null,
       hotWallet.address,
       amount,
       asset.decimals || 18,
@@ -260,13 +273,38 @@ Deno.serve(async (req) => {
     );
 
     if (!verification.valid) {
-      console.error(`[CreditDeposit] On-chain verification failed: ${verification.error}`);
+      const status = verification.pending
+        ? "pending_confirmations"
+        : verification.error?.includes("Wrong recipient")
+        ? "wrong_recipient"
+        : verification.error?.includes("mismatch")
+        ? "amount_mismatch"
+        : verification.error?.includes("failed on-chain")
+        ? "failed_tx"
+        : "verification_failed";
       return new Response(
-        JSON.stringify({ 
-          error: "On-chain verification failed", 
-          details: verification.error 
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ status, error: verification.error, details: verification.error }),
+        { status: verification.pending ? 202 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Ambiguity guard: ensure the on-chain sender belongs uniquely to this user
+    const senderLower = (verification.from || from_address).toLowerCase();
+    const { data: ownerMatches } = await supabase
+      .from("user_wallets")
+      .select("user_id")
+      .eq("address", senderLower);
+    const distinctOwners = new Set((ownerMatches || []).map((r: any) => r.user_id));
+    if (distinctOwners.size > 1) {
+      return new Response(
+        JSON.stringify({ status: "ambiguous_wallet_owner", error: "Sender wallet is linked to multiple accounts; deposit queued for manual review" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (distinctOwners.size === 1 && !distinctOwners.has(user.id)) {
+      return new Response(
+        JSON.stringify({ status: "wrong_sender", error: "Sender wallet does not belong to authenticated user" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
