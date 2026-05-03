@@ -17,13 +17,13 @@ const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a
 
 async function verifyOnChainTransfer(
   txHash: string,
-  expectedAssetContract: string,
+  expectedAssetContract: string | null, // null => native BNB
   expectedToAddress: string,
   expectedAmount: number,
   decimals: number,
   rpcUrl: string
-): Promise<{ valid: boolean; error?: string; actualAmount?: number; from?: string }> {
-  try {
+): Promise<{ valid: boolean; error?: string; actualAmount?: number; from?: string; isNative?: boolean }> {
+  const isNative = !expectedAssetContract;
     console.log(`[Verify] Checking tx ${txHash} on-chain...`);
     console.log(`[Verify] Expected: to=${expectedToAddress}, contract=${expectedAssetContract}, amount=${expectedAmount}`);
 
