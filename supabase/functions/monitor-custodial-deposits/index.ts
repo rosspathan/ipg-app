@@ -42,7 +42,10 @@ const DEFAULT_BSC_RPC_URLS = [
   'https://bsc-dataseed2.defibit.io',
 ];
 
-const REQUIRED_CONFIRMATIONS = 15;
+// Confirmations required to credit a deposit. Configurable via
+// system_settings.bsc_required_confirmations (default 3 for BSC, which is
+// finality-fast; previous value of 15 caused multi-hour stuck states).
+let REQUIRED_CONFIRMATIONS = 3;
 const BLOCKS_PER_2_HOURS = 2400;
 const BLOCKS_PER_BATCH = 500; // Smaller batches to avoid public RPC limits
 const MAX_BLOCKS_PER_RUN = 2400; // cap normal scanning per invocation (2h) to avoid spikes
@@ -367,6 +370,22 @@ Deno.serve(async (req) => {
     const customRpc = Deno.env.get('BSC_RPC_URL')?.trim();
     const rpcUrls = customRpc ? [customRpc, ...DEFAULT_BSC_RPC_URLS] : DEFAULT_BSC_RPC_URLS;
     console.log(`[monitor-custodial-deposits] Using ${rpcUrls.length} RPC endpoints`);
+
+    // Load configurable confirmation count
+    try {
+      const { data: confSetting } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'bsc_required_confirmations')
+        .maybeSingle();
+      const parsed = parseInt(String(confSetting?.value || ''), 10);
+      if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 64) {
+        REQUIRED_CONFIRMATIONS = parsed;
+      }
+      console.log(`[monitor-custodial-deposits] REQUIRED_CONFIRMATIONS=${REQUIRED_CONFIRMATIONS}`);
+    } catch (e) {
+      console.warn('[monitor-custodial-deposits] Failed to load confirmation setting, using default 3');
+    }
 
     // 1. Resolve Trading hot wallet
     let hotWallet: { address: string; label?: string } | null = null;

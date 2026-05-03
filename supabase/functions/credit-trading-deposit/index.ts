@@ -17,123 +17,107 @@ const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a
 
 async function verifyOnChainTransfer(
   txHash: string,
-  expectedAssetContract: string,
+  expectedAssetContract: string | null, // null => native BNB
   expectedToAddress: string,
   expectedAmount: number,
   decimals: number,
   rpcUrl: string
-): Promise<{ valid: boolean; error?: string; actualAmount?: number; from?: string }> {
+): Promise<{ valid: boolean; error?: string; actualAmount?: number; from?: string; isNative?: boolean; pending?: boolean }> {
+  const isNative = !expectedAssetContract;
   try {
-    console.log(`[Verify] Checking tx ${txHash} on-chain...`);
-    console.log(`[Verify] Expected: to=${expectedToAddress}, contract=${expectedAssetContract}, amount=${expectedAmount}`);
+    console.log(`[Verify] Checking tx ${txHash} on-chain (native=${isNative})...`);
 
-    // Get transaction receipt
     const receiptResponse = await fetch(rpcUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getTransactionReceipt",
-        params: [txHash],
-      }),
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getTransactionReceipt", params: [txHash] }),
     });
-
     const receiptData = await receiptResponse.json();
-    
+
     if (!receiptData.result) {
-      console.log(`[Verify] Transaction not found or not mined yet`);
-      return { valid: false, error: "Transaction not found or not yet confirmed" };
+      return { valid: false, pending: true, error: "Transaction not yet confirmed on-chain" };
     }
 
     const receipt = receiptData.result;
-    
-    // Check if transaction was successful
     if (receipt.status !== "0x1") {
-      console.log(`[Verify] Transaction failed on-chain`);
       return { valid: false, error: "Transaction failed on-chain" };
     }
 
-    // Parse logs for ERC-20 Transfer events
-    const logs = receipt.logs || [];
-    console.log(`[Verify] Found ${logs.length} logs in transaction`);
+    const expectedTo = expectedToAddress.toLowerCase();
 
-    for (const log of logs) {
-      // Check if this is a Transfer event from the expected contract
-      if (
-        log.topics &&
-        log.topics[0] === TRANSFER_TOPIC &&
-        log.address.toLowerCase() === expectedAssetContract.toLowerCase()
-      ) {
-        // Decode Transfer event: Transfer(from, to, amount)
-        // topics[1] = from address (padded to 32 bytes)
-        // topics[2] = to address (padded to 32 bytes)
-        // data = amount (uint256)
-        
+    // ===== ERC-20 / BEP-20 path =====
+    if (!isNative) {
+      const expectedContract = expectedAssetContract!.toLowerCase();
+      const logs = receipt.logs || [];
+      let bestMatch: { actualAmount: number; from: string } | null = null;
+
+      for (const log of logs) {
+        if (
+          !log.topics ||
+          log.topics[0] !== TRANSFER_TOPIC ||
+          (log.address || "").toLowerCase() !== expectedContract
+        ) continue;
+
         const fromAddress = "0x" + log.topics[1].slice(26);
         const toAddress = "0x" + log.topics[2].slice(26);
-        const amountHex = log.data;
-        const amountWei = BigInt(amountHex);
+        if (toAddress.toLowerCase() !== expectedTo) continue;
+
+        const amountWei = BigInt(log.data);
         const actualAmount = Number(amountWei) / Math.pow(10, decimals);
-
-        console.log(`[Verify] Found Transfer: from=${fromAddress}, to=${toAddress}, amount=${actualAmount}`);
-
-        // Check if this transfer is to our hot wallet
-        if (toAddress.toLowerCase() === expectedToAddress.toLowerCase()) {
-          // Allow small tolerance for floating point
-          const tolerance = 0.0001;
-          if (Math.abs(actualAmount - expectedAmount) <= tolerance || actualAmount >= expectedAmount) {
-            console.log(`[Verify] ✓ Valid transfer verified!`);
-            return { valid: true, actualAmount, from: fromAddress };
-          } else {
-            console.log(`[Verify] Amount mismatch: expected ${expectedAmount}, got ${actualAmount}`);
-            return { 
-              valid: false, 
-              error: `Amount mismatch: expected ${expectedAmount}, got ${actualAmount}`,
-              actualAmount,
-              from: fromAddress
-            };
-          }
-        }
+        bestMatch = { actualAmount, from: fromAddress };
+        break;
       }
+
+      if (!bestMatch) {
+        return { valid: false, error: `No matching ${expectedContract.slice(0, 10)} transfer to ${expectedTo} in tx logs` };
+      }
+
+      // Always credit the actual on-chain amount (never silently lose value).
+      // If actualAmount < expectedAmount * 0.99 → refuse, treat as amount mismatch.
+      const ratio = expectedAmount > 0 ? bestMatch.actualAmount / expectedAmount : 1;
+      if (ratio < 0.99) {
+        return {
+          valid: false,
+          error: `Amount mismatch: expected ${expectedAmount}, on-chain ${bestMatch.actualAmount}`,
+          actualAmount: bestMatch.actualAmount,
+          from: bestMatch.from,
+        };
+      }
+      return { valid: true, actualAmount: bestMatch.actualAmount, from: bestMatch.from };
     }
 
-    // Also check if this is a native BNB transfer (no logs, check value)
+    // ===== Native BNB path =====
     const txResponse = await fetch(rpcUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getTransactionByHash",
-        params: [txHash],
-      }),
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getTransactionByHash", params: [txHash] }),
     });
-
     const txData = await txResponse.json();
-    if (txData.result) {
-      const tx = txData.result;
-      const toAddress = tx.to?.toLowerCase();
-      const valueWei = BigInt(tx.value || "0");
-      const valueBNB = Number(valueWei) / 1e18;
-
-      // If it's a native transfer to our hot wallet
-      if (
-        toAddress === expectedToAddress.toLowerCase() &&
-        valueBNB > 0 &&
-        expectedAssetContract.toLowerCase() === "0x0000000000000000000000000000000000000000" // Native BNB
-      ) {
-        if (Math.abs(valueBNB - expectedAmount) <= 0.0001 || valueBNB >= expectedAmount) {
-          console.log(`[Verify] ✓ Native BNB transfer verified: ${valueBNB} BNB`);
-          return { valid: true, actualAmount: valueBNB, from: tx.from };
-        }
-      }
+    if (!txData.result) {
+      return { valid: false, error: "Native tx not found" };
     }
+    const tx = txData.result;
+    const toAddress = (tx.to || "").toLowerCase();
+    if (toAddress !== expectedTo) {
+      return { valid: false, error: `Wrong recipient: tx.to=${toAddress} expected=${expectedTo}` };
+    }
+    const valueWei = BigInt(tx.value || "0");
+    const valueBNB = Number(valueWei) / 1e18;
+    if (valueBNB <= 0) {
+      return { valid: false, error: "Native tx has zero value" };
+    }
+    const ratio = expectedAmount > 0 ? valueBNB / expectedAmount : 1;
+    if (ratio < 0.99) {
+      return {
+        valid: false,
+        error: `BNB amount mismatch: expected ${expectedAmount}, on-chain ${valueBNB}`,
+        actualAmount: valueBNB,
+        from: tx.from,
+      };
+    }
+    return { valid: true, actualAmount: valueBNB, from: tx.from, isNative: true };
 
-    console.log(`[Verify] No matching Transfer event found to ${expectedToAddress}`);
-    return { valid: false, error: `No matching transfer found to hot wallet ${expectedToAddress}` };
-
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[Verify] Error verifying transaction:`, error);
     return { valid: false, error: `Verification error: ${error.message}` };
   }
@@ -229,52 +213,59 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the platform hot wallet address (prioritize Trading wallet)
-    let hotWallet = null;
-    
-    // First try to get the Trading Hot Wallet specifically
-    const { data: tradingWallet } = await supabase
-      .from("platform_hot_wallet")
-      .select("address, label")
-      .eq("chain", "BSC")
-      .eq("is_active", true)
-      .ilike("label", "%Trading%")
-      .limit(1)
-      .maybeSingle();
-    
-    if (tradingWallet?.address) {
-      hotWallet = tradingWallet;
-      console.log(`[CreditDeposit] Using Trading Hot Wallet: ${tradingWallet.address}`);
-    } else {
-      // Fallback: get any active BSC wallet
-      const { data: anyWallet } = await supabase
+    // Get the platform Trading hot wallet (STRICT — by purpose, no random fallback)
+    let hotWallet: { address: string; label?: string | null } | null = null;
+    {
+      const { data: byPurpose } = await supabase
         .from("platform_hot_wallet")
         .select("address, label")
         .eq("chain", "BSC")
         .eq("is_active", true)
+        .eq("purpose", "trading")
         .limit(1)
         .maybeSingle();
-      
-      if (anyWallet?.address) {
-        hotWallet = anyWallet;
-        console.log(`[CreditDeposit] Using fallback wallet: ${anyWallet.label} - ${anyWallet.address}`);
+      if (byPurpose?.address) hotWallet = byPurpose;
+
+      if (!hotWallet) {
+        const { data: byLabel } = await supabase
+          .from("platform_hot_wallet")
+          .select("address, label")
+          .eq("chain", "BSC")
+          .eq("is_active", true)
+          .ilike("label", "%Trading%")
+          .limit(1)
+          .maybeSingle();
+        if (byLabel?.address) hotWallet = byLabel;
       }
     }
 
     if (!hotWallet) {
-      console.error(`[CreditDeposit] No active BSC hot wallet found`);
+      console.error(`[CreditDeposit] No Trading Hot Wallet configured`);
       return new Response(
-        JSON.stringify({ error: "Platform hot wallet not configured" }),
+        JSON.stringify({ status: "wrong_recipient", error: "Trading Hot Wallet not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log(`[CreditDeposit] Verifying on-chain: asset=${asset.symbol}, contract=${asset.contract_address}, hotWallet=${hotWallet.address}`);
 
-    // Verify the transaction on-chain
+    // KYC pre-check (server-side enforcement)
+    const { data: kyc } = await supabase
+      .from("kyc_profiles_new")
+      .select("final_status")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (kyc?.final_status !== "approved") {
+      return new Response(
+        JSON.stringify({ status: "kyc_required", error: "KYC_REQUIRED — approval needed before crediting trading balance" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify the transaction on-chain (null contract = native BNB)
     const verification = await verifyOnChainTransfer(
       tx_hash,
-      asset.contract_address || "0x0000000000000000000000000000000000000000",
+      asset.contract_address || null,
       hotWallet.address,
       amount,
       asset.decimals || 18,
@@ -282,13 +273,38 @@ Deno.serve(async (req) => {
     );
 
     if (!verification.valid) {
-      console.error(`[CreditDeposit] On-chain verification failed: ${verification.error}`);
+      const status = verification.pending
+        ? "pending_confirmations"
+        : verification.error?.includes("Wrong recipient")
+        ? "wrong_recipient"
+        : verification.error?.includes("mismatch")
+        ? "amount_mismatch"
+        : verification.error?.includes("failed on-chain")
+        ? "failed_tx"
+        : "verification_failed";
       return new Response(
-        JSON.stringify({ 
-          error: "On-chain verification failed", 
-          details: verification.error 
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ status, error: verification.error, details: verification.error }),
+        { status: verification.pending ? 202 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Ambiguity guard: ensure the on-chain sender belongs uniquely to this user
+    const senderLower = (verification.from || from_address).toLowerCase();
+    const { data: ownerMatches } = await supabase
+      .from("user_wallets")
+      .select("user_id")
+      .ilike("wallet_address", senderLower);
+    const distinctOwners = new Set((ownerMatches || []).map((r: any) => r.user_id));
+    if (distinctOwners.size > 1) {
+      return new Response(
+        JSON.stringify({ status: "ambiguous_wallet_owner", error: "Sender wallet is linked to multiple accounts; deposit queued for manual review" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (distinctOwners.size === 1 && !distinctOwners.has(user.id)) {
+      return new Response(
+        JSON.stringify({ status: "wrong_sender", error: "Sender wallet does not belong to authenticated user" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
