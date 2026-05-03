@@ -229,42 +229,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the platform hot wallet address (prioritize Trading wallet)
-    let hotWallet = null;
-    
-    // First try to get the Trading Hot Wallet specifically
-    const { data: tradingWallet } = await supabase
-      .from("platform_hot_wallet")
-      .select("address, label")
-      .eq("chain", "BSC")
-      .eq("is_active", true)
-      .ilike("label", "%Trading%")
-      .limit(1)
-      .maybeSingle();
-    
-    if (tradingWallet?.address) {
-      hotWallet = tradingWallet;
-      console.log(`[CreditDeposit] Using Trading Hot Wallet: ${tradingWallet.address}`);
-    } else {
-      // Fallback: get any active BSC wallet
-      const { data: anyWallet } = await supabase
+    // Get the platform Trading hot wallet (STRICT — by purpose, no random fallback)
+    let hotWallet: { address: string; label?: string | null } | null = null;
+    {
+      const { data: byPurpose } = await supabase
         .from("platform_hot_wallet")
         .select("address, label")
         .eq("chain", "BSC")
         .eq("is_active", true)
+        .eq("purpose", "trading")
         .limit(1)
         .maybeSingle();
-      
-      if (anyWallet?.address) {
-        hotWallet = anyWallet;
-        console.log(`[CreditDeposit] Using fallback wallet: ${anyWallet.label} - ${anyWallet.address}`);
+      if (byPurpose?.address) hotWallet = byPurpose;
+
+      if (!hotWallet) {
+        const { data: byLabel } = await supabase
+          .from("platform_hot_wallet")
+          .select("address, label")
+          .eq("chain", "BSC")
+          .eq("is_active", true)
+          .ilike("label", "%Trading%")
+          .limit(1)
+          .maybeSingle();
+        if (byLabel?.address) hotWallet = byLabel;
       }
     }
 
     if (!hotWallet) {
-      console.error(`[CreditDeposit] No active BSC hot wallet found`);
+      console.error(`[CreditDeposit] No Trading Hot Wallet configured`);
       return new Response(
-        JSON.stringify({ error: "Platform hot wallet not configured" }),
+        JSON.stringify({ status: "wrong_recipient", error: "Trading Hot Wallet not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
