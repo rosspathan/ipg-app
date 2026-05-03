@@ -4721,6 +4721,7 @@ export type Database = {
           credited_at: string | null
           from_address: string
           id: string
+          linked_internal_transfer_id: string | null
           required_confirmations: number | null
           status: string
           tx_hash: string
@@ -4735,6 +4736,7 @@ export type Database = {
           credited_at?: string | null
           from_address: string
           id?: string
+          linked_internal_transfer_id?: string | null
           required_confirmations?: number | null
           status?: string
           tx_hash: string
@@ -4749,6 +4751,7 @@ export type Database = {
           credited_at?: string | null
           from_address?: string
           id?: string
+          linked_internal_transfer_id?: string | null
           required_confirmations?: number | null
           status?: string
           tx_hash?: string
@@ -8678,6 +8681,7 @@ export type Database = {
           is_active: boolean
           label: string | null
           min_gas_balance: number
+          purpose: string | null
           updated_at: string
         }
         Insert: {
@@ -8688,6 +8692,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           min_gas_balance?: number
+          purpose?: string | null
           updated_at?: string
         }
         Update: {
@@ -8698,6 +8703,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           min_gas_balance?: number
+          purpose?: string | null
           updated_at?: string
         }
         Relationships: []
