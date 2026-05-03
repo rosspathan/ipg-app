@@ -4744,6 +4744,7 @@ export type Database = {
       }
       custodial_deposits: {
         Row: {
+          admin_notes: string | null
           amount: number
           asset_id: string
           confirmations: number | null
@@ -4753,12 +4754,16 @@ export type Database = {
           id: string
           linked_internal_transfer_id: string | null
           required_confirmations: number | null
+          review_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           tx_hash: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          admin_notes?: string | null
           amount: number
           asset_id: string
           confirmations?: number | null
@@ -4768,12 +4773,16 @@ export type Database = {
           id?: string
           linked_internal_transfer_id?: string | null
           required_confirmations?: number | null
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           tx_hash: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          admin_notes?: string | null
           amount?: number
           asset_id?: string
           confirmations?: number | null
@@ -4783,6 +4792,9 @@ export type Database = {
           id?: string
           linked_internal_transfer_id?: string | null
           required_confirmations?: number | null
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           tx_hash?: string
           updated_at?: string | null
@@ -14365,6 +14377,42 @@ export type Database = {
       }
     }
     Views: {
+      admin_manual_review_deposits: {
+        Row: {
+          admin_notes: string | null
+          amount: number | null
+          asset_id: string | null
+          asset_symbol: string | null
+          confirmations: number | null
+          contract_address: string | null
+          created_at: string | null
+          credited_at: string | null
+          decimals: number | null
+          from_address: string | null
+          id: string | null
+          linked_internal_transfer_id: string | null
+          required_confirmations: number | null
+          review_bucket: string | null
+          review_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          tx_hash: string | null
+          updated_at: string | null
+          user_email: string | null
+          user_id: string | null
+          user_username: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custodial_deposits_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_monitor_health: {
         Row: {
           active_rpc_provider: string | null
@@ -14431,6 +14479,67 @@ export type Database = {
           rpc_provider_health?: Json | null
           scanner_lag_blocks?: never
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      admin_recon_balances_by_asset: {
+        Row: {
+          symbol: string | null
+          user_available: number | null
+          user_locked: number | null
+          user_total_liability: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_deposits_by_asset: {
+        Row: {
+          credited_amount: number | null
+          credited_count: number | null
+          credited_without_ledger: number | null
+          failed_count: number | null
+          manual_review_count: number | null
+          pending_count: number | null
+          rejected_count: number | null
+          symbol: string | null
+          total_deposits: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_solvency_by_asset: {
+        Row: {
+          deposits_credited: number | null
+          drift: number | null
+          pending_withdrawals: number | null
+          symbol: string | null
+          user_available: number | null
+          user_locked: number | null
+          withdrawn_amount: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_user_asset_summary: {
+        Row: {
+          available: number | null
+          deposits_credited: number | null
+          ledger_net: number | null
+          locked: number | null
+          symbol: string | null
+          total: number | null
+          user_id: string | null
+          withdrawn: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_withdrawals_by_asset: {
+        Row: {
+          completed_amount: number | null
+          completed_count: number | null
+          failed_or_refunded_count: number | null
+          fees_collected: number | null
+          pending_amount: number | null
+          pending_count: number | null
+          symbol: string | null
+          total_withdrawals: number | null
         }
         Relationships: []
       }
@@ -14955,6 +15064,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_credit_manual_review_deposit: {
+        Args: { p_admin_note: string; p_deposit_id: string }
+        Returns: Json
+      }
       admin_debit_bsk_manual: {
         Args: {
           p_amount: number
@@ -14981,6 +15094,40 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
+      admin_list_manual_review_deposits: {
+        Args: never
+        Returns: {
+          admin_notes: string | null
+          amount: number | null
+          asset_id: string | null
+          asset_symbol: string | null
+          confirmations: number | null
+          contract_address: string | null
+          created_at: string | null
+          credited_at: string | null
+          decimals: number | null
+          from_address: string | null
+          id: string | null
+          linked_internal_transfer_id: string | null
+          required_confirmations: number | null
+          review_bucket: string | null
+          review_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          tx_hash: string | null
+          updated_at: string | null
+          user_email: string | null
+          user_id: string | null
+          user_username: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "admin_manual_review_deposits"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_mint_bsk: {
         Args: {
           p_admin_id: string
@@ -14990,6 +15137,14 @@ export type Database = {
           p_notes?: string
           p_recipient_id?: string
         }
+        Returns: Json
+      }
+      admin_reassign_manual_review_deposit: {
+        Args: { p_deposit_id: string; p_new_user_id: string; p_reason: string }
+        Returns: Json
+      }
+      admin_reject_manual_review_deposit: {
+        Args: { p_deposit_id: string; p_reason: string }
         Returns: Json
       }
       admin_reset_all_user_balances: { Args: never; Returns: Json }
