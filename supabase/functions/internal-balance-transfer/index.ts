@@ -105,8 +105,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Round to 8 decimal places
-    const safeAmount = Math.round(numAmount * 1e8) / 1e8;
+    // Asset-decimal-aware safe rounding (string math; no 1e8 truncation).
+    // Looked up below after asset is resolved; default to 8 here for the
+    // pre-validation log only.
+    let safeAmount = numAmount;
 
     const admin = createClient(supabaseUrl, serviceKey);
 
