@@ -42,7 +42,10 @@ const DEFAULT_BSC_RPC_URLS = [
   'https://bsc-dataseed2.defibit.io',
 ];
 
-const REQUIRED_CONFIRMATIONS = 15;
+// Confirmations required to credit a deposit. Configurable via
+// system_settings.bsc_required_confirmations (default 3 for BSC, which is
+// finality-fast; previous value of 15 caused multi-hour stuck states).
+let REQUIRED_CONFIRMATIONS = 3;
 const BLOCKS_PER_2_HOURS = 2400;
 const BLOCKS_PER_BATCH = 500; // Smaller batches to avoid public RPC limits
 const MAX_BLOCKS_PER_RUN = 2400; // cap normal scanning per invocation (2h) to avoid spikes
