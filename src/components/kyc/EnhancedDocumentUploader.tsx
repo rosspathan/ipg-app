@@ -198,6 +198,13 @@ export function EnhancedDocumentUploader({
                 <p className="text-sm text-muted-foreground">PDF Document</p>
               </div>
             </div>
+          ) : preview === 'uploaded' || !preview?.match(/^(https?:|data:|blob:)/i) ? (
+            <div className="flex items-center justify-center h-48 bg-muted">
+              <div className="text-center">
+                <Check className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Uploaded securely</p>
+              </div>
+            </div>
           ) : (
             <img src={preview} alt={label} className="w-full h-48 object-contain" />
           )}
