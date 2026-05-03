@@ -27,12 +27,16 @@ export function EnhancedDocumentUploader({
   maxSizeMB = 10,
   required = false,
 }: EnhancedDocumentUploaderProps) {
-  const [preview, setPreview] = useState<string | null>(currentUrl || null);
+  // Only show external URLs as preview; storage paths are not directly viewable
+  const isViewableUrl = (v?: string) => !!v && /^(https?:|data:|blob:)/i.test(v);
+  const initialPreview = isViewableUrl(currentUrl) ? (currentUrl as string) : (currentUrl ? 'uploaded' : null);
+  const [preview, setPreview] = useState<string | null>(initialPreview);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inFlightRef = useRef(false);
 
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -46,10 +50,15 @@ export function EnhancedDocumentUploader({
   };
 
   const handleFile = async (file: File, retryCount = 0) => {
+    if (inFlightRef.current && retryCount === 0) {
+      return; // Prevent double-upload from re-clicking while busy
+    }
+    inFlightRef.current = true;
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
       toast.error(validationError);
+      inFlightRef.current = false;
       return;
     }
 
@@ -104,6 +113,7 @@ export function EnhancedDocumentUploader({
         setUploading(false);
         setTimeout(() => setUploadProgress(0), 1000);
       }
+      inFlightRef.current = false;
     }
   };
 
@@ -188,6 +198,13 @@ export function EnhancedDocumentUploader({
                 <p className="text-sm text-muted-foreground">PDF Document</p>
               </div>
             </div>
+          ) : preview === 'uploaded' || !preview?.match(/^(https?:|data:|blob:)/i) ? (
+            <div className="flex items-center justify-center h-48 bg-muted">
+              <div className="text-center">
+                <Check className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Uploaded securely</p>
+              </div>
+            </div>
           ) : (
             <img src={preview} alt={label} className="w-full h-48 object-contain" />
           )}
@@ -224,6 +241,7 @@ export function EnhancedDocumentUploader({
             ref={fileInputRef}
             type="file"
             accept={accept}
+            capture="environment"
             onChange={handleChange}
             className="hidden"
             disabled={uploading}

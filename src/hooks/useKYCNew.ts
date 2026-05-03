@@ -165,20 +165,6 @@ export const useKYCNew = () => {
         throw uploadError;
       }
 
-      // Generate a signed URL (valid for 1 hour) — bucket is private
-      const { data: signedData, error: signedError } = await supabase.storage
-        .from('kyc')
-        .createSignedUrl(fileName, 3600);
-
-      if (signedError || !signedData?.signedUrl) {
-        console.error('[KYC] Failed to generate signed URL:', signedError);
-        throw new Error('Failed to generate document URL');
-      }
-
-      // Store the storage path (not the URL) so we can re-sign on demand
-      const publicUrl = signedData.signedUrl;
-      console.log('[KYC] Upload success, signed URL generated for:', fileName);
-
       // Save document record (best effort - don't fail the upload if this fails)
       try {
         await supabase
@@ -195,7 +181,11 @@ export const useKYCNew = () => {
         console.warn('[KYC] Document record insert failed (non-critical):', docError);
       }
 
-      return publicUrl;
+      console.log('[KYC] Upload success, returning storage path:', fileName);
+      // IMPORTANT: return the storage PATH (not a signed URL) so it survives
+      // re-signing later. Admin/user previews call resolveKycAsset() to get a
+      // fresh signed URL on demand.
+      return fileName;
     } catch (error: any) {
       console.error('[KYC] Upload failed:', error);
       const errorMsg = error?.message || 'Upload failed';
@@ -295,7 +285,7 @@ export const useKYCNew = () => {
     }
   };
 
-  const submitKYCLevel = async (level: KYCLevel, profileId: string) => {
+  const submitKYCLevel = async (level: KYCLevel, _profileId?: string) => {
     const userId = getUserId();
     if (!userId) {
       toast({
@@ -307,28 +297,31 @@ export const useKYCNew = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      // Pull the latest draft data_json so we submit canonical content
+      const { data: profile, error: pErr } = await supabase
         .from('kyc_profiles_new')
-        .update({
-          submitted_at: new Date().toISOString(),
-          status: 'submitted'
-        })
-        .eq('id', profileId)
+        .select('data_json')
         .eq('user_id', userId)
-        .select()
-        .single();
+        .eq('level', level)
+        .maybeSingle();
+      if (pErr) throw pErr;
+
+      const { data, error } = await supabase.rpc('submit_kyc_l1' as any, {
+        p_data: profile?.data_json ?? {},
+      });
 
       if (error) {
-        console.error('[KYC] Submit error:', error.code, error.message);
+        console.error('[KYC] submit_kyc_l1 error', error);
         throw error;
       }
 
-      setProfiles(prev => ({
-        ...prev,
-        [level]: data as KYCProfile
-      }));
+      if (data) {
+        setProfiles(prev => ({
+          ...prev,
+          [level]: data as KYCProfile,
+        }));
+      }
 
-      // Refresh to get latest state
       await fetchKYC();
     } catch (error: any) {
       console.error('[KYC] Error submitting KYC:', error);

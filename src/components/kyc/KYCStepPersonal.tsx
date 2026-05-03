@@ -9,17 +9,29 @@ import { Button } from "@/components/ui/button";
 import { User, Calendar, Phone, MapPin, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 import { usePhoneValidation } from "@/hooks/usePhoneValidation";
 
+// DOB validator using LOCAL time (avoids UTC boundary blocking IST users
+// who legitimately turned 18 today).
+const isAtLeast18Local = (yyyyMmDd: string): boolean => {
+  const [y, m, d] = yyyyMmDd.split('-').map(Number);
+  if (!y || !m || !d) return false;
+  const today = new Date();
+  let age = today.getFullYear() - y;
+  const mDiff = (today.getMonth() + 1) - m;
+  if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) age--;
+  return age >= 18;
+};
+
+// Accept very common phone shapes; we normalise on the server before storage.
+//   +91 9876543210 / +91-9876543210 / +91 98765 43210 / 9876543210
+const PHONE_RE = /^(\+?\d[\d\s\-]{6,20})$/;
+
 const personalSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters").max(100),
-  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use format YYYY-MM-DD").refine((date) => {
-    const age = (Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-    return age >= 18;
-  }, "Must be 18 or older"),
+  date_of_birth: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use format YYYY-MM-DD")
+    .refine(isAtLeast18Local, "Must be 18 or older"),
   nationality: z.string().min(2, "Please select your nationality"),
-  phone: z.string().regex(
-    /^\+\d{1,3}\s?\d{6,14}$/,
-    "Use format: +CountryCode PhoneNumber (e.g., +91 9876543210 or +1 5551234567)"
-  ),
+  phone: z.string().regex(PHONE_RE, "Enter a valid phone number (e.g. +91 9876543210)"),
 });
 
 type PersonalData = z.infer<typeof personalSchema>;

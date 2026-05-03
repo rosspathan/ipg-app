@@ -1,3 +1,12 @@
+/**
+ * @deprecated LEGACY — do not use in new code.
+ *
+ * The legacy `kyc_submissions_simple` table is no longer the source of truth.
+ * The active 3-pillar pipeline lives in `kyc_profiles_new` and is consumed by
+ * `useKYCNew` / `useKycGate` / `useAdminKYCv2`. This hook is kept only because
+ * a small number of pages still import its `KYCSubmission` *type*. Do not
+ * wire it into any UI/admin status decisions.
+ */
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
