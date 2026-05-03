@@ -14427,6 +14427,27 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_admin_config_public: {
+        Row: {
+          liveness_required: boolean | null
+          manual_review_required: boolean | null
+          required_levels: string[] | null
+          storage_bucket: string | null
+        }
+        Insert: {
+          liveness_required?: boolean | null
+          manual_review_required?: boolean | null
+          required_levels?: string[] | null
+          storage_bucket?: string | null
+        }
+        Update: {
+          liveness_required?: boolean | null
+          manual_review_required?: boolean | null
+          required_levels?: string[] | null
+          storage_bucket?: string | null
+        }
+        Relationships: []
+      }
       kyc_admin_summary: {
         Row: {
           created_at: string | null
@@ -15599,6 +15620,10 @@ export type Database = {
         Returns: boolean
       }
       kyc_access_diagnostic: { Args: { _user_id: string }; Returns: Json }
+      kyc_extract_storage_path: {
+        Args: { p_bucket: string; p_value: string }
+        Returns: string
+      }
       lock_balance_for_order:
         | {
             Args: { p_amount: number; p_asset_id: string; p_user_id: string }
@@ -15907,6 +15932,57 @@ export type Database = {
             }
             Returns: boolean
           }
+      submit_kyc_l1: {
+        Args: { p_data: Json }
+        Returns: {
+          created_at: string
+          data_json: Json
+          documents_notes: string | null
+          documents_reviewed_at: string | null
+          documents_reviewed_by: string | null
+          documents_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          email_computed: string | null
+          face_captured_at: string | null
+          face_notes: string | null
+          face_reviewed_at: string | null
+          face_reviewed_by: string | null
+          face_selfie_path: string | null
+          face_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          final_approved_at: string | null
+          final_approved_by: string | null
+          final_status: Database["public"]["Enums"]["kyc_status_v2"]
+          full_name_computed: string | null
+          id: string
+          is_legacy: boolean
+          kyc_version: number
+          legacy_reset_at: string | null
+          legacy_reset_batch_id: string | null
+          level: string
+          mobile_notes: string | null
+          mobile_number: string | null
+          mobile_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          mobile_submitted_at: string | null
+          mobile_verified_at: string | null
+          mobile_verified_by: string | null
+          phone_computed: string | null
+          rejection_reason: string | null
+          resubmission_allowed: boolean
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          risk_flags: Json
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "kyc_profiles_new"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       sync_kyc_approval_status: {
         Args: never
         Returns: {
