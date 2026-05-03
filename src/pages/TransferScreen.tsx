@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHotWalletAddress } from "@/hooks/useTradingBalances";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { transferERC20 } from "@/lib/wallet/onchainTransfer";
+import { transferERC20, transferBNB } from "@/lib/wallet/onchainTransfer";
 import { getStoredWallet, setWalletStorageUserId, storeWallet } from "@/utils/walletStorage";
 import { ethers } from "ethers";
 import { useWeb3 } from "@/contexts/Web3Context";
