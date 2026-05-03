@@ -108,27 +108,56 @@ function hexToBigInt(hex: string): bigint {
   return BigInt(hex);
 }
 
-async function rpcCall(url: string, method: string, params: any[]): Promise<any> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  });
-  if (!res.ok) throw new Error(`RPC request failed: ${res.status}`);
-  const data = await res.json();
-  if (data.error) throw new Error(`RPC error: ${data.error.message || JSON.stringify(data.error)}`);
-  return data.result;
+// Per-run RPC health telemetry (host -> { ok, fail, lastError })
+const rpcHealth = new Map<string, { ok: number; fail: number; lastError?: string }>();
+let activeRpcProvider: string | null = null;
+
+function bumpHealth(url: string, ok: boolean, err?: string) {
+  const host = (() => { try { return new URL(url).host; } catch { return url; } })();
+  const cur = rpcHealth.get(host) || { ok: 0, fail: 0 };
+  if (ok) cur.ok++; else { cur.fail++; cur.lastError = err?.slice(0, 200); }
+  rpcHealth.set(host, cur);
+  if (ok) activeRpcProvider = host;
 }
 
+async function rpcCall(url: string, method: string, params: any[], timeoutMs = 12000): Promise<any> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(`RPC error: ${data.error.message || JSON.stringify(data.error)}`);
+    return data.result;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+// Multi-RPC failover with retry + exponential backoff per provider
 async function tryRpc(urls: string[], method: string, params: any[]): Promise<any> {
   let lastErr: Error | null = null;
   for (const url of urls) {
-    try {
-      return await rpcCall(url, method, params);
-    } catch (e: any) {
-      lastErr = e;
-      console.warn(`[RPC] ${url} failed for ${method}:`, e?.message);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const result = await rpcCall(url, method, params);
+        bumpHealth(url, true);
+        return result;
+      } catch (e: any) {
+        lastErr = e;
+        bumpHealth(url, false, e?.message);
+        const msg = e?.message || '';
+        // Don't retry on logical RPC errors (only on transient network issues)
+        if (/RPC error/.test(msg)) break;
+        if (attempt === 0) await new Promise(r => setTimeout(r, 250 + Math.random() * 250));
+      }
     }
+    console.warn(`[RPC] ${url} exhausted for ${method}: ${lastErr?.message}`);
   }
   throw lastErr || new Error('All RPC endpoints failed');
 }
