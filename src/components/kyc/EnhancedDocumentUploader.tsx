@@ -113,6 +113,7 @@ export function EnhancedDocumentUploader({
         setUploading(false);
         setTimeout(() => setUploadProgress(0), 1000);
       }
+      inFlightRef.current = false;
     }
   };
 
