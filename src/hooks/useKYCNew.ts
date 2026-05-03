@@ -285,7 +285,7 @@ export const useKYCNew = () => {
     }
   };
 
-  const submitKYCLevel = async (level: KYCLevel, profileId: string) => {
+  const submitKYCLevel = async (level: KYCLevel, _profileId?: string) => {
     const userId = getUserId();
     if (!userId) {
       toast({
@@ -297,28 +297,31 @@ export const useKYCNew = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      // Pull the latest draft data_json so we submit canonical content
+      const { data: profile, error: pErr } = await supabase
         .from('kyc_profiles_new')
-        .update({
-          submitted_at: new Date().toISOString(),
-          status: 'submitted'
-        })
-        .eq('id', profileId)
+        .select('data_json')
         .eq('user_id', userId)
-        .select()
-        .single();
+        .eq('level', level)
+        .maybeSingle();
+      if (pErr) throw pErr;
+
+      const { data, error } = await supabase.rpc('submit_kyc_l1' as any, {
+        p_data: profile?.data_json ?? {},
+      });
 
       if (error) {
-        console.error('[KYC] Submit error:', error.code, error.message);
+        console.error('[KYC] submit_kyc_l1 error', error);
         throw error;
       }
 
-      setProfiles(prev => ({
-        ...prev,
-        [level]: data as KYCProfile
-      }));
+      if (data) {
+        setProfiles(prev => ({
+          ...prev,
+          [level]: data as KYCProfile,
+        }));
+      }
 
-      // Refresh to get latest state
       await fetchKYC();
     } catch (error: any) {
       console.error('[KYC] Error submitting KYC:', error);
