@@ -50,10 +50,15 @@ export function EnhancedDocumentUploader({
   };
 
   const handleFile = async (file: File, retryCount = 0) => {
+    if (inFlightRef.current && retryCount === 0) {
+      return; // Prevent double-upload from re-clicking while busy
+    }
+    inFlightRef.current = true;
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
       toast.error(validationError);
+      inFlightRef.current = false;
       return;
     }
 
