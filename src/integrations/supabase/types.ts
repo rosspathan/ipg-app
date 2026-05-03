@@ -4687,27 +4687,57 @@ export type Database = {
       }
       custodial_deposit_scan_state: {
         Row: {
+          active_rpc_provider: string | null
           chain: string
           created_at: string
+          failed_provider_count: number
           hot_wallet_address: string
           id: string
+          last_chain_head_block: number | null
+          last_error: string | null
+          last_failure_at: string | null
+          last_run_at: string | null
+          last_run_credited: number
+          last_run_detected: number
           last_scanned_block: number
+          last_success_at: string | null
+          rpc_provider_health: Json
           updated_at: string
         }
         Insert: {
+          active_rpc_provider?: string | null
           chain?: string
           created_at?: string
+          failed_provider_count?: number
           hot_wallet_address: string
           id?: string
+          last_chain_head_block?: number | null
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_run_at?: string | null
+          last_run_credited?: number
+          last_run_detected?: number
           last_scanned_block: number
+          last_success_at?: string | null
+          rpc_provider_health?: Json
           updated_at?: string
         }
         Update: {
+          active_rpc_provider?: string | null
           chain?: string
           created_at?: string
+          failed_provider_count?: number
           hot_wallet_address?: string
           id?: string
+          last_chain_head_block?: number | null
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_run_at?: string | null
+          last_run_credited?: number
+          last_run_detected?: number
           last_scanned_block?: number
+          last_success_at?: string | null
+          rpc_provider_health?: Json
           updated_at?: string
         }
         Relationships: []
@@ -14335,6 +14365,75 @@ export type Database = {
       }
     }
     Views: {
+      admin_monitor_health: {
+        Row: {
+          active_rpc_provider: string | null
+          chain: string | null
+          confirmed_uncredited: number | null
+          failed_deposits: number | null
+          failed_provider_count: number | null
+          hot_wallet_address: string | null
+          last_chain_head_block: number | null
+          last_error: string | null
+          last_failure_at: string | null
+          last_run_at: string | null
+          last_run_credited: number | null
+          last_run_detected: number | null
+          last_scanned_block: number | null
+          last_success_at: string | null
+          manual_review_deposits: number | null
+          pending_deposits: number | null
+          pending_over_10m: number | null
+          rpc_provider_health: Json | null
+          scanner_lag_blocks: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_rpc_provider?: string | null
+          chain?: string | null
+          confirmed_uncredited?: never
+          failed_deposits?: never
+          failed_provider_count?: number | null
+          hot_wallet_address?: string | null
+          last_chain_head_block?: number | null
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_run_at?: string | null
+          last_run_credited?: number | null
+          last_run_detected?: number | null
+          last_scanned_block?: number | null
+          last_success_at?: string | null
+          manual_review_deposits?: never
+          pending_deposits?: never
+          pending_over_10m?: never
+          rpc_provider_health?: Json | null
+          scanner_lag_blocks?: never
+          updated_at?: string | null
+        }
+        Update: {
+          active_rpc_provider?: string | null
+          chain?: string | null
+          confirmed_uncredited?: never
+          failed_deposits?: never
+          failed_provider_count?: number | null
+          hot_wallet_address?: string | null
+          last_chain_head_block?: number | null
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_run_at?: string | null
+          last_run_credited?: number | null
+          last_run_detected?: number | null
+          last_scanned_block?: number | null
+          last_success_at?: string | null
+          manual_review_deposits?: never
+          pending_deposits?: never
+          pending_over_10m?: never
+          rpc_provider_health?: Json | null
+          scanner_lag_blocks?: never
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       badge_commission_health: {
         Row: {
           commission_paid: number | null
@@ -15369,6 +15468,37 @@ export type Database = {
           p_report_type: string
         }
         Returns: Json
+      }
+      get_admin_monitor_health: {
+        Args: never
+        Returns: {
+          active_rpc_provider: string | null
+          chain: string | null
+          confirmed_uncredited: number | null
+          failed_deposits: number | null
+          failed_provider_count: number | null
+          hot_wallet_address: string | null
+          last_chain_head_block: number | null
+          last_error: string | null
+          last_failure_at: string | null
+          last_run_at: string | null
+          last_run_credited: number | null
+          last_run_detected: number | null
+          last_scanned_block: number | null
+          last_success_at: string | null
+          manual_review_deposits: number | null
+          pending_deposits: number | null
+          pending_over_10m: number | null
+          rpc_provider_health: Json | null
+          scanner_lag_blocks: number | null
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "admin_monitor_health"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_asset_logo_url: {
         Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }
