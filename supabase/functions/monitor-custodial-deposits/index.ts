@@ -709,27 +709,51 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6. Update scan state
+    // 6. Update scan state (with health telemetry)
     let scanStateUpdated = false;
+    const failedProviderCount = Array.from(rpcHealth.values()).filter(h => h.fail > 0 && h.ok === 0).length;
+    const healthJson: Record<string, any> = {};
+    for (const [host, h] of rpcHealth.entries()) healthJson[host] = h;
+
+    const baseTelemetry: Record<string, any> = {
+      last_chain_head_block: currentBlock,
+      last_run_detected: totalDiscovered,
+      last_run_credited: totalCredited,
+      last_run_at: new Date().toISOString(),
+      active_rpc_provider: activeRpcProvider,
+      failed_provider_count: failedProviderCount,
+      rpc_provider_health: healthJson,
+      updated_at: new Date().toISOString(),
+    };
+    if (complete) {
+      baseTelemetry.last_success_at = new Date().toISOString();
+      baseTelemetry.last_error = null;
+    } else {
+      baseTelemetry.last_failure_at = new Date().toISOString();
+      baseTelemetry.last_error = `Scan halted at block ${lastSuccessfulBlock} (range ${fromBlock}-${toBlock})`;
+    }
+
     if (mode === 'normal') {
       // Only advance scan state to the last *successfully* scanned block.
       // NEVER advance past a failed eth_getLogs batch, or deposits will be permanently missed.
       const newLast = Math.max(0, lastSuccessfulBlock);
-      if (newLast >= fromBlock) {
-        if (scanState?.id) {
-          await supabase
-            .from('custodial_deposit_scan_state')
-            .update({ last_scanned_block: newLast, updated_at: new Date().toISOString() })
-            .eq('id', scanState.id);
-        } else {
-          await supabase.from('custodial_deposit_scan_state').insert({
-            chain: 'BSC',
-            hot_wallet_address: hotWalletAddress,
-            last_scanned_block: newLast,
-          });
-        }
-        scanStateUpdated = true;
+      const updates: Record<string, any> = { ...baseTelemetry };
+      if (newLast >= fromBlock) updates.last_scanned_block = newLast;
+
+      if (scanState?.id) {
+        await supabase.from('custodial_deposit_scan_state').update(updates).eq('id', scanState.id);
+      } else {
+        await supabase.from('custodial_deposit_scan_state').insert({
+          chain: 'BSC',
+          hot_wallet_address: hotWalletAddress,
+          last_scanned_block: newLast >= 0 ? newLast : 0,
+          ...updates,
+        });
       }
+      scanStateUpdated = true;
+    } else if (scanState?.id) {
+      // Replay/backfill: still record telemetry but never touch last_scanned_block
+      await supabase.from('custodial_deposit_scan_state').update(baseTelemetry).eq('id', scanState.id);
     }
 
     console.log(
