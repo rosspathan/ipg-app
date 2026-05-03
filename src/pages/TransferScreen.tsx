@@ -398,6 +398,24 @@ const TransferScreen = () => {
 
     try {
       if (direction === "to_trading") {
+        // === KYC PRE-CHECK (before user spends gas) ===
+        const { data: kycRow } = await supabase
+          .from('kyc_profiles_new')
+          .select('final_status')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id || '')
+          .maybeSingle();
+        if (kycRow?.final_status !== 'approved') {
+          setIsProcessing(false);
+          toast({
+            title: 'KYC Approval Required',
+            description: 'Complete document, face and admin mobile verification to move funds into Trading Balance.',
+            variant: 'destructive',
+          });
+          // Re-use centralized KYC error UX
+          handleKycError(new Error('KYC_REQUIRED'));
+          return;
+        }
+
         // === ON-CHAIN TRANSFER to hot wallet ===
         const privateKey = await resolvePrivateKey();
         if (!privateKey) {
