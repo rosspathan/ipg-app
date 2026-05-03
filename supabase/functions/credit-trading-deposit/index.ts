@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
     const { data: ownerMatches } = await supabase
       .from("user_wallets")
       .select("user_id")
-      .eq("address", senderLower);
+      .ilike("wallet_address", senderLower);
     const distinctOwners = new Set((ownerMatches || []).map((r: any) => r.user_id));
     if (distinctOwners.size > 1) {
       return new Response(
