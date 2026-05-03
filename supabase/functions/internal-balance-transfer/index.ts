@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     // Verify the asset exists and is active
     const { data: asset, error: assetError } = await admin
       .from("assets")
-      .select("id, symbol, name, trading_enabled")
+      .select("id, symbol, name, trading_enabled, decimals")
       .eq("id", asset_id)
       .eq("is_active", true)
       .maybeSingle();
@@ -126,6 +126,11 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Asset-decimal-aware safe rounding via string math (no 1e8 truncation).
+    const dec = Math.min(Number(asset.decimals ?? 18), 18);
+    const factor = Math.pow(10, dec);
+    safeAmount = Math.floor(numAmount * factor) / factor;
 
     console.log(`[internal-balance-transfer] ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}${tx_hash ? ` TX: ${tx_hash}` : ""}`);
 
