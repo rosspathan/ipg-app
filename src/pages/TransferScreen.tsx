@@ -231,60 +231,56 @@ const TransferScreen = () => {
     // Original Trading Hot Wallet address (dedicated for trading deposits only)
     const hotWalletAddress = dynamicHotWalletAddress;
     if (!hotWalletAddress) {
-      throw new Error("Platform deposit address not available. Please try again.");
+      throw new Error("Trading Hot Wallet not configured. Please contact support.");
     }
 
-    // Get contract address for the asset
+    // Get contract address for the asset (NULL means native BNB)
     const { data: assetData } = await supabase
       .from('assets')
-      .select('contract_address, decimals')
+      .select('contract_address, decimals, symbol')
       .eq('id', currentTradingAsset.assetId)
       .single();
 
-    if (!assetData?.contract_address) {
-      throw new Error("Contract address not found for this asset.");
+    if (!assetData) {
+      throw new Error("Asset configuration not found.");
     }
+
+    const isNativeBNB = !assetData.contract_address;
+    const decimals = assetData.decimals || 18;
 
     toast({
       title: "Sending Transaction",
       description: `Broadcasting ${amountNum} ${selectedAsset} to trading hot wallet...`,
     });
 
-    const result = await transferERC20(
-      privateKey,
-      assetData.contract_address,
-      hotWalletAddress,
-      amountNum.toString(),
-      assetData.decimals || 18
-    );
+    // Branch: native BNB vs BEP20
+    const result = isNativeBNB
+      ? await transferBNB(privateKey, hotWalletAddress, amountNum.toString())
+      : await transferERC20(
+          privateKey,
+          assetData.contract_address!,
+          hotWalletAddress,
+          amountNum.toString(),
+          decimals
+        );
 
     if (!result.success) {
       throw new Error(result.error || "On-chain transfer failed");
     }
 
+    const txHash = result.txHash!;
+
     toast({
       title: "Transfer Sent!",
-      description: `TX: ${result.txHash?.slice(0, 10)}... — Crediting your trading balance...`,
+      description: `TX: ${txHash.slice(0, 10)}... — Verifying on-chain & crediting trading balance...`,
     });
 
-    // Immediately credit trading balance via RPC (debit onchain, credit trading)
-    // CRITICAL: Must pass tx_hash — edge function requires on-chain proof for to_trading
-    const { data: creditResult, error: creditError } = await supabase.functions.invoke('internal-balance-transfer', {
-      body: {
-        asset_id: currentTradingAsset.assetId,
-        amount: amountNum,
-        direction: "to_trading",
-        tx_hash: result.txHash,
-      }
-    });
-
-    const transferStatus = (creditError || !creditResult?.success) ? 'pending' : 'success';
-
-    // Record in internal_balance_transfers
+    // Record IBT row immediately (idempotent via partial unique index on tx_hash)
     const refId = `IBT-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
     const { data: { user: authUser } } = await supabase.auth.getUser();
+
     if (authUser) {
-      await supabase.from('internal_balance_transfers').insert({
+      await supabase.from('internal_balance_transfers').upsert({
         user_id: authUser.id,
         asset_id: currentTradingAsset.assetId,
         asset_symbol: selectedAsset,
@@ -292,42 +288,72 @@ const TransferScreen = () => {
         amount: amountNum,
         fee: 0,
         net_amount: amountNum,
-        status: transferStatus,
-        status_detail: transferStatus === 'success' 
-          ? 'Credited to trading balance' 
-          : 'Waiting for blockchain confirmation',
-        tx_hash: result.txHash || null,
+        status: 'pending',
+        status_detail: 'Transaction broadcast — verifying on-chain',
+        tx_hash: txHash,
         reference_id: refId,
-        balance_after: creditResult?.new_balance ?? null,
-      } as any);
-
-      // SECURITY: custodial_deposits insertion is now BLOCKED at DB level.
-      // The monitor-custodial-deposits server-side function handles all deposit
-      // detection and crediting via SECURITY DEFINER RPCs.
-      // Double-credit prevention is enforced by UNIQUE(tx_hash) constraint.
+      } as any, { onConflict: 'tx_hash', ignoreDuplicates: true } as any);
     }
+
+    // Use credit-trading-deposit (verifies tx on-chain, idempotent by tx_hash)
+    const senderAddress = result.signerAddress || wallet?.address || '';
+    let creditStatus: 'success' | 'pending' = 'pending';
+    let creditMsg = 'Waiting for blockchain confirmation';
+
+    try {
+      const { data: creditResult, error: creditError } = await supabase.functions.invoke(
+        'credit-trading-deposit',
+        {
+          body: {
+            tx_hash: txHash,
+            asset_id: currentTradingAsset.assetId,
+            amount: amountNum,
+            from_address: senderAddress,
+          },
+        }
+      );
+
+      if (!creditError && creditResult?.success) {
+        creditStatus = 'success';
+        creditMsg = creditResult.message || 'Credited to trading balance';
+      } else {
+        const detail = creditResult?.details || creditError?.message || '';
+        if (/not found|not yet|confirm/i.test(detail)) {
+          creditMsg = 'Tx broadcast — pending confirmations (monitor will credit shortly)';
+        } else if (detail) {
+          creditMsg = detail;
+        }
+        console.warn('[TransferScreen] credit-trading-deposit pending:', detail);
+      }
+    } catch (e: any) {
+      console.warn('[TransferScreen] credit-trading-deposit error:', e?.message);
+    }
+
+    // Update IBT with final status
+    if (authUser) {
+      await supabase
+        .from('internal_balance_transfers')
+        .update({
+          status: creditStatus,
+          status_detail: creditMsg,
+        })
+        .eq('tx_hash', txHash)
+        .eq('user_id', authUser.id);
+    }
+
     queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
 
-    if (transferStatus === 'pending') {
-      console.warn('[TransferScreen] RPC credit failed, deposit monitor will handle it:', creditResult?.error || creditError?.message);
-      toast({
-        title: "Balance Update Pending",
-        description: "Your trading balance will be credited automatically once the transaction confirms on-chain.",
-      });
-    } else {
-      toast({
-        title: "Trading Balance Updated",
-        description: `${amountNum} ${selectedAsset} credited to your trading balance.`,
-      });
-    }
+    toast({
+      title: creditStatus === 'success' ? 'Trading Balance Updated' : 'Deposit Pending Confirmation',
+      description: creditStatus === 'success'
+        ? `${amountNum} ${selectedAsset} credited to your trading balance.`
+        : creditMsg,
+    });
 
-    // Sync on-chain balances to reflect the new state
+    // Background sync of on-chain balances
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.functions.invoke('sync-bep20-balances', {
-          body: { userIds: [user.id] }
-        });
+      if (authUser) {
+        await supabase.functions.invoke('sync-bep20-balances', { body: { userIds: [authUser.id] } });
       }
     } catch (syncErr) {
       console.warn('[TransferScreen] Post-transfer sync failed:', syncErr);
