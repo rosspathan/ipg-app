@@ -165,20 +165,6 @@ export const useKYCNew = () => {
         throw uploadError;
       }
 
-      // Generate a signed URL (valid for 1 hour) — bucket is private
-      const { data: signedData, error: signedError } = await supabase.storage
-        .from('kyc')
-        .createSignedUrl(fileName, 3600);
-
-      if (signedError || !signedData?.signedUrl) {
-        console.error('[KYC] Failed to generate signed URL:', signedError);
-        throw new Error('Failed to generate document URL');
-      }
-
-      // Store the storage path (not the URL) so we can re-sign on demand
-      const publicUrl = signedData.signedUrl;
-      console.log('[KYC] Upload success, signed URL generated for:', fileName);
-
       // Save document record (best effort - don't fail the upload if this fails)
       try {
         await supabase
@@ -195,7 +181,11 @@ export const useKYCNew = () => {
         console.warn('[KYC] Document record insert failed (non-critical):', docError);
       }
 
-      return publicUrl;
+      console.log('[KYC] Upload success, returning storage path:', fileName);
+      // IMPORTANT: return the storage PATH (not a signed URL) so it survives
+      // re-signing later. Admin/user previews call resolveKycAsset() to get a
+      // fresh signed URL on demand.
+      return fileName;
     } catch (error: any) {
       console.error('[KYC] Upload failed:', error);
       const errorMsg = error?.message || 'Upload failed';

@@ -14427,27 +14427,6 @@ export type Database = {
         }
         Relationships: []
       }
-      kyc_admin_config_public: {
-        Row: {
-          liveness_required: boolean | null
-          manual_review_required: boolean | null
-          required_levels: string[] | null
-          storage_bucket: string | null
-        }
-        Insert: {
-          liveness_required?: boolean | null
-          manual_review_required?: boolean | null
-          required_levels?: string[] | null
-          storage_bucket?: string | null
-        }
-        Update: {
-          liveness_required?: boolean | null
-          manual_review_required?: boolean | null
-          required_levels?: string[] | null
-          storage_bucket?: string | null
-        }
-        Relationships: []
-      }
       kyc_admin_summary: {
         Row: {
           created_at: string | null
