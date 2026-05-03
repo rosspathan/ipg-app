@@ -14491,6 +14491,18 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_recon_bsk_liability_funding: {
+        Row: {
+          balance_type: string | null
+          event_count: number | null
+          first_event: string | null
+          last_event: string | null
+          total_bsk: number | null
+          tx_subtype: string | null
+          tx_type: string | null
+        }
+        Relationships: []
+      }
       admin_recon_deposits_by_asset: {
         Row: {
           credited_amount: number | null
@@ -14505,6 +14517,69 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_recon_hot_wallet_solvency: {
+        Row: {
+          actual_onchain_balance: number | null
+          asset_symbol: string | null
+          drift_users_count: number | null
+          pending_withdrawals: number | null
+          platform_fees_owed: number | null
+          required_balance: number | null
+          snapshot_at: string | null
+          status: string | null
+          surplus_or_deficit: number | null
+          total_drift_amount: number | null
+          total_user_liability: number | null
+          user_available: number | null
+          user_locked: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_ledger_sources_by_asset: {
+        Row: {
+          asset_symbol: string | null
+          entry_count: number | null
+          entry_type: string | null
+          first_seen: string | null
+          last_seen: string | null
+          sum_delta_available: number | null
+          sum_delta_locked: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_orphan_ledger_entries: {
+        Row: {
+          asset_symbol: string | null
+          entry_count: number | null
+          first_seen: string | null
+          last_seen: string | null
+          sum_delta_available: number | null
+          sum_delta_locked: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      admin_recon_orphan_wallet_balances: {
+        Row: {
+          asset_symbol: string | null
+          available: number | null
+          created_at: string | null
+          locked: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      admin_recon_rewards_by_source: {
+        Row: {
+          asset_symbol: string | null
+          event_count: number | null
+          source: string | null
+          subtype: string | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
       admin_recon_solvency_by_asset: {
         Row: {
           deposits_credited: number | null
@@ -14514,6 +14589,51 @@ export type Database = {
           user_available: number | null
           user_locked: number | null
           withdrawn_amount: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_unexplained_drift_by_asset: {
+        Row: {
+          asset_symbol: string | null
+          drift_available: number | null
+          drift_locked: number | null
+          led_available: number | null
+          led_locked: number | null
+          wb_available: number | null
+          wb_locked: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_unexplained_drift_by_user: {
+        Row: {
+          asset_symbol: string | null
+          drift_available: number | null
+          drift_locked: number | null
+          led_available: number | null
+          led_locked: number | null
+          user_id: string | null
+          wb_available: number | null
+          wb_locked: number | null
+        }
+        Relationships: []
+      }
+      admin_recon_usdt_drift_forensics: {
+        Row: {
+          asset_symbol: string | null
+          classification: string | null
+          drift_available: number | null
+          drift_locked: number | null
+          first_ledger_at: string | null
+          last_ledger_at: string | null
+          ledger_available: number | null
+          ledger_entry_count: number | null
+          ledger_locked: number | null
+          suggested_ledger_correction_available: number | null
+          suggested_ledger_correction_locked: number | null
+          user_id: string | null
+          wb_available: number | null
+          wb_locked: number | null
+          wb_updated_at: string | null
         }
         Relationships: []
       }
@@ -15088,6 +15208,7 @@ export type Database = {
           wallet_balance: number
         }[]
       }
+      admin_get_recon_view: { Args: { p_view: string }; Returns: Json[] }
       admin_has_valid_session: { Args: { _admin_id: string }; Returns: boolean }
       admin_import_genesis_crypto_balances: { Args: never; Returns: Json }
       admin_kyc_access_check: {
@@ -15142,6 +15263,15 @@ export type Database = {
       admin_reassign_manual_review_deposit: {
         Args: { p_deposit_id: string; p_new_user_id: string; p_reason: string }
         Returns: Json
+      }
+      admin_recon_security_self_test: {
+        Args: never
+        Returns: {
+          actual: string
+          check_name: string
+          expected: string
+          pass: boolean
+        }[]
       }
       admin_reject_manual_review_deposit: {
         Args: { p_deposit_id: string; p_reason: string }
