@@ -234,6 +234,7 @@ export function EnhancedDocumentUploader({
             ref={fileInputRef}
             type="file"
             accept={accept}
+            capture="environment"
             onChange={handleChange}
             className="hidden"
             disabled={uploading}
