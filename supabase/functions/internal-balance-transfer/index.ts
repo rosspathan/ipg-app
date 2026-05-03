@@ -105,15 +105,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Round to 8 decimal places
-    const safeAmount = Math.round(numAmount * 1e8) / 1e8;
+    // Asset-decimal-aware safe rounding (string math; no 1e8 truncation).
+    // Looked up below after asset is resolved; default to 8 here for the
+    // pre-validation log only.
+    let safeAmount = numAmount;
 
     const admin = createClient(supabaseUrl, serviceKey);
 
     // Verify the asset exists and is active
     const { data: asset, error: assetError } = await admin
       .from("assets")
-      .select("id, symbol, name, trading_enabled")
+      .select("id, symbol, name, trading_enabled, decimals")
       .eq("id", asset_id)
       .eq("is_active", true)
       .maybeSingle();
@@ -124,6 +126,11 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Asset-decimal-aware safe rounding via string math (no 1e8 truncation).
+    const dec = Math.min(Number(asset.decimals ?? 18), 18);
+    const factor = Math.pow(10, dec);
+    safeAmount = Math.floor(numAmount * factor) / factor;
 
     console.log(`[internal-balance-transfer] ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}${tx_hash ? ` TX: ${tx_hash}` : ""}`);
 
