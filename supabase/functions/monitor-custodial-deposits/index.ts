@@ -371,6 +371,22 @@ Deno.serve(async (req) => {
     const rpcUrls = customRpc ? [customRpc, ...DEFAULT_BSC_RPC_URLS] : DEFAULT_BSC_RPC_URLS;
     console.log(`[monitor-custodial-deposits] Using ${rpcUrls.length} RPC endpoints`);
 
+    // Load configurable confirmation count
+    try {
+      const { data: confSetting } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'bsc_required_confirmations')
+        .maybeSingle();
+      const parsed = parseInt(String(confSetting?.value || ''), 10);
+      if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 64) {
+        REQUIRED_CONFIRMATIONS = parsed;
+      }
+      console.log(`[monitor-custodial-deposits] REQUIRED_CONFIRMATIONS=${REQUIRED_CONFIRMATIONS}`);
+    } catch (e) {
+      console.warn('[monitor-custodial-deposits] Failed to load confirmation setting, using default 3');
+    }
+
     // 1. Resolve Trading hot wallet
     let hotWallet: { address: string; label?: string } | null = null;
     {
