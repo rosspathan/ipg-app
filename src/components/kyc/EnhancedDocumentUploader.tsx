@@ -27,12 +27,16 @@ export function EnhancedDocumentUploader({
   maxSizeMB = 10,
   required = false,
 }: EnhancedDocumentUploaderProps) {
-  const [preview, setPreview] = useState<string | null>(currentUrl || null);
+  // Only show external URLs as preview; storage paths are not directly viewable
+  const isViewableUrl = (v?: string) => !!v && /^(https?:|data:|blob:)/i.test(v);
+  const initialPreview = isViewableUrl(currentUrl) ? (currentUrl as string) : (currentUrl ? 'uploaded' : null);
+  const [preview, setPreview] = useState<string | null>(initialPreview);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inFlightRef = useRef(false);
 
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) {
