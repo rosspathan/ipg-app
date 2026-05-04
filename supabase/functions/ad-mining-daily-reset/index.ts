@@ -240,6 +240,25 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // SECURITY: require shared CRON_SECRET so anonymous callers cannot trigger
+  // subscription expirations / completion bonus credits.
+  const cronSecret = Deno.env.get('CRON_SECRET');
+  if (!cronSecret) {
+    console.error('[ad-mining-daily-reset] CRON_SECRET not configured — refusing call');
+    return new Response(
+      JSON.stringify({ success: false, error: 'Daily reset not configured' }),
+      { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+  const presented = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (presented !== cronSecret) {
+    console.warn('[ad-mining-daily-reset] Invalid cron secret');
+    return new Response(
+      JSON.stringify({ success: false, error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
   
   console.log('🚀 Starting Ad Mining Daily Reset...');
   const startTime = Date.now();

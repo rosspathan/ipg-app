@@ -47,6 +47,25 @@ serve(async (req: Request) => {
 
     // Handle auto-debit mode (called by cron job with service role)
     if (auto_debit) {
+      // SECURITY: require shared CRON_SECRET to prevent unauthenticated callers
+      // from draining BSK from arbitrary users by passing user_id in the body.
+      const cronSecret = Deno.env.get('CRON_SECRET');
+      if (!cronSecret) {
+        console.error('[REPAY] CRON_SECRET not configured — refusing auto_debit');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Auto-debit not configured' }),
+          { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+      const authHeader = req.headers.get('Authorization') ?? '';
+      const presented = authHeader.replace(/^Bearer\s+/i, '');
+      if (presented !== cronSecret) {
+        console.warn('[REPAY] Invalid cron secret on auto_debit request');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Unauthorized' }),
+          { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
       if (!providedUserId) {
         throw new Error('user_id is required for auto_debit mode');
       }

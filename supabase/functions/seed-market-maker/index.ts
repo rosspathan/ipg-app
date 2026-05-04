@@ -27,6 +27,25 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // SECURITY: require shared CRON_SECRET so anonymous callers cannot flood
+  // the order book by repeatedly triggering market-maker seeding.
+  const cronSecret = Deno.env.get('CRON_SECRET');
+  if (!cronSecret) {
+    console.error('[Market Maker] CRON_SECRET not configured — refusing call');
+    return new Response(
+      JSON.stringify({ success: false, error: 'Market maker not configured' }),
+      { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+  const presented = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (presented !== cronSecret) {
+    console.warn('[Market Maker] Invalid cron secret');
+    return new Response(
+      JSON.stringify({ success: false, error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

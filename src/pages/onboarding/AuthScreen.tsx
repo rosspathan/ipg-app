@@ -90,13 +90,14 @@ export default function AuthScreen({ onAuthComplete, onBack }: AuthScreenProps) 
       // Generate 6-digit verification code
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Store credentials temporarily for later user creation (after OTP verification)
+      // Store email + OTP in sessionStorage (non-sensitive). Password stays
+      // in an in-memory store to avoid XSS exfiltration of credentials.
       sessionStorage.setItem('verificationEmail', email);
-      sessionStorage.setItem('verificationPassword', password);
       sessionStorage.setItem('verificationCode', verificationCode);
+      const { setPendingSignupPassword } = await import('@/lib/auth/signupCredentialStore');
+      setPendingSignupPassword(password);
       
       console.log('🚀 [AUTH] Sending verification email to:', email);
-      console.log('📧 [AUTH] Generated code:', verificationCode);
       
       // Send custom branded email with verification code
       const { data: emailData, error: emailError } = await supabase.functions.invoke('send-verification-email', {

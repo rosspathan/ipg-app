@@ -135,10 +135,12 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
     // Generate 6-digit verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store credentials temporarily for later user creation (after OTP verification)
+    // Store email + OTP in sessionStorage (non-sensitive), but keep the
+    // password ONLY in memory to avoid XSS exfiltration of credentials.
     sessionStorage.setItem('verificationEmail', email);
-    sessionStorage.setItem('verificationPassword', password);
     sessionStorage.setItem('verificationCode', verificationCode);
+    const { setPendingSignupPassword } = await import('@/lib/auth/signupCredentialStore');
+    setPendingSignupPassword(password);
     
     // Send custom branded email with verification code
     const { error } = await supabase.functions.invoke('send-verification-email', {
