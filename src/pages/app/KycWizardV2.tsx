@@ -295,21 +295,45 @@ export default function KycWizardV2() {
                   </div>
                 </Card>
               ) : gate.finalStatus === "rejected" ? (
-                <Card className="overflow-hidden border-rose-500/40 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-background p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-2xl bg-rose-500/20 p-3">
-                      <X className="h-5 w-5 text-rose-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h2 className="text-lg font-semibold tracking-tight text-rose-700 dark:text-rose-300">
-                        KYC rejected
-                      </h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {gate.rejectionReason || "Your KYC submission was rejected. Please review admin notes on each pillar below and resubmit."}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
+                (() => {
+                  // If only the mobile pillar is the blocker, frame it precisely.
+                  const docsOk = gate.documentsStatus === "approved";
+                  const faceOk = gate.faceStatus === "approved";
+                  const mobileBad = gate.mobileStatus === "rejected"
+                    || gate.mobileStatus === "needs_resubmission"
+                    || gate.mobileStatus === "not_submitted";
+                  const isMobileOnly = docsOk && faceOk && mobileBad;
+                  const title = isMobileOnly ? "Mobile verification rejected" : "KYC rejected";
+                  const reason = gate.mobileNotes || gate.rejectionReason
+                    || "Your KYC submission was rejected. Please review admin notes on each pillar below and resubmit.";
+                  return (
+                    <Card className="overflow-hidden border-rose-500/40 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-background p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-2xl bg-rose-500/20 p-3">
+                          <X className="h-5 w-5 text-rose-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h2 className="text-lg font-semibold tracking-tight text-rose-700 dark:text-rose-300">
+                            {title}
+                          </h2>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            <span className="font-medium text-foreground">Reason: </span>{reason}
+                          </p>
+                          {isMobileOnly && (
+                            <>
+                              <p className="mt-2 text-sm text-muted-foreground">
+                                Your identity documents and face verification are still approved. Please submit your mobile number again — there's no need to redo the other steps.
+                              </p>
+                              <Button size="sm" className="mt-3" onClick={() => setStep("mobile")}>
+                                Resubmit mobile number
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })()
               ) : gate.finalStatus === "needs_resubmission" ? (
                 <Card className="overflow-hidden border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-background p-5">
                   <div className="flex items-start gap-3">
