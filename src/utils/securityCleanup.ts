@@ -21,6 +21,16 @@ export function cleanupInsecureStorage() {
         localStorage.removeItem(key);
       }
     });
+    // Wipe any stale plaintext password left in sessionStorage from old
+    // builds (passwords are now kept only in memory during signup).
+    try {
+      if (sessionStorage.getItem('verificationPassword') !== null) {
+        console.warn('[SECURITY] Removing stale sessionStorage key: verificationPassword');
+        sessionStorage.removeItem('verificationPassword');
+      }
+    } catch {
+      /* sessionStorage unavailable — ignore */
+    }
   } catch (error) {
     console.error('[SECURITY] Failed to cleanup insecure storage:', error);
   }
