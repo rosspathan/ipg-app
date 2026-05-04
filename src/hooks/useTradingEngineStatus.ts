@@ -12,9 +12,8 @@ export function useTradingEngineStatus() {
     queryKey: ["trading-engine-status"],
     queryFn: async (): Promise<TradingEngineStatus> => {
       const { data, error } = await supabase
-        .from("trading_engine_settings")
-        .select("auto_matching_enabled, circuit_breaker_active")
-        .single();
+        .rpc("get_trading_engine_status")
+        .maybeSingle();
 
       if (error) {
         console.error("Failed to fetch trading engine status:", error);
