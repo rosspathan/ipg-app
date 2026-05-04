@@ -189,33 +189,47 @@ export default function KycWizardV2() {
     if (!user) return;
     const cleaned = mobile.replace(/\s+/g, "");
     if (!/^\+?\d{8,15}$/.test(cleaned)) {
-      toast({ title: "Invalid number", description: "Enter a valid phone number (digits only, 8–15).", variant: "destructive" });
+      toast({ title: "Invalid number", description: "Enter a valid phone number with country code (digits only, 8–15).", variant: "destructive" });
       return;
     }
     try {
       setBusy(true);
-      await ensureProfile();
-      const { error } = await supabase
-        .from("kyc_profiles_new")
-        .update({
-          mobile_number: cleaned,
-          mobile_status: "pending_review",
-          mobile_submitted_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
-      if (error) throw error;
-      await supabase.from("kyc_decision_audit").insert({
-        user_id: user.id, pillar: "mobile", action: "submit",
-        status_before: gate.mobileStatus, status_after: "pending_review",
+      // Server-side RPC handles: ensure profile, normalize, uniqueness,
+      // preserve docs/face approvals, set pending_review, audit, notify admin.
+      const { data, error } = await supabase.rpc("resubmit_kyc_mobile_number", {
+        _mobile_number: cleaned,
       });
+      if (error) {
+        const raw = `${error.message ?? ""} ${error.hint ?? ""} ${error.details ?? ""}`;
+        let title = "Submission failed";
+        let description = error.hint || error.message || "Please try again.";
+        if (/PHONE_ALREADY_USED/i.test(raw)) {
+          title = "Mobile number already in use";
+          description = "This mobile number is already linked to another account. Please use a different number.";
+        } else if (/INVALID_NUMBER/i.test(raw)) {
+          title = "Invalid number";
+          description = "Please enter a valid phone number with country code (8–15 digits).";
+        } else if (/ALREADY_APPROVED/i.test(raw)) {
+          title = "Already approved";
+          description = "Your mobile is already approved. Contact support to change it.";
+        } else if (/NOT_AUTHENTICATED/i.test(raw)) {
+          title = "Sign-in required";
+          description = "Please sign in again to resubmit.";
+        }
+        toast({ title, description, variant: "destructive" });
+        return;
+      }
       toast({
-        title: "Number submitted",
-        description: "Our team will manually verify your number — typically within 1–24 hours.",
+        title: "Number submitted for review",
+        description:
+          (data as any)?.message ??
+          "Our team will manually verify your number — typically within 1–24 hours.",
       });
+      setMobile("");
       await gate.refresh();
       setStep("overview");
     } catch (e: any) {
-      toast({ title: "Submission failed", description: e?.message ?? "", variant: "destructive" });
+      toast({ title: "Something went wrong", description: e?.message ?? "Please try again.", variant: "destructive" });
     } finally {
       setBusy(false);
     }
