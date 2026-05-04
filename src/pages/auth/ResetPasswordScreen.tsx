@@ -124,15 +124,16 @@ const ResetPasswordScreen: React.FC = () => {
       try { payload = await resp.json(); } catch { /* ignore */ }
 
       if (!resp.ok || !payload?.success) {
-        const code = String(payload?.error || 'server_error');
-        const friendly = ERROR_MESSAGES[code] || { title: "Error", description: payload?.message || "Failed to reset password." };
+        const errCode = String(payload?.error || 'server_error');
+        const friendly: { title: string; description: string; redirect?: string } =
+          ERROR_MESSAGES[errCode] || { title: "Error", description: payload?.message || "Failed to reset password." };
         toast({
           title: friendly.title,
           description: payload?.message || friendly.description,
           variant: "destructive",
         });
         if (friendly.redirect) {
-          setTimeout(() => navigate(friendly.redirect!), 2000);
+          setTimeout(() => navigate(friendly.redirect as string), 2000);
         }
         return;
       }
