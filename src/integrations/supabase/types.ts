@@ -15929,6 +15929,13 @@ export type Database = {
           user_count: number
         }[]
       }
+      get_trading_engine_status: {
+        Args: never
+        Returns: {
+          auto_matching_enabled: boolean
+          circuit_breaker_active: boolean
+        }[]
+      }
       get_transaction_stats: { Args: never; Returns: Json }
       get_unresolved_error_count: {
         Args: never
