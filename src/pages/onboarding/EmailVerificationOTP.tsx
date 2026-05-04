@@ -35,7 +35,9 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
       // Verify against locally stored code
       const storedCode = sessionStorage.getItem('verificationCode');
       const storedEmail = sessionStorage.getItem('verificationEmail');
-      const storedPassword = sessionStorage.getItem('verificationPassword');
+      const { getPendingSignupPassword, clearPendingSignupPassword } =
+        await import('@/lib/auth/signupCredentialStore');
+      const storedPassword = getPendingSignupPassword();
 
       if (!storedCode || !storedEmail || !storedPassword) {
         throw new Error('Verification session expired. Please sign up again.');
@@ -63,10 +65,10 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
       if (data.user) {
         console.log('[ONBOARDING OTP] User created successfully:', data.user.id);
         
-        // Clear temporary verification data
+        // Clear temporary verification data — including the in-memory password
         sessionStorage.removeItem('verificationCode');
         sessionStorage.removeItem('verificationEmail');
-        sessionStorage.removeItem('verificationPassword');
+        clearPendingSignupPassword();
 
         toast.success("Email verified! ✓");
         onVerified(data.user.id);
