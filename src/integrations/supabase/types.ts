@@ -16275,6 +16275,10 @@ export type Database = {
         Args: { p_error_id: string; p_resolution_notes?: string }
         Returns: boolean
       }
+      resubmit_kyc_mobile_number: {
+        Args: { _mobile_number: string }
+        Returns: Json
+      }
       rollback_kyc_legacy_reset: { Args: { _batch_id?: string }; Returns: Json }
       run_balance_reconciliation: {
         Args: never

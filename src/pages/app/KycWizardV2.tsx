@@ -36,9 +36,9 @@ function PillarChip({ status, label }: { status: KycPillarStatus; label: string 
   const cfg = useMemo(() => {
     switch (status) {
       case "approved": return { icon: Check, cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30", text: "Approved" };
-      case "rejected": return { icon: X, cls: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30", text: "Rejected" };
-      case "needs_resubmission": return { icon: AlertCircle, cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30", text: "Resubmit" };
-      case "pending_review": return { icon: Clock, cls: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30", text: "In review" };
+      case "rejected": return { icon: X, cls: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30", text: "Rejected — resubmit" };
+      case "needs_resubmission": return { icon: AlertCircle, cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30", text: "Resubmit required" };
+      case "pending_review": return { icon: Clock, cls: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30", text: "Under admin review" };
       default: return { icon: AlertCircle, cls: "bg-muted text-muted-foreground border-border", text: "Not started" };
     }
   }, [status]);
@@ -189,33 +189,47 @@ export default function KycWizardV2() {
     if (!user) return;
     const cleaned = mobile.replace(/\s+/g, "");
     if (!/^\+?\d{8,15}$/.test(cleaned)) {
-      toast({ title: "Invalid number", description: "Enter a valid phone number (digits only, 8–15).", variant: "destructive" });
+      toast({ title: "Invalid number", description: "Enter a valid phone number with country code (digits only, 8–15).", variant: "destructive" });
       return;
     }
     try {
       setBusy(true);
-      await ensureProfile();
-      const { error } = await supabase
-        .from("kyc_profiles_new")
-        .update({
-          mobile_number: cleaned,
-          mobile_status: "pending_review",
-          mobile_submitted_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
-      if (error) throw error;
-      await supabase.from("kyc_decision_audit").insert({
-        user_id: user.id, pillar: "mobile", action: "submit",
-        status_before: gate.mobileStatus, status_after: "pending_review",
+      // Server-side RPC handles: ensure profile, normalize, uniqueness,
+      // preserve docs/face approvals, set pending_review, audit, notify admin.
+      const { data, error } = await supabase.rpc("resubmit_kyc_mobile_number", {
+        _mobile_number: cleaned,
       });
+      if (error) {
+        const raw = `${error.message ?? ""} ${error.hint ?? ""} ${error.details ?? ""}`;
+        let title = "Submission failed";
+        let description = error.hint || error.message || "Please try again.";
+        if (/PHONE_ALREADY_USED/i.test(raw)) {
+          title = "Mobile number already in use";
+          description = "This mobile number is already linked to another account. Please use a different number.";
+        } else if (/INVALID_NUMBER/i.test(raw)) {
+          title = "Invalid number";
+          description = "Please enter a valid phone number with country code (8–15 digits).";
+        } else if (/ALREADY_APPROVED/i.test(raw)) {
+          title = "Already approved";
+          description = "Your mobile is already approved. Contact support to change it.";
+        } else if (/NOT_AUTHENTICATED/i.test(raw)) {
+          title = "Sign-in required";
+          description = "Please sign in again to resubmit.";
+        }
+        toast({ title, description, variant: "destructive" });
+        return;
+      }
       toast({
-        title: "Number submitted",
-        description: "Our team will manually verify your number — typically within 1–24 hours.",
+        title: "Number submitted for review",
+        description:
+          (data as any)?.message ??
+          "Our team will manually verify your number — typically within 1–24 hours.",
       });
+      setMobile("");
       await gate.refresh();
       setStep("overview");
     } catch (e: any) {
-      toast({ title: "Submission failed", description: e?.message ?? "", variant: "destructive" });
+      toast({ title: "Something went wrong", description: e?.message ?? "Please try again.", variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -281,21 +295,45 @@ export default function KycWizardV2() {
                   </div>
                 </Card>
               ) : gate.finalStatus === "rejected" ? (
-                <Card className="overflow-hidden border-rose-500/40 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-background p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-2xl bg-rose-500/20 p-3">
-                      <X className="h-5 w-5 text-rose-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h2 className="text-lg font-semibold tracking-tight text-rose-700 dark:text-rose-300">
-                        KYC rejected
-                      </h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {gate.rejectionReason || "Your KYC submission was rejected. Please review admin notes on each pillar below and resubmit."}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
+                (() => {
+                  // If only the mobile pillar is the blocker, frame it precisely.
+                  const docsOk = gate.documentsStatus === "approved";
+                  const faceOk = gate.faceStatus === "approved";
+                  const mobileBad = gate.mobileStatus === "rejected"
+                    || gate.mobileStatus === "needs_resubmission"
+                    || gate.mobileStatus === "not_submitted";
+                  const isMobileOnly = docsOk && faceOk && mobileBad;
+                  const title = isMobileOnly ? "Mobile verification rejected" : "KYC rejected";
+                  const reason = gate.mobileNotes || gate.rejectionReason
+                    || "Your KYC submission was rejected. Please review admin notes on each pillar below and resubmit.";
+                  return (
+                    <Card className="overflow-hidden border-rose-500/40 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-background p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-2xl bg-rose-500/20 p-3">
+                          <X className="h-5 w-5 text-rose-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h2 className="text-lg font-semibold tracking-tight text-rose-700 dark:text-rose-300">
+                            {title}
+                          </h2>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            <span className="font-medium text-foreground">Reason: </span>{reason}
+                          </p>
+                          {isMobileOnly && (
+                            <>
+                              <p className="mt-2 text-sm text-muted-foreground">
+                                Your identity documents and face verification are still approved. Please submit your mobile number again — there's no need to redo the other steps.
+                              </p>
+                              <Button size="sm" className="mt-3" onClick={() => setStep("mobile")}>
+                                Resubmit mobile number
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })()
               ) : gate.finalStatus === "needs_resubmission" ? (
                 <Card className="overflow-hidden border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-background p-5">
                   <div className="flex items-start gap-3">
