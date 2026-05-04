@@ -88,41 +88,70 @@ const ResetPasswordScreen: React.FC = () => {
       return;
     }
 
+    if (loading) return; // prevent double-submit
     setLoading(true);
 
+    // Friendly mapping from structured error codes
+    const ERROR_MESSAGES: Record<string, { title: string; description: string; redirect?: string }> = {
+      invalid_otp: { title: "Invalid code", description: "The verification code is invalid. Please request a new one.", redirect: '/auth/forgot-password' },
+      expired_otp: { title: "Code expired", description: "Your verification code has expired. Please request a new one.", redirect: '/auth/forgot-password' },
+      reset_session_expired: { title: "Session expired", description: "This reset session is no longer valid. Please start over.", redirect: '/auth/forgot-password' },
+      weak_password: { title: "Weak password", description: "Please choose a stronger password." },
+      password_mismatch: { title: "Passwords do not match", description: "Please re-enter your new password." },
+      user_not_found: { title: "User not found", description: "We could not find your account.", redirect: '/auth/forgot-password' },
+      missing_fields: { title: "Missing information", description: "Please fill all fields and try again." },
+      rate_limited: { title: "Too many attempts", description: "Please wait a moment and try again." },
+      server_error: { title: "Server error", description: "Something went wrong on our side. Please try again." },
+    };
+
     try {
-      const { data, error } = await supabase.functions.invoke('complete-password-reset', {
-        body: {
-          email,
-          code,
-          newPassword: password,
+      // Use direct fetch so we can read the JSON error body
+      // (supabase.functions.invoke hides non-2xx response bodies)
+      const SUPABASE_URL = (supabase as any).supabaseUrl || (import.meta as any).env?.VITE_SUPABASE_URL;
+      const SUPABASE_ANON = (supabase as any).supabaseKey || (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/complete-password-reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_ANON,
+          Authorization: `Bearer ${SUPABASE_ANON}`,
         },
+        body: JSON.stringify({ email, code, newPassword: password }),
       });
 
-      if (error) throw error;
+      let payload: any = {};
+      try { payload = await resp.json(); } catch { /* ignore */ }
 
-      if (data?.success) {
-        setSuccess(true);
-        setShowConfetti(true);
+      if (!resp.ok || !payload?.success) {
+        const errCode = String(payload?.error || 'server_error');
+        const friendly: { title: string; description: string; redirect?: string } =
+          ERROR_MESSAGES[errCode] || { title: "Error", description: payload?.message || "Failed to reset password." };
         toast({
-          title: "Password Reset Successful!",
-          description: "Your password has been updated. Redirecting to login...",
+          title: friendly.title,
+          description: payload?.message || friendly.description,
+          variant: "destructive",
         });
-
-        // Stop confetti after 5 seconds
-        setTimeout(() => setShowConfetti(false), 5000);
-        
-        // Redirect to login after 3 seconds
-        setTimeout(() => navigate('/auth/login'), 3000);
-      } else {
-        throw new Error(data?.error || 'Failed to reset password');
+        if (friendly.redirect) {
+          setTimeout(() => navigate(friendly.redirect as string), 2000);
+        }
+        return;
       }
-    } catch (error: any) {
-      console.error('Password reset error:', error);
+
+      setSuccess(true);
+      setShowConfetti(true);
       toast({
-        title: "Error",
-        description: error.message || "Failed to reset password. Please try again.",
-        variant: "destructive"
+        title: "Password Reset Successful!",
+        description: "Your password has been updated. Redirecting to login...",
+      });
+      setTimeout(() => setShowConfetti(false), 5000);
+      setTimeout(() => navigate('/auth/login', { state: { resetSuccess: true, email } }), 2500);
+    } catch (error: any) {
+      console.error('Password reset error');
+      toast({
+        title: "Network error",
+        description: "Could not reach server. Check your connection and try again.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
