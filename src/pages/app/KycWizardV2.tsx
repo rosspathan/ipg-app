@@ -89,7 +89,7 @@ export default function KycWizardV2() {
     if (!existing) {
       await supabase.from("kyc_profiles_new").insert({
         user_id: user.id,
-        level: "level_1",
+        level: "L1",
         status: "submitted",
         data_json: {},
       });
