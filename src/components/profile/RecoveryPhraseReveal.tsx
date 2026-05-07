@@ -36,9 +36,10 @@ interface RecoveryPhraseRevealProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = "warning" | "pin_entry" | "reveal" | "not_found";
+type Step = "warning" | "verify_pin" | "pin_entry" | "reveal" | "not_found";
 
 const AUTO_HIDE_SECONDS = 30;
+type PinPurpose = "reveal" | "copy" | "download";
 
 const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
   const { toast } = useToast();
