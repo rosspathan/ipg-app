@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowUpRight, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowUpRight, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useBep20Balances, Bep20Balance } from '@/hooks/useBep20Balances';
 import { supabase } from '@/integrations/supabase/client';
 import { validateCryptoAddress } from '@/lib/validation/cryptoAddressValidator';
+import { WalletPinDialog } from '@/components/wallet/WalletPinDialog';
 
 interface WithdrawalResult {
   success: boolean;
@@ -25,13 +27,17 @@ interface WithdrawalResult {
 export function CryptoWithdrawalForm() {
   const { balances, isLoading: balancesLoading } = useBep20Balances();
   const { toast } = useToast();
-  
+  const navigate = useNavigate();
+
   const [selectedAsset, setSelectedAsset] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [destinationAddress, setDestinationAddress] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<WithdrawalResult | null>(null);
   const [addressError, setAddressError] = useState<string>('');
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [noPinSet, setNoPinSet] = useState(false);
 
   // Get withdrawable assets (those with positive internal balance)
   const withdrawableAssets = balances.filter(b => b.appAvailable > 0);
@@ -56,87 +62,119 @@ export function CryptoWithdrawalForm() {
     }
   };
 
-  const handleWithdraw = async () => {
+  const validateInputs = (): boolean => {
     if (!selectedAsset || !amount || !destinationAddress) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all fields',
-        variant: 'destructive'
-      });
-      return;
+      toast({ title: 'Missing Information', description: 'Please fill in all fields', variant: 'destructive' });
+      return false;
     }
-
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      toast({
-        title: 'Invalid Amount',
-        description: 'Please enter a valid amount',
-        variant: 'destructive'
-      });
-      return;
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid amount', variant: 'destructive' });
+      return false;
     }
-
     if (selectedBalance && numAmount > selectedBalance.appAvailable) {
-      toast({
-        title: 'Insufficient Balance',
-        description: `You only have ${selectedBalance.appAvailable} ${selectedAsset} available`,
-        variant: 'destructive'
-      });
-      return;
+      toast({ title: 'Insufficient Balance', description: `You only have ${selectedBalance.appAvailable} ${selectedAsset} available`, variant: 'destructive' });
+      return false;
     }
-
     const validation = validateCryptoAddress(destinationAddress, 'BEP20');
     if (!validation.isValid) {
+      toast({ title: 'Invalid Address', description: validation.error || 'Please enter a valid BEP20 address', variant: 'destructive' });
+      return false;
+    }
+    return true;
+  };
+
+  const handleStartWithdraw = async () => {
+    if (!validateInputs()) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: 'Not signed in', description: 'Please sign in again.', variant: 'destructive' });
+      return;
+    }
+    const { data: sec } = await supabase
+      .from('security')
+      .select('pin_set')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!sec?.pin_set) {
+      setNoPinSet(true);
       toast({
-        title: 'Invalid Address',
-        description: validation.error || 'Please enter a valid BEP20 address',
+        title: 'Withdrawal PIN required',
+        description: 'Please set your 6-digit security PIN before withdrawing.',
         variant: 'destructive'
       });
       return;
     }
 
+    setNoPinSet(false);
+    setPinError(null);
+    setPinDialogOpen(true);
+  };
+
+  const submitWithdrawal = async (pin: string) => {
+    setPinError(null);
     setIsProcessing(true);
     setResult(null);
-
     try {
+      const numAmount = parseFloat(amount);
       const { data, error } = await supabase.functions.invoke('process-crypto-withdrawal', {
         body: {
           asset_symbol: selectedAsset,
           amount: numAmount,
           destination_address: destinationAddress,
-          network: 'BEP20'
+          network: 'BEP20',
+          pin
         }
       });
 
       if (error) {
-        throw new Error(error.message);
+        const ctx: any = (error as any).context;
+        let serverMsg: string | null = null;
+        let serverCode: string | null = null;
+        try {
+          const text = await ctx?.text?.();
+          if (text) {
+            const parsed = JSON.parse(text);
+            serverMsg = parsed?.message || parsed?.error || null;
+            serverCode = parsed?.error || null;
+          }
+        } catch { /* ignore */ }
+
+        if (serverCode && ['PIN_REQUIRED', 'PIN_INVALID', 'PIN_LOCKED', 'PIN_NOT_SET'].includes(serverCode)) {
+          setPinError(serverMsg || 'Incorrect PIN');
+          setIsProcessing(false);
+          return;
+        }
+        throw new Error(serverMsg || error.message);
       }
 
       if (data?.success) {
+        setPinDialogOpen(false);
         setResult(data);
         toast({
           title: 'Withdrawal Successful',
           description: `${data.amount} ${selectedAsset} sent to ${destinationAddress.slice(0, 8)}...`,
         });
-        // Reset form
         setAmount('');
         setDestinationAddress('');
       } else {
-        setResult({ success: false, error: data?.error || 'Withdrawal failed' });
-        toast({
-          title: 'Withdrawal Failed',
-          description: data?.error || 'Please try again later',
-          variant: 'destructive'
-        });
+        const code = data?.error;
+        if (code && ['PIN_REQUIRED', 'PIN_INVALID', 'PIN_LOCKED', 'PIN_NOT_SET'].includes(code)) {
+          setPinError(data?.message || 'Incorrect PIN');
+          setIsProcessing(false);
+          return;
+        }
+        setPinDialogOpen(false);
+        setResult({ success: false, error: data?.message || data?.error || 'Withdrawal failed' });
+        toast({ title: 'Withdrawal Failed', description: data?.message || data?.error || 'Please try again later', variant: 'destructive' });
       }
     } catch (err) {
+      setPinDialogOpen(false);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setResult({ success: false, error: errorMessage });
-      toast({
-        title: 'Withdrawal Error',
-        description: errorMessage,
-        variant: 'destructive'
-      });
+      toast({ title: 'Withdrawal Error', description: errorMessage, variant: 'destructive' });
     } finally {
       setIsProcessing(false);
     }
@@ -272,10 +310,27 @@ export function CryptoWithdrawalForm() {
           </Alert>
         )}
 
+
+        {noPinSet && (
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between gap-3">
+              <span>Set your 6-digit security PIN to enable withdrawals.</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate('/app/profile/security')}
+              >
+                Set PIN
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Submit Button */}
         <Button
           className="w-full"
-          onClick={handleWithdraw}
+          onClick={handleStartWithdraw}
           disabled={isProcessing || !selectedAsset || !amount || !destinationAddress || !!addressError}
         >
           {isProcessing ? (
@@ -291,6 +346,16 @@ export function CryptoWithdrawalForm() {
           )}
         </Button>
       </CardContent>
+
+      <WalletPinDialog
+        open={pinDialogOpen}
+        onOpenChange={(o) => { if (!isProcessing) setPinDialogOpen(o); }}
+        onConfirm={submitWithdrawal}
+        isConfirming={isProcessing}
+        error={pinError}
+        title="Confirm withdrawal"
+        description={`Enter your 6-digit security PIN to authorize sending ${amount || ''} ${selectedAsset || ''} to ${destinationAddress ? destinationAddress.slice(0, 10) + '…' : 'the destination address'}.`}
+      />
     </Card>
   );
 }
