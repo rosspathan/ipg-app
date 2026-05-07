@@ -310,10 +310,27 @@ export function CryptoWithdrawalForm() {
           </Alert>
         )}
 
+
+        {noPinSet && (
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between gap-3">
+              <span>Set your 6-digit security PIN to enable withdrawals.</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate('/app/profile/security')}
+              >
+                Set PIN
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Submit Button */}
         <Button
           className="w-full"
-          onClick={handleWithdraw}
+          onClick={handleStartWithdraw}
           disabled={isProcessing || !selectedAsset || !amount || !destinationAddress || !!addressError}
         >
           {isProcessing ? (
@@ -329,6 +346,16 @@ export function CryptoWithdrawalForm() {
           )}
         </Button>
       </CardContent>
+
+      <WalletPinDialog
+        open={pinDialogOpen}
+        onOpenChange={(o) => { if (!isProcessing) setPinDialogOpen(o); }}
+        onConfirm={submitWithdrawal}
+        isConfirming={isProcessing}
+        error={pinError}
+        title="Confirm withdrawal"
+        description={`Enter your 6-digit security PIN to authorize sending ${amount || ''} ${selectedAsset || ''} to ${destinationAddress ? destinationAddress.slice(0, 10) + '…' : 'the destination address'}.`}
+      />
     </Card>
   );
 }
