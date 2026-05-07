@@ -62,87 +62,119 @@ export function CryptoWithdrawalForm() {
     }
   };
 
-  const handleWithdraw = async () => {
+  const validateInputs = (): boolean => {
     if (!selectedAsset || !amount || !destinationAddress) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all fields',
-        variant: 'destructive'
-      });
-      return;
+      toast({ title: 'Missing Information', description: 'Please fill in all fields', variant: 'destructive' });
+      return false;
     }
-
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      toast({
-        title: 'Invalid Amount',
-        description: 'Please enter a valid amount',
-        variant: 'destructive'
-      });
-      return;
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid amount', variant: 'destructive' });
+      return false;
     }
-
     if (selectedBalance && numAmount > selectedBalance.appAvailable) {
-      toast({
-        title: 'Insufficient Balance',
-        description: `You only have ${selectedBalance.appAvailable} ${selectedAsset} available`,
-        variant: 'destructive'
-      });
-      return;
+      toast({ title: 'Insufficient Balance', description: `You only have ${selectedBalance.appAvailable} ${selectedAsset} available`, variant: 'destructive' });
+      return false;
     }
-
     const validation = validateCryptoAddress(destinationAddress, 'BEP20');
     if (!validation.isValid) {
+      toast({ title: 'Invalid Address', description: validation.error || 'Please enter a valid BEP20 address', variant: 'destructive' });
+      return false;
+    }
+    return true;
+  };
+
+  const handleStartWithdraw = async () => {
+    if (!validateInputs()) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: 'Not signed in', description: 'Please sign in again.', variant: 'destructive' });
+      return;
+    }
+    const { data: sec } = await supabase
+      .from('security')
+      .select('pin_set')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!sec?.pin_set) {
+      setNoPinSet(true);
       toast({
-        title: 'Invalid Address',
-        description: validation.error || 'Please enter a valid BEP20 address',
+        title: 'Withdrawal PIN required',
+        description: 'Please set your 6-digit security PIN before withdrawing.',
         variant: 'destructive'
       });
       return;
     }
 
+    setNoPinSet(false);
+    setPinError(null);
+    setPinDialogOpen(true);
+  };
+
+  const submitWithdrawal = async (pin: string) => {
+    setPinError(null);
     setIsProcessing(true);
     setResult(null);
-
     try {
+      const numAmount = parseFloat(amount);
       const { data, error } = await supabase.functions.invoke('process-crypto-withdrawal', {
         body: {
           asset_symbol: selectedAsset,
           amount: numAmount,
           destination_address: destinationAddress,
-          network: 'BEP20'
+          network: 'BEP20',
+          pin
         }
       });
 
       if (error) {
-        throw new Error(error.message);
+        const ctx: any = (error as any).context;
+        let serverMsg: string | null = null;
+        let serverCode: string | null = null;
+        try {
+          const text = await ctx?.text?.();
+          if (text) {
+            const parsed = JSON.parse(text);
+            serverMsg = parsed?.message || parsed?.error || null;
+            serverCode = parsed?.error || null;
+          }
+        } catch { /* ignore */ }
+
+        if (serverCode && ['PIN_REQUIRED', 'PIN_INVALID', 'PIN_LOCKED', 'PIN_NOT_SET'].includes(serverCode)) {
+          setPinError(serverMsg || 'Incorrect PIN');
+          setIsProcessing(false);
+          return;
+        }
+        throw new Error(serverMsg || error.message);
       }
 
       if (data?.success) {
+        setPinDialogOpen(false);
         setResult(data);
         toast({
           title: 'Withdrawal Successful',
           description: `${data.amount} ${selectedAsset} sent to ${destinationAddress.slice(0, 8)}...`,
         });
-        // Reset form
         setAmount('');
         setDestinationAddress('');
       } else {
-        setResult({ success: false, error: data?.error || 'Withdrawal failed' });
-        toast({
-          title: 'Withdrawal Failed',
-          description: data?.error || 'Please try again later',
-          variant: 'destructive'
-        });
+        const code = data?.error;
+        if (code && ['PIN_REQUIRED', 'PIN_INVALID', 'PIN_LOCKED', 'PIN_NOT_SET'].includes(code)) {
+          setPinError(data?.message || 'Incorrect PIN');
+          setIsProcessing(false);
+          return;
+        }
+        setPinDialogOpen(false);
+        setResult({ success: false, error: data?.message || data?.error || 'Withdrawal failed' });
+        toast({ title: 'Withdrawal Failed', description: data?.message || data?.error || 'Please try again later', variant: 'destructive' });
       }
     } catch (err) {
+      setPinDialogOpen(false);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setResult({ success: false, error: errorMessage });
-      toast({
-        title: 'Withdrawal Error',
-        description: errorMessage,
-        variant: 'destructive'
-      });
+      toast({ title: 'Withdrawal Error', description: errorMessage, variant: 'destructive' });
     } finally {
       setIsProcessing(false);
     }
