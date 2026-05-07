@@ -27,13 +27,17 @@ interface WithdrawalResult {
 export function CryptoWithdrawalForm() {
   const { balances, isLoading: balancesLoading } = useBep20Balances();
   const { toast } = useToast();
-  
+  const navigate = useNavigate();
+
   const [selectedAsset, setSelectedAsset] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [destinationAddress, setDestinationAddress] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<WithdrawalResult | null>(null);
   const [addressError, setAddressError] = useState<string>('');
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [noPinSet, setNoPinSet] = useState(false);
 
   // Get withdrawable assets (those with positive internal balance)
   const withdrawableAssets = balances.filter(b => b.appAvailable > 0);
