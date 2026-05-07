@@ -94,9 +94,88 @@ Deno.serve(async (req) => {
     userId = user.id;
 
     const body: WithdrawalRequest = await req.json();
-    const { asset_symbol, amount, destination_address, network = 'BEP20' } = body;
+    const { asset_symbol, amount, destination_address, network = 'BEP20', pin } = body;
 
     console.log(`[Withdrawal] User ${user.id} requesting ${amount} ${asset_symbol} to ${destination_address}`);
+
+    // ============================================================
+    // MANDATORY WITHDRAWAL PIN VERIFICATION (server-side enforced)
+    // ============================================================
+    if (!pin || !/^\d{6}$/.test(pin)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'PIN_REQUIRED', message: 'Please enter your 6-digit security PIN to authorize this withdrawal.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: securityRow, error: securityError } = await supabase
+      .from('security')
+      .select('pin_hash, pin_salt, pin_set, locked_until, failed_attempts')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (securityError) {
+      console.error('[Withdrawal] Security lookup failed:', securityError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'PIN_LOOKUP_FAILED', message: 'Could not verify your security PIN. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!securityRow?.pin_set || !securityRow.pin_hash || !securityRow.pin_salt) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'PIN_NOT_SET', message: 'Please set your withdrawal PIN in Profile → Security before withdrawing.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (securityRow.locked_until && new Date(securityRow.locked_until).getTime() > Date.now()) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'PIN_LOCKED', message: 'Your account is temporarily locked due to too many failed PIN attempts. Try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const computedHash = await hashPinPbkdf2(pin, securityRow.pin_salt);
+    if (computedHash !== securityRow.pin_hash) {
+      const newAttempts = (securityRow.failed_attempts || 0) + 1;
+      const shouldLock = newAttempts >= 5;
+      await supabase.from('security').update({
+        failed_attempts: newAttempts,
+        locked_until: shouldLock ? new Date(Date.now() + 30 * 60 * 1000).toISOString() : null
+      }).eq('user_id', user.id);
+
+      await supabase.from('login_audit').insert({
+        user_id: user.id,
+        event: 'withdrawal_pin_failed',
+        device_info: { surface: 'process-crypto-withdrawal' }
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'PIN_INVALID',
+          message: shouldLock
+            ? 'Incorrect PIN. Account temporarily locked for 30 minutes.'
+            : `Incorrect PIN. ${5 - newAttempts} attempts remaining.`
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // PIN OK – reset failed attempts
+    if ((securityRow.failed_attempts || 0) > 0) {
+      await supabase.from('security').update({
+        failed_attempts: 0,
+        locked_until: null
+      }).eq('user_id', user.id);
+    }
+    await supabase.from('login_audit').insert({
+      user_id: user.id,
+      event: 'withdrawal_pin_success',
+      device_info: { surface: 'process-crypto-withdrawal' }
+    });
+    // ============================================================
 
     // Validate destination address
     if (!ethers.isAddress(destination_address)) {
