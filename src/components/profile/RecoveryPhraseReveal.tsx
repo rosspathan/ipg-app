@@ -636,6 +636,61 @@ Generated: ${new Date().toISOString()}
       </DialogContent>
     </Dialog>
 
+    {/* Server-verified Security PIN gate */}
+    <WalletPinDialog
+      open={showSecurityPin}
+      onOpenChange={(o) => {
+        setShowSecurityPin(o);
+        if (!o) {
+          setSecurityPin("");
+          setSecurityPinError(null);
+        }
+      }}
+      onConfirm={async (enteredPin) => {
+        setSecurityPin(enteredPin);
+        // verify with the just-entered value (state update is async)
+        setSecurityPinLoading(true);
+        setSecurityPinError(null);
+        try {
+          const { data, error } = await supabase.functions.invoke("verify-security-pin", {
+            body: { pin: enteredPin, purpose: `recovery_phrase_${pinPurpose}` },
+          });
+          if (error || !data?.success) {
+            if (data?.error === "PIN_NOT_SET") {
+              setShowSecurityPin(false);
+              toast({
+                title: "Security PIN Required",
+                description: "Please set your security PIN first before viewing your recovery phrase.",
+                variant: "destructive",
+              });
+              onOpenChange(false);
+              navigate("/app/profile/security");
+              return;
+            }
+            setSecurityPinError(data?.message || error?.message || "Incorrect PIN. Please try again.");
+            return;
+          }
+          setShowSecurityPin(false);
+          if (pinPurpose === "reveal") {
+            setRevealed(true);
+            setCountdown(AUTO_HIDE_SECONDS);
+          } else if (pinPurpose === "copy") {
+            await doCopy();
+          } else if (pinPurpose === "download") {
+            doDownload();
+          }
+        } catch (e: any) {
+          setSecurityPinError(e?.message || "Verification failed");
+        } finally {
+          setSecurityPinLoading(false);
+        }
+      }}
+      isConfirming={securityPinLoading}
+      error={securityPinError}
+      title="Verify Security PIN"
+      description="Enter your 6-digit security PIN to access your recovery phrase."
+    />
+
     {/* Add Recovery Phrase Dialog */}
     <AddRecoveryPhraseDialog
       open={showAddPhraseDialog}
