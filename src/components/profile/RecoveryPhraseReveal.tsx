@@ -57,6 +57,13 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
   const [hasServerBackup, setHasServerBackup] = useState(false);
   const [showAddPhraseDialog, setShowAddPhraseDialog] = useState(false);
 
+  // Security PIN gate (server-verified)
+  const [showSecurityPin, setShowSecurityPin] = useState(false);
+  const [securityPin, setSecurityPin] = useState("");
+  const [securityPinError, setSecurityPinError] = useState<string | null>(null);
+  const [securityPinLoading, setSecurityPinLoading] = useState(false);
+  const [pinPurpose, setPinPurpose] = useState<PinPurpose>("reveal");
+
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
@@ -68,6 +75,9 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
       setPin("");
       setPinError("");
       setHasServerBackup(false);
+      setShowSecurityPin(false);
+      setSecurityPin("");
+      setSecurityPinError(null);
     }
   }, [open]);
 
