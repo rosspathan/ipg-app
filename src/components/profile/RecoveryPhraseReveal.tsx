@@ -573,12 +573,9 @@ Generated: ${new Date().toISOString()}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Button
                     variant="secondary"
-                    onClick={() => {
-                      setRevealed(true);
-                      setCountdown(AUTO_HIDE_SECONDS);
-                    }}
+                    onClick={() => requestPin("reveal")}
                   >
-                    <Eye className="h-4 w-4 mr-2" />
+                    <Lock className="h-4 w-4 mr-2" />
                     Tap to Reveal
                   </Button>
                 </div>
