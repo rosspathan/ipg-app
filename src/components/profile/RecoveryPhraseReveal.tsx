@@ -30,15 +30,17 @@ import { getStoredWallet, storeWallet, setWalletStorageUserId } from "@/utils/wa
 import AddRecoveryPhraseDialog from "./AddRecoveryPhraseDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
+import { WalletPinDialog } from "@/components/wallet/WalletPinDialog";
 
 interface RecoveryPhraseRevealProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = "warning" | "pin_entry" | "reveal" | "not_found";
+type Step = "warning" | "verify_pin" | "pin_entry" | "reveal" | "not_found";
 
 const AUTO_HIDE_SECONDS = 30;
+type PinPurpose = "reveal" | "copy" | "download";
 
 const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
   const { toast } = useToast();
@@ -56,6 +58,13 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
   const [hasServerBackup, setHasServerBackup] = useState(false);
   const [showAddPhraseDialog, setShowAddPhraseDialog] = useState(false);
 
+  // Security PIN gate (server-verified)
+  const [showSecurityPin, setShowSecurityPin] = useState(false);
+  const [securityPin, setSecurityPin] = useState("");
+  const [securityPinError, setSecurityPinError] = useState<string | null>(null);
+  const [securityPinLoading, setSecurityPinLoading] = useState(false);
+  const [pinPurpose, setPinPurpose] = useState<PinPurpose>("reveal");
+
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
@@ -67,6 +76,9 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
       setPin("");
       setPinError("");
       setHasServerBackup(false);
+      setShowSecurityPin(false);
+      setSecurityPin("");
+      setSecurityPinError(null);
     }
   }, [open]);
 
@@ -254,25 +266,30 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
     }
   };
 
-  const handleCopy = async () => {
+  // Server-side PIN verification gate
+  const requestPin = (purpose: PinPurpose) => {
+    setPinPurpose(purpose);
+    setSecurityPin("");
+    setSecurityPinError(null);
+    setShowSecurityPin(true);
+  };
+
+
+
+  const doCopy = async () => {
     try {
       await navigator.clipboard.writeText(seedPhrase.join(" "));
       setCopied(true);
-      toast({
-        title: "Copied",
-        description: "Recovery phrase copied to clipboard"
-      });
+      toast({ title: "Copied", description: "Recovery phrase copied to clipboard" });
       setTimeout(() => setCopied(false), 3000);
     } catch {
-      toast({
-        title: "Copy Failed",
-        description: "Please manually copy the words",
-        variant: "destructive"
-      });
+      toast({ title: "Copy Failed", description: "Please manually copy the words", variant: "destructive" });
     }
   };
 
-  const handleDownload = () => {
+  const handleCopy = () => requestPin("copy");
+
+  const doDownload = () => {
     const content = `IPG i-SMART Recovery Phrase
 ================================
 Keep this file safe and never share it with anyone!
@@ -296,11 +313,10 @@ Generated: ${new Date().toISOString()}
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({
-      title: "Downloaded",
-      description: "Recovery phrase saved. Store it securely!"
-    });
+    toast({ title: "Downloaded", description: "Recovery phrase saved. Store it securely!" });
   };
+
+  const handleDownload = () => requestPin("download");
 
   return (
     <>
@@ -515,12 +531,9 @@ Generated: ${new Date().toISOString()}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Button
                     variant="secondary"
-                    onClick={() => {
-                      setRevealed(true);
-                      setCountdown(AUTO_HIDE_SECONDS);
-                    }}
+                    onClick={() => requestPin("reveal")}
                   >
-                    <Eye className="h-4 w-4 mr-2" />
+                    <Lock className="h-4 w-4 mr-2" />
                     Tap to Reveal
                   </Button>
                 </div>
@@ -580,6 +593,61 @@ Generated: ${new Date().toISOString()}
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Server-verified Security PIN gate */}
+    <WalletPinDialog
+      open={showSecurityPin}
+      onOpenChange={(o) => {
+        setShowSecurityPin(o);
+        if (!o) {
+          setSecurityPin("");
+          setSecurityPinError(null);
+        }
+      }}
+      onConfirm={async (enteredPin) => {
+        setSecurityPin(enteredPin);
+        // verify with the just-entered value (state update is async)
+        setSecurityPinLoading(true);
+        setSecurityPinError(null);
+        try {
+          const { data, error } = await supabase.functions.invoke("verify-security-pin", {
+            body: { pin: enteredPin, purpose: `recovery_phrase_${pinPurpose}` },
+          });
+          if (error || !data?.success) {
+            if (data?.error === "PIN_NOT_SET") {
+              setShowSecurityPin(false);
+              toast({
+                title: "Security PIN Required",
+                description: "Please set your security PIN first before viewing your recovery phrase.",
+                variant: "destructive",
+              });
+              onOpenChange(false);
+              navigate("/app/profile/security");
+              return;
+            }
+            setSecurityPinError(data?.message || error?.message || "Incorrect PIN. Please try again.");
+            return;
+          }
+          setShowSecurityPin(false);
+          if (pinPurpose === "reveal") {
+            setRevealed(true);
+            setCountdown(AUTO_HIDE_SECONDS);
+          } else if (pinPurpose === "copy") {
+            await doCopy();
+          } else if (pinPurpose === "download") {
+            doDownload();
+          }
+        } catch (e: any) {
+          setSecurityPinError(e?.message || "Verification failed");
+        } finally {
+          setSecurityPinLoading(false);
+        }
+      }}
+      isConfirming={securityPinLoading}
+      error={securityPinError}
+      title="Verify Security PIN"
+      description="Enter your 6-digit security PIN to access your recovery phrase."
+    />
 
     {/* Add Recovery Phrase Dialog */}
     <AddRecoveryPhraseDialog

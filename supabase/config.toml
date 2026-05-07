@@ -334,3 +334,6 @@ verify_jwt = false
 
 [functions.staking-auto-unstake]
 verify_jwt = false
+
+[functions.verify-security-pin]
+verify_jwt = true
