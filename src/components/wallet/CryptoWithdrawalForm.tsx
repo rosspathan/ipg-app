@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowUpRight, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowUpRight, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useBep20Balances, Bep20Balance } from '@/hooks/useBep20Balances';
 import { supabase } from '@/integrations/supabase/client';
 import { validateCryptoAddress } from '@/lib/validation/cryptoAddressValidator';
+import { WalletPinDialog } from '@/components/wallet/WalletPinDialog';
 
 interface WithdrawalResult {
   success: boolean;
