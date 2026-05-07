@@ -265,25 +265,73 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
     }
   };
 
-  const handleCopy = async () => {
+  // Server-side PIN verification gate
+  const requestPin = (purpose: PinPurpose) => {
+    setPinPurpose(purpose);
+    setSecurityPin("");
+    setSecurityPinError(null);
+    setShowSecurityPin(true);
+  };
+
+  const verifySecurityPin = async () => {
+    if (securityPin.length !== 6 || !/^\d{6}$/.test(securityPin)) {
+      setSecurityPinError("PIN must be 6 digits");
+      return;
+    }
+    setSecurityPinLoading(true);
+    setSecurityPinError(null);
     try {
-      await navigator.clipboard.writeText(seedPhrase.join(" "));
-      setCopied(true);
-      toast({
-        title: "Copied",
-        description: "Recovery phrase copied to clipboard"
+      const { data, error } = await supabase.functions.invoke("verify-security-pin", {
+        body: { pin: securityPin, purpose: `recovery_phrase_${pinPurpose}` },
       });
-      setTimeout(() => setCopied(false), 3000);
-    } catch {
-      toast({
-        title: "Copy Failed",
-        description: "Please manually copy the words",
-        variant: "destructive"
-      });
+      if (error || !data?.success) {
+        const msg = data?.message || error?.message || "Verification failed";
+        if (data?.error === "PIN_NOT_SET") {
+          setShowSecurityPin(false);
+          toast({
+            title: "Security PIN Required",
+            description: "Please set your security PIN first before viewing your recovery phrase.",
+            variant: "destructive",
+          });
+          onOpenChange(false);
+          navigate("/app/profile/security");
+          return;
+        }
+        setSecurityPinError(msg);
+        return;
+      }
+      // Verified — perform the requested action
+      setShowSecurityPin(false);
+      setSecurityPin("");
+      if (pinPurpose === "reveal") {
+        setRevealed(true);
+        setCountdown(AUTO_HIDE_SECONDS);
+      } else if (pinPurpose === "copy") {
+        await doCopy();
+      } else if (pinPurpose === "download") {
+        doDownload();
+      }
+    } catch (e: any) {
+      setSecurityPinError(e?.message || "Verification failed");
+    } finally {
+      setSecurityPinLoading(false);
     }
   };
 
-  const handleDownload = () => {
+  const doCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(seedPhrase.join(" "));
+      setCopied(true);
+      toast({ title: "Copied", description: "Recovery phrase copied to clipboard" });
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      toast({ title: "Copy Failed", description: "Please manually copy the words", variant: "destructive" });
+    }
+  };
+
+  const handleCopy = () => requestPin("copy");
+
+  const doDownload = () => {
     const content = `IPG i-SMART Recovery Phrase
 ================================
 Keep this file safe and never share it with anyone!
@@ -307,11 +355,10 @@ Generated: ${new Date().toISOString()}
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({
-      title: "Downloaded",
-      description: "Recovery phrase saved. Store it securely!"
-    });
+    toast({ title: "Downloaded", description: "Recovery phrase saved. Store it securely!" });
   };
+
+  const handleDownload = () => requestPin("download");
 
   return (
     <>
