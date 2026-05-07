@@ -30,6 +30,7 @@ import { getStoredWallet, storeWallet, setWalletStorageUserId } from "@/utils/wa
 import AddRecoveryPhraseDialog from "./AddRecoveryPhraseDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
+import { WalletPinDialog } from "@/components/wallet/WalletPinDialog";
 
 interface RecoveryPhraseRevealProps {
   open: boolean;
