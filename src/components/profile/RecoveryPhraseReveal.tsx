@@ -274,50 +274,7 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
     setShowSecurityPin(true);
   };
 
-  const verifySecurityPin = async () => {
-    if (securityPin.length !== 6 || !/^\d{6}$/.test(securityPin)) {
-      setSecurityPinError("PIN must be 6 digits");
-      return;
-    }
-    setSecurityPinLoading(true);
-    setSecurityPinError(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("verify-security-pin", {
-        body: { pin: securityPin, purpose: `recovery_phrase_${pinPurpose}` },
-      });
-      if (error || !data?.success) {
-        const msg = data?.message || error?.message || "Verification failed";
-        if (data?.error === "PIN_NOT_SET") {
-          setShowSecurityPin(false);
-          toast({
-            title: "Security PIN Required",
-            description: "Please set your security PIN first before viewing your recovery phrase.",
-            variant: "destructive",
-          });
-          onOpenChange(false);
-          navigate("/app/profile/security");
-          return;
-        }
-        setSecurityPinError(msg);
-        return;
-      }
-      // Verified — perform the requested action
-      setShowSecurityPin(false);
-      setSecurityPin("");
-      if (pinPurpose === "reveal") {
-        setRevealed(true);
-        setCountdown(AUTO_HIDE_SECONDS);
-      } else if (pinPurpose === "copy") {
-        await doCopy();
-      } else if (pinPurpose === "download") {
-        doDownload();
-      }
-    } catch (e: any) {
-      setSecurityPinError(e?.message || "Verification failed");
-    } finally {
-      setSecurityPinLoading(false);
-    }
-  };
+
 
   const doCopy = async () => {
     try {
