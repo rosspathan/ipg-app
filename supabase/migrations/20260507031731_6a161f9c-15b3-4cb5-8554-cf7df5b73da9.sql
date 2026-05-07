@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "System can create ledger entries" ON public.bonus_ledger;
