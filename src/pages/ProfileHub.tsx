@@ -84,39 +84,57 @@ export function ProfileHub() {
   const username = useUsername();
   const [showQuickSwitch, setShowQuickSwitch] = useState(false);
   const [canClaimReferral, setCanClaimReferral] = useState(false);
-  const [kycStatus, setKycStatus] = useState<'draft' | 'submitted' | 'approved' | 'rejected' | null>(null);
-  
-  // Fetch KYC status
+  const [kycPillars, setKycPillars] = useState<{
+    documents: string; face: string; mobile: string; final: string;
+  } | null>(null);
+
+  // Fetch pillar-aware KYC status (3-pillar truth, not legacy single status)
   useEffect(() => {
     const fetchKYCStatus = async () => {
       if (!user) return;
-      
       const { data, error } = await supabase
         .from('kyc_profiles_new')
-        .select('status')
+        .select('documents_status, face_status, mobile_status, final_status')
         .eq('user_id', user.id)
         .maybeSingle();
-        
       if (!error && data) {
-        setKycStatus(data.status as any);
+        setKycPillars({
+          documents: (data.documents_status as string) || 'not_submitted',
+          face: (data.face_status as string) || 'not_submitted',
+          mobile: (data.mobile_status as string) || 'not_submitted',
+          final: (data.final_status as string) || 'not_started',
+        });
       }
     };
-    
     fetchKYCStatus();
   }, [user]);
-  
-  // Get dynamic KYC badge based on status
+
+  // Pillar-aware badge: distinguishes "Action required" (some pillars need user
+  // resubmission) from "Under review" (everything submitted, awaiting admin)
+  // and from a true terminal "Rejected".
   const getKYCBadge = () => {
-    if (kycStatus === 'approved') {
+    if (!kycPillars) return { text: "Required", className: "" };
+    const { documents, face, mobile, final } = kycPillars;
+    const allApproved = documents === 'approved' && face === 'approved' && mobile === 'approved' && final === 'approved';
+    if (allApproved) {
       return { text: "Approved", className: "bg-green-500/10 text-green-600 border-green-500/30" };
     }
-    if (kycStatus === 'submitted') {
-      return { text: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
+    const needsAction = [documents, face, mobile].some(s => s === 'needs_resubmission' || s === 'rejected')
+                     || final === 'needs_resubmission';
+    if (needsAction) {
+      return { text: "Action required", className: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
     }
-    if (kycStatus === 'rejected') {
+    if (final === 'rejected') {
       return { text: "Rejected", className: "bg-red-500/10 text-red-600 border-red-500/30" };
     }
-    return { text: "Required", className: "" }; // Default for draft/not started
+    if (final === 'suspended') {
+      return { text: "Suspended", className: "bg-zinc-500/10 text-zinc-600 border-zinc-500/30" };
+    }
+    const anySubmitted = [documents, face, mobile].some(s => s === 'pending_review' || s === 'approved');
+    if (anySubmitted) {
+      return { text: "Under review", className: "bg-sky-500/10 text-sky-600 border-sky-500/30" };
+    }
+    return { text: "Required", className: "" };
   };
   
   const kycBadgeConfig = getKYCBadge();
