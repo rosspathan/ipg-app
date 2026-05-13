@@ -514,6 +514,14 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
             ].filter(Boolean).join(", ")}
           />
           <Field label="Nationality" value={dataJson.nationality} />
+
+          {/* Reset stuck KYC profile — admin-only escape hatch.
+              The DB RPC enforces:
+                - admin role check (raises 'Only admins can reset KYC profiles')
+                - reason >= 5 chars
+                - writes 4 immutable audit rows (one per pillar incl. final)
+                - re-locks profiles.is_kyc_approved instantly */}
+          <ResetStuckProfileButton userId={sub.user_id} onDone={k.refetch} />
         </SectionCard>
 
         {/* Diagnostics — instant verdict on what this user can/can't do */}
