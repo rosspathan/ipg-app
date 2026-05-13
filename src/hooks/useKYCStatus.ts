@@ -19,12 +19,14 @@ export interface KYCStatus {
 }
 
 const PENDING_LIKE = new Set(['submitted', 'pending_review', 'pending', 'in_review']);
+const RESUBMIT_LIKE = new Set(['rejected', 'needs_resubmission']);
 
 function deriveHeadline(d: string, f: string, m: string, isApproved: boolean): string {
   if (isApproved) return 'KYC Approved';
   const all = [d, f, m];
-  if (all.every(s => s === 'not_started' || !s)) return 'Complete your KYC to start trading';
-  if (all.some(s => s === 'rejected')) return 'KYC was rejected — please resubmit';
+  if (all.every(s => s === 'not_started' || s === 'not_submitted' || !s)) return 'Complete your KYC to start trading';
+  // Collapse rejected + needs_resubmission into a single user-facing state.
+  if (all.some(s => RESUBMIT_LIKE.has(s))) return 'Action needed — resubmit your KYC';
   if (all.some(s => PENDING_LIKE.has(s))) return 'KYC pending admin review';
   return 'Finish all KYC steps to start trading';
 }
