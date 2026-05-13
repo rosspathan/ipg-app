@@ -890,3 +890,54 @@ function NoteBlock({ label, text }: { label?: string; text: string }) {
     </div>
   );
 }
+
+/**
+ * "Reset stuck KYC profile" — escape hatch for admin to unstick a user
+ * whose 3 pillars and final_status drifted out of sync. Resets all 3 pillars
+ * to needs_resubmission, re-locks `is_kyc_approved`, and writes 4 immutable
+ * audit rows. The RPC itself enforces admin-only + mandatory reason.
+ */
+function ResetStuckProfileButton({ userId, onDone }: { userId: string; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    const reason = window.prompt(
+      "Reset stuck KYC profile?\n\nThis re-locks the user and forces them to resubmit all 3 pillars (documents, face, mobile).\n\nProvide a clear reason (5+ chars) — it is logged immutably:"
+    );
+    if (!reason || reason.trim().length < 5) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("admin_reset_kyc_profile" as any, {
+        p_user_id: userId,
+        p_reason: reason.trim(),
+      });
+      if (error) throw error;
+      toast.success("Profile reset — user must resubmit all 3 pillars");
+      onDone();
+    } catch (err: any) {
+      toast.error("Reset failed", { description: err?.message || "Unknown error" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5">
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+        Stuck profile?
+      </p>
+      <p className="mb-2 text-[11px] text-muted-foreground">
+        Resets all 3 pillars to "needs resubmission", re-locks the user, and writes an immutable audit
+        row per pillar. Use only if status looks desynced.
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full h-9 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+        onClick={handleClick}
+        disabled={busy}
+      >
+        <RotateCcw className={cn("mr-1.5 h-3.5 w-3.5", busy && "animate-spin")} />
+        {busy ? "Resetting…" : "Reset stuck KYC profile"}
+      </Button>
+    </div>
+  );
+}
