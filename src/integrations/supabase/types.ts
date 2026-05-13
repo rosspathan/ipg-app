@@ -15215,6 +15215,28 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
+      admin_kyc_pending_queue: {
+        Args: never
+        Returns: {
+          data_json: Json
+          documents_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          email: string
+          face_selfie_path: string
+          face_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          final_status: Database["public"]["Enums"]["kyc_status_v2"]
+          mobile_number: string
+          mobile_status: Database["public"]["Enums"]["kyc_pillar_status"]
+          notes: string
+          pillar: string
+          status: Database["public"]["Enums"]["kyc_pillar_status"]
+          submitted_at: string
+          user_id: string
+        }[]
+      }
+      admin_kyc_signed_url: {
+        Args: { p_expires_in?: number; p_path: string }
+        Returns: string
+      }
       admin_list_manual_review_deposits: {
         Args: never
         Returns: {
