@@ -100,7 +100,6 @@ const AdminAnnouncementsManager = React.lazy(() => import("./pages/admin/AdminAn
 const AdminCarouselManager = React.lazy(() => import("./pages/admin/AdminCarouselManager"));
 const AdminProgramConfigEditor = React.lazy(() => import("./pages/admin/AdminProgramConfigEditor"));
 import BSKTransferScreen from "./pages/BSKTransferScreen";
-import AdminKYCReview from "./pages/AdminKYCReview";
 const KYCReviewNew = React.lazy(() => import("./pages/admin/KYCReviewNew"));
 const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
 const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleManagement"));
