@@ -7866,6 +7866,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_qa_results: {
+        Row: {
+          created_at: string
+          expected: Json
+          id: number
+          notes: string | null
+          observed: Json
+          pass: boolean
+          run_id: string
+          scenario: string
+        }
+        Insert: {
+          created_at?: string
+          expected: Json
+          id?: number
+          notes?: string | null
+          observed: Json
+          pass: boolean
+          run_id: string
+          scenario: string
+        }
+        Update: {
+          created_at?: string
+          expected?: Json
+          id?: number
+          notes?: string | null
+          observed?: Json
+          pass?: boolean
+          run_id?: string
+          scenario?: string
+        }
+        Relationships: []
+      }
       kyc_submissions: {
         Row: {
           address_line1: string | null
@@ -15302,6 +15335,10 @@ export type Database = {
       admin_reset_all_user_balances: { Args: never; Returns: Json }
       admin_reset_kyc_phone: {
         Args: { p_action?: string; p_phone_number: string; p_reason: string }
+        Returns: Json
+      }
+      admin_reset_kyc_profile: {
+        Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
       admin_seed_market_order: {
