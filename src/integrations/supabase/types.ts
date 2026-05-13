@@ -16298,6 +16298,7 @@ export type Database = {
         }[]
       }
       run_daily_trading_reconciliation: { Args: never; Returns: Json }
+      run_disk_cleanup: { Args: never; Returns: Json }
       run_full_reconciliation_check: { Args: never; Returns: Json }
       scan_hotwallet_security_alerts: { Args: never; Returns: Json }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
