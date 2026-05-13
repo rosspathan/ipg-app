@@ -16,8 +16,9 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   ShieldCheck, Search, RefreshCw, FileText, Camera, Phone, X, Check,
-  AlertCircle, History, User2, Loader2,
+  AlertCircle, History, User2, Loader2, RotateCcw,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -513,6 +514,14 @@ function ReviewDrawer({ sub, k, onClose }: { sub: KycSubmissionV2; k: ReturnType
             ].filter(Boolean).join(", ")}
           />
           <Field label="Nationality" value={dataJson.nationality} />
+
+          {/* Reset stuck KYC profile — admin-only escape hatch.
+              The DB RPC enforces:
+                - admin role check (raises 'Only admins can reset KYC profiles')
+                - reason >= 5 chars
+                - writes 4 immutable audit rows (one per pillar incl. final)
+                - re-locks profiles.is_kyc_approved instantly */}
+          <ResetStuckProfileButton userId={sub.user_id} onDone={k.refetch} />
         </SectionCard>
 
         {/* Diagnostics — instant verdict on what this user can/can't do */}
@@ -878,6 +887,57 @@ function NoteBlock({ label, text }: { label?: string; text: string }) {
     <div className="mt-2 rounded-lg border border-border/60 bg-muted/30 p-2 text-xs">
       {label && <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>}
       <p className="break-words">{text}</p>
+    </div>
+  );
+}
+
+/**
+ * "Reset stuck KYC profile" — escape hatch for admin to unstick a user
+ * whose 3 pillars and final_status drifted out of sync. Resets all 3 pillars
+ * to needs_resubmission, re-locks `is_kyc_approved`, and writes 4 immutable
+ * audit rows. The RPC itself enforces admin-only + mandatory reason.
+ */
+function ResetStuckProfileButton({ userId, onDone }: { userId: string; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    const reason = window.prompt(
+      "Reset stuck KYC profile?\n\nThis re-locks the user and forces them to resubmit all 3 pillars (documents, face, mobile).\n\nProvide a clear reason (5+ chars) — it is logged immutably:"
+    );
+    if (!reason || reason.trim().length < 5) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("admin_reset_kyc_profile" as any, {
+        p_user_id: userId,
+        p_reason: reason.trim(),
+      });
+      if (error) throw error;
+      toast.success("Profile reset — user must resubmit all 3 pillars");
+      onDone();
+    } catch (err: any) {
+      toast.error("Reset failed", { description: err?.message || "Unknown error" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5">
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+        Stuck profile?
+      </p>
+      <p className="mb-2 text-[11px] text-muted-foreground">
+        Resets all 3 pillars to "needs resubmission", re-locks the user, and writes an immutable audit
+        row per pillar. Use only if status looks desynced.
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full h-9 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+        onClick={handleClick}
+        disabled={busy}
+      >
+        <RotateCcw className={cn("mr-1.5 h-3.5 w-3.5", busy && "animate-spin")} />
+        {busy ? "Resetting…" : "Reset stuck KYC profile"}
+      </Button>
     </div>
   );
 }
