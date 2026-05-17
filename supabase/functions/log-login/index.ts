@@ -12,17 +12,46 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const { user_id, email, user_agent, referer } = body;
-
-    console.log("[log-login] Received request for:", email || user_id);
-
-    if (!user_id) {
-      return new Response(JSON.stringify({ error: "user_id required" }), {
-        status: 400,
+    // SECURITY: Require a valid Supabase JWT and derive identity from it.
+    // The previous version trusted client-supplied user_id/email, which
+    // allowed forging arbitrary login_history records.
+    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const token = authHeader.replace("Bearer ", "");
+
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.warn("[log-login] JWT validation failed", claimsError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const user_id = claimsData.claims.sub as string;
+    const verifiedEmail = (claimsData.claims.email as string | undefined) ?? null;
+
+    let body: { user_agent?: string; referer?: string } = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+    const { user_agent, referer } = body;
+
+    console.log("[log-login] Authenticated login event for:", verifiedEmail || user_id);
 
     // Extract IP from request headers
     const ip_address =
@@ -45,7 +74,6 @@ Deno.serve(async (req) => {
 
     if (ip_address && ip_address !== "unknown") {
       try {
-        // Use ipapi.co which supports HTTPS on free tier
         const geoRes = await fetch(
           `https://ipapi.co/${ip_address}/json/`,
           { signal: AbortSignal.timeout(5000) }
@@ -73,8 +101,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log("[log-login] Geo data:", JSON.stringify(geo));
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -82,7 +108,7 @@ Deno.serve(async (req) => {
 
     const { error } = await supabase.from("login_history").insert({
       user_id,
-      email: email || null,
+      email: verifiedEmail,
       ip_address,
       user_agent: user_agent || null,
       referer: referer || null,
@@ -103,7 +129,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[log-login] ✅ Success: ${email || user_id} from ${ip_address} | ${geo.city || "?"}, ${geo.region || "?"}, ${geo.country || "?"}`
+      `[log-login] ✅ Success: ${verifiedEmail || user_id} from ${ip_address} | ${geo.city || "?"}, ${geo.region || "?"}, ${geo.country || "?"}`
     );
 
     return new Response(JSON.stringify({ success: true }), {
