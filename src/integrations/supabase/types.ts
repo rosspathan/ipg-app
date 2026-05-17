@@ -14773,6 +14773,51 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_purchase_settings_public: {
+        Row: {
+          admin_bep20_address: string | null
+          admin_upi_id: string | null
+          created_at: string | null
+          fee_fixed: number | null
+          fee_percent: number | null
+          id: string | null
+          instructions: string | null
+          is_active: boolean | null
+          max_purchase_amount: number | null
+          min_purchase_amount: number | null
+          payment_methods_enabled: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_bep20_address?: string | null
+          admin_upi_id?: string | null
+          created_at?: string | null
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          id?: string | null
+          instructions?: string | null
+          is_active?: boolean | null
+          max_purchase_amount?: number | null
+          min_purchase_amount?: number | null
+          payment_methods_enabled?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_bep20_address?: string | null
+          admin_upi_id?: string | null
+          created_at?: string | null
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          id?: string | null
+          instructions?: string | null
+          is_active?: boolean | null
+          max_purchase_amount?: number | null
+          min_purchase_amount?: number | null
+          payment_methods_enabled?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       crypto_transactions: {
         Row: {
           amount: number | null
