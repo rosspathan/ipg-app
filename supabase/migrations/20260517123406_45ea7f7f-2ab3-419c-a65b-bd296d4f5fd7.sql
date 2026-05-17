@@ -1,0 +1,1 @@
+ALTER VIEW public.bsk_purchase_settings_public SET (security_invoker = true);

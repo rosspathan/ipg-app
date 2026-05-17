@@ -194,26 +194,9 @@ const AdminLoginScreen = () => {
   const handleSetPassword = async () => {
     setError("");
     setSuccess("");
-    if (!adminPassword || adminPassword.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      return;
-    }
-    setPasswordLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('admin-password-reset', {
-        body: { 
-          email: 'admin@example.com',
-          newPassword: adminPassword 
-        }
-      });
-      if (error) throw error;
-      setSuccess(`Password set successfully for admin@example.com. You can now login with this password.`);
-      setAdminPassword(""); // Clear the password field
-    } catch (e: any) {
-      setError(e.message || 'Failed to set password');
-    } finally {
-      setPasswordLoading(false);
-    }
+    // SECURITY: The unauthenticated admin-password-reset endpoint was removed.
+    // Use the standard Supabase "Forgot password" email flow instead.
+    setError("Self-serve admin password reset has been disabled for security. Use the standard email password-reset flow.");
   };
 
   const handleEmailLogin = async () => {
