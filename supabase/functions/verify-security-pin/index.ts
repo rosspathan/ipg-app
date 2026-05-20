@@ -56,8 +56,11 @@ Deno.serve(async (req) => {
     const pin: string | undefined = body?.pin;
     const purpose: string = typeof body?.purpose === 'string' ? body.purpose : 'sensitive_action';
 
+    // IMPORTANT: business errors return HTTP 200 with success:false so the
+    // supabase-js client surfaces the JSON body in `data` (non-2xx swallows it,
+    // leaving users with a raw "Edge Function returned a non-2xx status code").
     if (!pin || !/^\d{6}$/.test(pin)) {
-      return json({ success: false, error: 'PIN_REQUIRED', message: 'Please enter your 6-digit security PIN.' }, 400);
+      return json({ success: false, error: 'PIN_REQUIRED', message: 'Please enter your 6-digit security PIN.' }, 200);
     }
 
     const { data: securityRow, error: securityError } = await supabase
@@ -75,8 +78,8 @@ Deno.serve(async (req) => {
       return json({
         success: false,
         error: 'PIN_NOT_SET',
-        message: 'Please set your security PIN first before viewing your recovery phrase.',
-      }, 400);
+        message: 'You haven\'t set a Security PIN yet. Please create one in Security settings first.',
+      }, 200);
     }
 
     if (securityRow.locked_until && new Date(securityRow.locked_until).getTime() > Date.now()) {
@@ -85,7 +88,7 @@ Deno.serve(async (req) => {
         error: 'PIN_LOCKED',
         message: 'Your account is temporarily locked due to too many failed PIN attempts. Try again later.',
         locked_until: securityRow.locked_until,
-      }, 429);
+      }, 200);
     }
 
     const computedHash = await hashPinPbkdf2(pin, securityRow.pin_salt);
@@ -111,7 +114,7 @@ Deno.serve(async (req) => {
           ? 'Incorrect PIN. Account temporarily locked for 30 minutes.'
           : `Incorrect PIN. Please try again. ${5 - newAttempts} attempts remaining.`,
         attempts_remaining: Math.max(0, 5 - newAttempts),
-      }, 401);
+      }, 200);
     }
 
     // Success
