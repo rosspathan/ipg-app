@@ -267,10 +267,36 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
   };
 
   // Server-side PIN verification gate
-  const requestPin = (purpose: PinPurpose) => {
+  const requestPin = async (purpose: PinPurpose) => {
     setPinPurpose(purpose);
     setSecurityPin("");
     setSecurityPinError(null);
+
+    // Pre-check: if user has never set a Security PIN, don't show "Verify" dialog.
+    // Route them straight to Security settings to create one.
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser?.id) {
+        const { data: sec } = await supabase
+          .from('security')
+          .select('pin_set, pin_hash')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+
+        if (!sec?.pin_set || !sec?.pin_hash) {
+          toast({
+            title: "Security PIN Required",
+            description: "Please create your 6-digit Security PIN first to protect your recovery phrase.",
+          });
+          onOpenChange(false);
+          navigate("/app/profile/security");
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[RECOVERY] pin_set precheck failed, falling back to verify dialog', e);
+    }
+
     setShowSecurityPin(true);
   };
 
