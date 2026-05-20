@@ -12,74 +12,45 @@ interface InternalOrderBook {
   asks: OrderBookLevel[];
 }
 
+/**
+ * Public internal order book (aggregated, no PII).
+ * Uses the `get_public_order_book` SECURITY DEFINER RPC so it works even though
+ * the `orders` table RLS restricts row-level SELECT to the order owner.
+ */
 export const useInternalOrderBook = (symbol?: string) => {
   return useQuery({
     queryKey: ['internal-order-book', symbol],
     queryFn: async (): Promise<InternalOrderBook> => {
-      if (!symbol) {
+      if (!symbol) return { bids: [], asks: [] };
+
+      const { data, error } = await supabase.rpc('get_public_order_book', {
+        p_symbol: symbol,
+        p_depth: 50,
+      });
+      if (error) {
+        console.error('[useInternalOrderBook] RPC error:', error);
         return { bids: [], asks: [] };
       }
 
-      // Fetch pending buy orders (bids) - highest price first
-      const { data: buyOrders, error: buyError } = await supabase
-        .from('orders')
-        .select('price, remaining_amount')
-        .eq('symbol', symbol)
-        .eq('side', 'buy')
-        .eq('status', 'pending')
-        .eq('order_type', 'limit')
-        .not('price', 'is', null)
-        .order('price', { ascending: false })
-        .limit(50);
+      const rows = (data as Array<{ side: string; price: number; quantity: number }>) || [];
 
-      if (buyError) {
-        console.error('[useInternalOrderBook] Error fetching bids:', buyError);
-      }
-
-      // Fetch pending sell orders (asks) - lowest price first
-      const { data: sellOrders, error: sellError } = await supabase
-        .from('orders')
-        .select('price, remaining_amount')
-        .eq('symbol', symbol)
-        .eq('side', 'sell')
-        .eq('status', 'pending')
-        .eq('order_type', 'limit')
-        .not('price', 'is', null)
-        .order('price', { ascending: true })
-        .limit(50);
-
-      if (sellError) {
-        console.error('[useInternalOrderBook] Error fetching asks:', sellError);
-      }
-
-      // Aggregate orders at same price level
-      const aggregateLevels = (orders: any[]): OrderBookLevel[] => {
-        const priceMap = new Map<number, number>();
-        
-        orders?.forEach(order => {
-          const price = order.price;
-          const qty = order.remaining_amount || 0;
-          priceMap.set(price, (priceMap.get(price) || 0) + qty);
-        });
-
-        let runningTotal = 0;
-        return Array.from(priceMap.entries()).map(([price, quantity]) => {
-          runningTotal += quantity;
-          return {
-            price,
-            quantity,
-            total: runningTotal
-          };
+      const build = (filtered: typeof rows, ascending: boolean): OrderBookLevel[] => {
+        const sorted = [...filtered].sort((a, b) => (ascending ? a.price - b.price : b.price - a.price));
+        let total = 0;
+        return sorted.map((r) => {
+          const quantity = Number(r.quantity) || 0;
+          total += quantity;
+          return { price: Number(r.price), quantity, total };
         });
       };
 
-      const bids = aggregateLevels(buyOrders || []);
-      const asks = aggregateLevels(sellOrders || []);
-
-      return { bids, asks };
+      return {
+        bids: build(rows.filter((r) => r.side === 'buy'), false),
+        asks: build(rows.filter((r) => r.side === 'sell'), true),
+      };
     },
     enabled: !!symbol,
-    refetchInterval: 10000, // Refresh every 10 seconds (reduced to avoid rate limits)
-    staleTime: 5000,
+    staleTime: 1500,
+    refetchInterval: 5000,
   });
 };
