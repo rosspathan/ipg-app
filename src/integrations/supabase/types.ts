@@ -16052,6 +16052,23 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_public_order_book: {
+        Args: { p_depth?: number; p_symbol: string }
+        Returns: {
+          price: number
+          quantity: number
+          side: string
+        }[]
+      }
+      get_public_recent_trades: {
+        Args: { p_limit?: number; p_symbol: string }
+        Returns: {
+          price: number
+          quantity: number
+          side: string
+          traded_at: string
+        }[]
+      }
       get_total_bsk_circulation: {
         Args: never
         Returns: {
