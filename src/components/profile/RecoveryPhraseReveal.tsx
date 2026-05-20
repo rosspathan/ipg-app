@@ -636,22 +636,41 @@ Generated: ${new Date().toISOString()}
         setSecurityPinLoading(true);
         setSecurityPinError(null);
         try {
-          const { data, error } = await supabase.functions.invoke("verify-security-pin", {
+          let { data, error } = await supabase.functions.invoke("verify-security-pin", {
             body: { pin: enteredPin, purpose: `recovery_phrase_${pinPurpose}` },
           });
-          if (error || !data?.success) {
+
+          // supabase-js swallows the response body on non-2xx; recover it here
+          // so we always show a friendly message instead of "non-2xx status code".
+          if (error && !data) {
+            try {
+              const ctx: any = (error as any)?.context;
+              if (ctx && typeof ctx.json === 'function') {
+                data = await ctx.json();
+              } else if (ctx && typeof ctx.text === 'function') {
+                const t = await ctx.text();
+                try { data = JSON.parse(t); } catch { /* keep raw */ }
+              }
+            } catch { /* ignore parse errors */ }
+          }
+
+          if (!data?.success) {
             if (data?.error === "PIN_NOT_SET") {
               setShowSecurityPin(false);
               toast({
                 title: "Security PIN Required",
-                description: "Please set your security PIN first before viewing your recovery phrase.",
-                variant: "destructive",
+                description: "Please create your Security PIN first before viewing your recovery phrase.",
               });
               onOpenChange(false);
               navigate("/app/profile/security");
               return;
             }
-            setSecurityPinError(data?.message || error?.message || "Incorrect PIN. Please try again.");
+            setSecurityPinError(
+              data?.message ||
+              (data?.error === "PIN_INVALID" ? "Incorrect PIN. Please try again." : null) ||
+              (data?.error === "PIN_LOCKED" ? "Too many attempts. Please try again later." : null) ||
+              "We couldn't verify your PIN. Please try again."
+            );
             return;
           }
           setShowSecurityPin(false);
@@ -664,7 +683,7 @@ Generated: ${new Date().toISOString()}
             doDownload();
           }
         } catch (e: any) {
-          setSecurityPinError(e?.message || "Verification failed");
+          setSecurityPinError("We couldn't verify your PIN right now. Please check your connection and try again.");
         } finally {
           setSecurityPinLoading(false);
         }
