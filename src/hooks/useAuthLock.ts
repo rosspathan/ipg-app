@@ -266,10 +266,11 @@ export const useAuthLock = () => {
               if (ok) {
                 isValid = true;
                 console.log('✅ Legacy local PIN verified (PBKDF2)');
-                // Migrate to DB if logged in
+                // Migrate to DB via server (direct writes are blocked by trigger)
                 if (user) {
-                  await supabase.from('security')
-                    .upsert({ user_id: user.id, pin_hash: creds.hash, pin_salt: creds.salt, pin_set: true }, { onConflict: 'user_id' });
+                  await supabase.functions.invoke('manage-pin', {
+                    body: { action: 'create', new_pin: pin },
+                  }).catch((e) => console.error('Legacy→DB migration failed:', e));
                 }
               }
             }
@@ -282,10 +283,11 @@ export const useAuthLock = () => {
                   const { hash, salt } = await hashPin(pin);
                   // Update local legacy store to PBKDF2
                   storePinCredentials(hash, salt);
-                  // Upsert to DB if logged in
+                  // Migrate to DB via server
                   if (user) {
-                    await supabase.from('security')
-                      .upsert({ user_id: user.id, pin_hash: hash, pin_salt: salt, pin_set: true }, { onConflict: 'user_id' });
+                    await supabase.functions.invoke('manage-pin', {
+                      body: { action: 'create', new_pin: pin },
+                    }).catch((e) => console.error('Legacy bcrypt→DB migration failed:', e));
                   }
                   isValid = true;
                   console.log('✅ Migrated legacy ipg_* PIN → PBKDF2');
