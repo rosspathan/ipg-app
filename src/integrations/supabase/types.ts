@@ -461,6 +461,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_pin_resets: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          target_user_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          target_user_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       admin_sensitive_operations: {
         Row: {
           admin_user_id: string
@@ -15384,6 +15408,10 @@ export type Database = {
       }
       admin_reset_kyc_profile: {
         Args: { p_reason: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_reset_user_pin: {
+        Args: { p_reason?: string; p_target_user_id: string }
         Returns: Json
       }
       admin_seed_market_order: {
