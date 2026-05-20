@@ -151,8 +151,10 @@ export const useAuthLock = () => {
     return await cryptoVerifyPin(pin, salt, storedHash);
   }, []);
 
-  // Set PIN (for initial setup or change)
-  const setPin = useCallback(async (pin: string): Promise<boolean> => {
+  // Set PIN (initial setup or change). Routed through the manage-pin edge
+  // function so hashing happens server-side and direct writes to security.*
+  // PIN columns are blocked at the DB level for non-service-role callers.
+  const setPin = useCallback(async (pin: string, oldPin?: string): Promise<boolean> => {
     if (!/^\d{6}$/.test(pin)) {
       toast({
         title: "Invalid PIN",
@@ -162,49 +164,47 @@ export const useAuthLock = () => {
       return false;
     }
 
-    // Allow PIN setting even without session for onboarding
     if (!user) {
       console.log('Setting PIN without session - will be synced after login');
-      return true; // Allow local storage handling
+      return true;
     }
 
     try {
-      const { hash, salt } = await hashPin(pin);
-      
-      const { error } = await supabase
-        .from('security')
-        .upsert({
-          user_id: user.id,
-          pin_hash: hash,
-          pin_salt: salt,
-          pin_set: true
-        }, { onConflict: 'user_id' });
-
-      if (error) throw error;
-
-      // Log security event
-      await supabase.from('login_audit').insert({
-        user_id: user.id,
-        event: 'pin_set',
-        device_info: { userAgent: navigator.userAgent }
+      const { data, error } = await supabase.functions.invoke('manage-pin', {
+        body: { action: 'create', new_pin: pin, old_pin: oldPin },
       });
+
+      const payload: any = data ?? {};
+      // Safety net for non-2xx envelopes
+      if (error && !payload?.success) {
+        const ctx: any = (error as any)?.context;
+        if (ctx?.json) Object.assign(payload, await ctx.json().catch(() => ({})));
+      }
+
+      if (!payload?.success) {
+        toast({
+          title: "Could not save PIN",
+          description: payload?.message || "Please try again.",
+          variant: "destructive",
+        });
+        return false;
+      }
 
       toast({
-        title: "PIN Set Successfully",
-        description: "Your PIN has been securely stored"
+        title: "PIN saved",
+        description: "Your Security PIN is now active.",
       });
-
       return true;
-    } catch (error) {
-      console.error('Failed to set PIN:', error);
+    } catch (err) {
+      console.error('Failed to set PIN:', err);
       toast({
         title: "Error",
         description: "Failed to set PIN. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return false;
     }
-  }, [user, hashPin, toast]);
+  }, [user, toast]);
 
   // Unlock with PIN (supports both database and local verification)
   const unlockWithPin = useCallback(async (pin: string): Promise<boolean> => {
