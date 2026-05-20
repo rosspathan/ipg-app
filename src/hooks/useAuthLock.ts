@@ -240,15 +240,13 @@ export const useAuthLock = () => {
               const isBcryptValid = await bcrypt.compare(pin, security.pin_hash);
               
               if (isBcryptValid) {
-                // Re-hash with PBKDF2 and update database
-                const { hash, salt } = await hashPin(pin);
-                await supabase
-                  .from('security')
-                  .update({ pin_hash: hash, pin_salt: salt })
-                  .eq('user_id', user.id);
-                
+                // Re-hash via server-side edge function (RLS now blocks direct writes to pin_* columns)
+                await supabase.functions.invoke('manage-pin', {
+                  body: { action: 'create', new_pin: pin },
+                }).catch((e) => console.error('PBKDF2 migration via manage-pin failed:', e));
+
                 isValid = true;
-                console.log('✅ Migrated PIN from bcrypt to PBKDF2');
+                console.log('✅ Migrated PIN from bcrypt to PBKDF2 (via manage-pin)');
               }
             } catch (err) {
               console.error('Migration fallback failed:', err);
