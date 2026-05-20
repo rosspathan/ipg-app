@@ -32,14 +32,15 @@ export const useSecuritySync = () => {
         const localData = getLocalSecurityData();
         if (!localData) return;
 
-        // Sync to database
+        // Sync non-sensitive fields to DB. PIN columns (pin_hash/pin_salt/pin_set)
+        // are intentionally NOT written here — direct writes are blocked by the
+        // protect_security_pin_fields trigger. Users who set up a PIN during
+        // pre-signup onboarding will be prompted to (re)create the PIN via the
+        // server-side manage-pin edge function on first access.
         const { error: securityError } = await supabase
           .from('security')
           .insert({
             user_id: userId,
-            pin_hash: localData.pin_hash,
-            pin_salt: localData.pin_salt,
-            pin_set: true,
             biometric_enabled: localData.biometric_enabled,
             anti_phishing_code: localData.anti_phishing_code
           });
