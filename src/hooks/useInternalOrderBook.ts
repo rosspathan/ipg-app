@@ -36,7 +36,12 @@ export const useInternalOrderBook = (symbol?: string) => {
       const rows = (data as Array<{ side: string; price: number; quantity: number }>) || [];
 
       const build = (filtered: typeof rows, ascending: boolean): OrderBookLevel[] => {
-        const sorted = [...filtered].sort((a, b) => (ascending ? a.price - b.price : b.price - a.price));
+        // Defense-in-depth: never display non-finite / zero / dust levels.
+        const tradable = filtered.filter((r) => {
+          const q = Number(r.quantity);
+          return Number.isFinite(q) && q >= ORDER_BOOK_DUST_THRESHOLD;
+        });
+        const sorted = [...tradable].sort((a, b) => (ascending ? a.price - b.price : b.price - a.price));
         let total = 0;
         return sorted.map((r) => {
           const quantity = Number(r.quantity) || 0;
