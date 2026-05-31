@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { BottomTabBar } from '@/components/navigation/BottomTabBar';
 import { NavigationStateManager } from '@/components/navigation/NavigationGuards';
+import RestrictedAccountGate from '@/components/account/RestrictedAccountGate';
 import { useHardwareBackButton, useNavigation } from '@/hooks/useNavigation';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'react-router-dom';
