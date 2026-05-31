@@ -70,15 +70,17 @@ const UserLayout = () => {
 
   return (
     <NavigationStateManager>
-      <div className="h-screen bg-background w-full max-w-full overflow-hidden flex flex-col">
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[calc(6rem+var(--bso))]">
-          <Outlet />
-        </div>
+      <RestrictedAccountGate>
+        <div className="h-screen bg-background w-full max-w-full overflow-hidden flex flex-col">
+          {/* Main Content */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[calc(6rem+var(--bso))]">
+            <Outlet />
+          </div>
 
-        {/* Enhanced bottom navigation */}
-        <BottomTabBar />
-      </div>
+          {/* Enhanced bottom navigation */}
+          <BottomTabBar />
+        </div>
+      </RestrictedAccountGate>
     </NavigationStateManager>
   );
 };
