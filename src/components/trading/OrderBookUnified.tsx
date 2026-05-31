@@ -69,7 +69,9 @@ const fmtCompact = (q: number) => {
   if (q >= 10) return q.toFixed(2);
   if (q >= 1) return q.toFixed(3);
   if (q >= 0.01) return q.toFixed(4);
-  return q.toFixed(5);
+  if (q >= 0.00001) return q.toFixed(8).replace(/0+$/, '');
+  // Truly tiny but non-zero: never render a misleading "0.00000"
+  return '<0.00001';
 };
 
 const getDustThreshold = (entries: OrderBookEntry[]) => {
