@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ORDER_BOOK_DUST_THRESHOLD } from '@/lib/trading/orderBookDust';
 
 interface OrderBookLevel {
   price: number;
