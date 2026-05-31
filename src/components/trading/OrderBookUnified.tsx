@@ -153,8 +153,11 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
   }, [effectivePrice]);
 
   const precisionOptions = useMemo(() => getPrecisionOptions(effectivePrice), [effectivePrice]);
-  const aggBids = useMemo(() => aggregateByPrecision(bids, precision, 'bid'), [bids, precision]);
-  const aggAsks = useMemo(() => aggregateByPrecision(asks, precision, 'ask'), [asks, precision]);
+  // Drop dust / zero-quantity levels so we never render a "0.00000" amount row.
+  const tradableBids = useMemo(() => bids.filter(b => Number.isFinite(b.quantity) && b.quantity >= ORDER_BOOK_DUST_THRESHOLD), [bids]);
+  const tradableAsks = useMemo(() => asks.filter(a => Number.isFinite(a.quantity) && a.quantity >= ORDER_BOOK_DUST_THRESHOLD), [asks]);
+  const aggBids = useMemo(() => aggregateByPrecision(tradableBids, precision, 'bid').filter(l => l.quantity >= ORDER_BOOK_DUST_THRESHOLD), [tradableBids, precision]);
+  const aggAsks = useMemo(() => aggregateByPrecision(tradableAsks, precision, 'ask').filter(l => l.quantity >= ORDER_BOOK_DUST_THRESHOLD), [tradableAsks, precision]);
 
   const rowsPerSide = mode === 'split' ? maxRows : maxRows * 2;
   const displayAsks = useMemo(() => aggAsks.slice(0, rowsPerSide).reverse(), [aggAsks, rowsPerSide]);
