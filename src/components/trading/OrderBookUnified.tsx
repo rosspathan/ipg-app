@@ -1,6 +1,7 @@
 import React, { memo, useMemo, useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { ORDER_BOOK_DUST_THRESHOLD } from '@/lib/trading/orderBookDust';
 
 interface OrderBookEntry {
   price: number;
