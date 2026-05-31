@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_holds: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_status: string | null
+          performed_by: string | null
+          previous_status: string | null
+          reason: string | null
+          user_id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          performed_by?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          user_id: string
+          wallet_address?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          performed_by?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          user_id?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       ad_clicks: {
         Row: {
           ad_id: string
@@ -8847,6 +8883,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_kyc_approved: boolean | null
+          is_suspended: boolean
           kyc_status: string | null
           onboarding_completed_at: string | null
           onboarding_step: string | null
@@ -8854,6 +8891,9 @@ export type Database = {
           referral_code: string
           setup_complete: boolean | null
           sponsor_id: string | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
           two_fa_enabled: boolean | null
           updated_at: string | null
           user_id: string
@@ -8871,6 +8911,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_kyc_approved?: boolean | null
+          is_suspended?: boolean
           kyc_status?: string | null
           onboarding_completed_at?: string | null
           onboarding_step?: string | null
@@ -8878,6 +8919,9 @@ export type Database = {
           referral_code: string
           setup_complete?: boolean | null
           sponsor_id?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -8895,6 +8939,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_kyc_approved?: boolean | null
+          is_suspended?: boolean
           kyc_status?: string | null
           onboarding_completed_at?: string | null
           onboarding_step?: string | null
@@ -8902,6 +8947,9 @@ export type Database = {
           referral_code?: string
           setup_complete?: boolean | null
           sponsor_id?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string
@@ -16165,6 +16213,7 @@ export type Database = {
         Args: { p_module_id: string; p_user_id: string }
         Returns: string
       }
+      is_account_restricted: { Args: { _user_id: string }; Returns: boolean }
       is_bsk_holding_sunset: { Args: never; Returns: boolean }
       is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_wallet_address_blocked: {
