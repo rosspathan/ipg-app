@@ -131,6 +131,15 @@ serve(async (req) => {
     if (quantity === undefined || typeof quantity !== 'number' || !isFinite(quantity) || quantity <= 0 || quantity > 1e12) {
       return businessError('Please enter a valid quantity greater than 0.', 'INVALID_QUANTITY');
     }
+    // Reject "dust" quantities that are non-tradable and would render as 0.00000
+    // in the order book. Keep in sync with ORDER_BOOK_DUST_THRESHOLD / DB dust constant.
+    const DUST_QUANTITY = 0.00001;
+    if (quantity < DUST_QUANTITY) {
+      return businessError(
+        `Order quantity is too small to trade. Minimum is ${DUST_QUANTITY}.`,
+        'DUST_QUANTITY',
+      );
+    }
     if (type === 'limit') {
       if (price === undefined || typeof price !== 'number' || !isFinite(price) || price <= 0 || price > 1e12) {
         return businessError('Limit orders require a valid positive price.', 'INVALID_PRICE');

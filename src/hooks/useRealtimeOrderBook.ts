@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ORDER_BOOK_DUST_THRESHOLD } from '@/lib/trading/orderBookDust';
 
 interface OrderBookLevel {
   price: number;
@@ -46,7 +47,13 @@ export function useRealtimeOrderBook(symbol?: string) {
         filtered: typeof rows,
         ascending: boolean,
       ): OrderBookLevel[] => {
-        const sorted = [...filtered].sort((a, b) =>
+        // Defense-in-depth: drop any non-finite / zero / dust level that the
+        // backend RPC dust filter might have missed (e.g. cached data).
+        const tradable = filtered.filter((r) => {
+          const q = Number(r.quantity);
+          return Number.isFinite(q) && q >= ORDER_BOOK_DUST_THRESHOLD;
+        });
+        const sorted = [...tradable].sort((a, b) =>
           ascending ? a.price - b.price : b.price - a.price,
         );
         let runningTotal = 0;

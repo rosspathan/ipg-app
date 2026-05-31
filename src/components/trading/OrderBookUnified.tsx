@@ -1,6 +1,7 @@
 import React, { memo, useMemo, useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { ORDER_BOOK_DUST_THRESHOLD } from '@/lib/trading/orderBookDust';
 
 interface OrderBookEntry {
   price: number;
@@ -68,7 +69,9 @@ const fmtCompact = (q: number) => {
   if (q >= 10) return q.toFixed(2);
   if (q >= 1) return q.toFixed(3);
   if (q >= 0.01) return q.toFixed(4);
-  return q.toFixed(5);
+  if (q >= 0.00001) return q.toFixed(8).replace(/0+$/, '');
+  // Truly tiny but non-zero: never render a misleading "0.00000"
+  return '<0.00001';
 };
 
 const getDustThreshold = (entries: OrderBookEntry[]) => {
@@ -150,8 +153,11 @@ export const OrderBookUnified: React.FC<OrderBookUnifiedProps> = ({
   }, [effectivePrice]);
 
   const precisionOptions = useMemo(() => getPrecisionOptions(effectivePrice), [effectivePrice]);
-  const aggBids = useMemo(() => aggregateByPrecision(bids, precision, 'bid'), [bids, precision]);
-  const aggAsks = useMemo(() => aggregateByPrecision(asks, precision, 'ask'), [asks, precision]);
+  // Drop dust / zero-quantity levels so we never render a "0.00000" amount row.
+  const tradableBids = useMemo(() => bids.filter(b => Number.isFinite(b.quantity) && b.quantity >= ORDER_BOOK_DUST_THRESHOLD), [bids]);
+  const tradableAsks = useMemo(() => asks.filter(a => Number.isFinite(a.quantity) && a.quantity >= ORDER_BOOK_DUST_THRESHOLD), [asks]);
+  const aggBids = useMemo(() => aggregateByPrecision(tradableBids, precision, 'bid').filter(l => l.quantity >= ORDER_BOOK_DUST_THRESHOLD), [tradableBids, precision]);
+  const aggAsks = useMemo(() => aggregateByPrecision(tradableAsks, precision, 'ask').filter(l => l.quantity >= ORDER_BOOK_DUST_THRESHOLD), [tradableAsks, precision]);
 
   const rowsPerSide = mode === 'split' ? maxRows : maxRows * 2;
   const displayAsks = useMemo(() => aggAsks.slice(0, rowsPerSide).reverse(), [aggAsks, rowsPerSide]);
