@@ -36,7 +36,8 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { ad_id, view_time_seconds, subscription_tier = 'free' } = await req.json();
+    // Ignore any client-supplied subscription_tier — it must be verified server-side.
+    const { ad_id, view_time_seconds } = await req.json();
 
     console.log('Processing ad reward:', { user_id: user.id, ad_id, view_time_seconds });
 
