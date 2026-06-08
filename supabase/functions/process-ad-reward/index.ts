@@ -36,7 +36,8 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { ad_id, view_time_seconds, subscription_tier = 'free' } = await req.json();
+    // Ignore any client-supplied subscription_tier — it must be verified server-side.
+    const { ad_id, view_time_seconds } = await req.json();
 
     console.log('Processing ad reward:', { user_id: user.id, ad_id, view_time_seconds });
 
@@ -80,8 +81,19 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Determine destination (withdrawable vs holding)
-    const destination = subscription_tier === 'free' ? 'holding' : 'withdrawable';
+    // Determine destination (withdrawable vs holding) from a SERVER-SIDE
+    // subscription lookup — never trust a client-supplied tier value.
+    const { data: activeSubscription } = await supabaseClient
+      .from('ad_user_subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .gte('end_date', new Date().toISOString().slice(0, 10))
+      .limit(1)
+      .maybeSingle();
+
+    const subscription_tier = activeSubscription ? 'subscribed' : 'free';
+    const destination = activeSubscription ? 'withdrawable' : 'holding';
 
     // Create ad click record
     const { data: clickRecord, error: clickError } = await supabaseClient
