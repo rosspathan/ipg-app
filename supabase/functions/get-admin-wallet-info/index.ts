@@ -6,6 +6,7 @@
 import { createPublicClient, http, formatUnits } from 'https://esm.sh/viem@2.34.0';
 import { privateKeyToAccount } from 'https://esm.sh/viem@2.34.0/accounts';
 import { bsc } from 'https://esm.sh/viem@2.34.0/chains';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
