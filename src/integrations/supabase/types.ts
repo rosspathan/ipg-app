@@ -10658,6 +10658,8 @@ export type Database = {
       scratch_card_config: {
         Row: {
           bnb_gas_floor: number
+          bsk_token_contract: string | null
+          bsk_token_decimals: number
           campaign_end_at: string | null
           campaign_start_at: string | null
           created_at: string
@@ -10671,11 +10673,14 @@ export type Database = {
           notes: string | null
           require_kyc: boolean
           reward_decimals: number
+          scratch_wallet_address: string | null
           singleton: boolean
           updated_at: string
         }
         Insert: {
           bnb_gas_floor?: number
+          bsk_token_contract?: string | null
+          bsk_token_decimals?: number
           campaign_end_at?: string | null
           campaign_start_at?: string | null
           created_at?: string
@@ -10689,11 +10694,14 @@ export type Database = {
           notes?: string | null
           require_kyc?: boolean
           reward_decimals?: number
+          scratch_wallet_address?: string | null
           singleton?: boolean
           updated_at?: string
         }
         Update: {
           bnb_gas_floor?: number
+          bsk_token_contract?: string | null
+          bsk_token_decimals?: number
           campaign_end_at?: string | null
           campaign_start_at?: string | null
           created_at?: string
@@ -10707,6 +10715,7 @@ export type Database = {
           notes?: string | null
           require_kyc?: boolean
           reward_decimals?: number
+          scratch_wallet_address?: string | null
           singleton?: boolean
           updated_at?: string
         }
@@ -16908,7 +16917,32 @@ export type Database = {
       run_disk_cleanup: { Args: never; Returns: Json }
       run_full_reconciliation_check: { Args: never; Returns: Json }
       scan_hotwallet_security_alerts: { Args: never; Returns: Json }
+      scratch_card_confirm_batch: {
+        Args: {
+          p_batch_id: string
+          p_block_number?: number
+          p_confirmations?: number
+          p_log_index?: number
+        }
+        Returns: Json
+      }
+      scratch_card_create_claim_batch: {
+        Args: { p_card_ids: string[] }
+        Returns: Json
+      }
+      scratch_card_fail_batch: {
+        Args: { p_batch_id: string; p_reason?: string }
+        Returns: Json
+      }
+      scratch_card_mark_broadcasting: {
+        Args: { p_batch_id: string; p_nonce?: number; p_tx_hash: string }
+        Returns: Json
+      }
       scratch_card_reveal: { Args: { p_card_id: string }; Returns: Json }
+      scratch_create_claim_batch_internal: {
+        Args: { p_card_ids: string[]; p_user_id: string }
+        Returns: Json
+      }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       set_withdrawal_circuit_breaker: {
         Args: {
