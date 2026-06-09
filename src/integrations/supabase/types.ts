@@ -10574,6 +10574,399 @@ export type Database = {
         }
         Relationships: []
       }
+      scratch_card_audit_log: {
+        Row: {
+          actor: string | null
+          amount_bsk: number | null
+          batch_id: string | null
+          card_id: string | null
+          created_at: string
+          detail: Json | null
+          event_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          actor?: string | null
+          amount_bsk?: number | null
+          batch_id?: string | null
+          card_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          event_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          actor?: string | null
+          amount_bsk?: number | null
+          batch_id?: string | null
+          card_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      scratch_card_claim_batches: {
+        Row: {
+          attempts: number
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          nonce: number | null
+          status: string
+          to_address: string | null
+          total_amount_bsk: number
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          nonce?: number | null
+          status?: string
+          to_address?: string | null
+          total_amount_bsk: number
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          nonce?: number | null
+          status?: string
+          to_address?: string | null
+          total_amount_bsk?: number
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scratch_card_config: {
+        Row: {
+          bnb_gas_floor: number
+          campaign_end_at: string | null
+          campaign_start_at: string | null
+          created_at: string
+          id: string
+          is_enabled: boolean
+          launch_phase: number
+          max_claim_attempts: number
+          max_reward_bsk: number
+          min_confirmations: number
+          min_reward_bsk: number
+          notes: string | null
+          require_kyc: boolean
+          reward_decimals: number
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          bnb_gas_floor?: number
+          campaign_end_at?: string | null
+          campaign_start_at?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          launch_phase?: number
+          max_claim_attempts?: number
+          max_reward_bsk?: number
+          min_confirmations?: number
+          min_reward_bsk?: number
+          notes?: string | null
+          require_kyc?: boolean
+          reward_decimals?: number
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          bnb_gas_floor?: number
+          campaign_end_at?: string | null
+          campaign_start_at?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          launch_phase?: number
+          max_claim_attempts?: number
+          max_reward_bsk?: number
+          min_confirmations?: number
+          min_reward_bsk?: number
+          notes?: string | null
+          require_kyc?: boolean
+          reward_decimals?: number
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scratch_card_funding_deposits: {
+        Row: {
+          chain: string
+          chain_id: number
+          claimed_amount: number | null
+          confirmations: number
+          created_at: string
+          from_address: string | null
+          id: string
+          rejection_reason: string | null
+          required_confirmations: number
+          status: string
+          submitted_by: string | null
+          to_address: string
+          token_contract: string
+          tx_hash: string
+          updated_at: string
+          verified_amount: number | null
+          verified_at: string | null
+        }
+        Insert: {
+          chain?: string
+          chain_id?: number
+          claimed_amount?: number | null
+          confirmations?: number
+          created_at?: string
+          from_address?: string | null
+          id?: string
+          rejection_reason?: string | null
+          required_confirmations?: number
+          status?: string
+          submitted_by?: string | null
+          to_address: string
+          token_contract: string
+          tx_hash: string
+          updated_at?: string
+          verified_amount?: number | null
+          verified_at?: string | null
+        }
+        Update: {
+          chain?: string
+          chain_id?: number
+          claimed_amount?: number | null
+          confirmations?: number
+          created_at?: string
+          from_address?: string | null
+          id?: string
+          rejection_reason?: string | null
+          required_confirmations?: number
+          status?: string
+          submitted_by?: string | null
+          to_address?: string
+          token_contract?: string
+          tx_hash?: string
+          updated_at?: string
+          verified_amount?: number | null
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      scratch_card_payouts: {
+        Row: {
+          amount_bsk: number
+          batch_id: string | null
+          card_id: string
+          created_at: string
+          id: string
+          onchain_tx_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_bsk: number
+          batch_id?: string | null
+          card_id: string
+          created_at?: string
+          id?: string
+          onchain_tx_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_bsk?: number
+          batch_id?: string | null
+          card_id?: string
+          created_at?: string
+          id?: string
+          onchain_tx_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scratch_card_payouts_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "scratch_card_claim_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scratch_card_payouts_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: true
+            referencedRelation: "scratch_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scratch_card_treasury_balances: {
+        Row: {
+          available_bsk: number
+          claimable_reserved_bsk: number
+          created_at: string
+          distributed_bsk: number
+          funded_bsk: number
+          id: string
+          last_onchain_bsk_snapshot: number | null
+          last_solvency_checked_at: string | null
+          last_solvency_status: string | null
+          singleton: boolean
+          unfunded_pending_bsk: number
+          updated_at: string
+        }
+        Insert: {
+          available_bsk?: number
+          claimable_reserved_bsk?: number
+          created_at?: string
+          distributed_bsk?: number
+          funded_bsk?: number
+          id?: string
+          last_onchain_bsk_snapshot?: number | null
+          last_solvency_checked_at?: string | null
+          last_solvency_status?: string | null
+          singleton?: boolean
+          unfunded_pending_bsk?: number
+          updated_at?: string
+        }
+        Update: {
+          available_bsk?: number
+          claimable_reserved_bsk?: number
+          created_at?: string
+          distributed_bsk?: number
+          funded_bsk?: number
+          id?: string
+          last_onchain_bsk_snapshot?: number | null
+          last_solvency_checked_at?: string | null
+          last_solvency_status?: string | null
+          singleton?: boolean
+          unfunded_pending_bsk?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scratch_card_treasury_ledger: {
+        Row: {
+          amount_bsk: number
+          available_after: number | null
+          claimable_reserved_after: number | null
+          created_at: string
+          created_by: string | null
+          distributed_after: number | null
+          entry_type: string
+          funded_after: number | null
+          id: string
+          notes: string | null
+          reference_id: string | null
+          reference_type: string | null
+          source_deposit_id: string | null
+          source_type: string | null
+          unfunded_pending_after: number | null
+        }
+        Insert: {
+          amount_bsk: number
+          available_after?: number | null
+          claimable_reserved_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          distributed_after?: number | null
+          entry_type: string
+          funded_after?: number | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          source_deposit_id?: string | null
+          source_type?: string | null
+          unfunded_pending_after?: number | null
+        }
+        Update: {
+          amount_bsk?: number
+          available_after?: number | null
+          claimable_reserved_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          distributed_after?: number | null
+          entry_type?: string
+          funded_after?: number | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          source_deposit_id?: string | null
+          source_type?: string | null
+          unfunded_pending_after?: number | null
+        }
+        Relationships: []
+      }
+      scratch_cards: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          id: string
+          revealed_at: string | null
+          reward_amount_bsk: number | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          revealed_at?: string | null
+          reward_amount_bsk?: number | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          revealed_at?: string | null
+          reward_amount_bsk?: number | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: []
+      }
       security: {
         Row: {
           anti_phishing_code: string | null
@@ -15462,6 +15855,7 @@ export type Database = {
         Args: { p_reason?: string; p_target_user_id: string }
         Returns: Json
       }
+      admin_scratch_card_overview: { Args: never; Returns: Json }
       admin_seed_market_order: {
         Args: {
           p_admin_id: string
@@ -15489,6 +15883,21 @@ export type Database = {
           p_notes?: string
           p_pillar: string
           p_user_id: string
+        }
+        Returns: Json
+      }
+      admin_update_scratch_card_config: {
+        Args: {
+          p_bnb_gas_floor?: number
+          p_campaign_end_at?: string
+          p_campaign_start_at?: string
+          p_is_enabled?: boolean
+          p_max_claim_attempts?: number
+          p_max_reward_bsk?: number
+          p_min_confirmations?: number
+          p_min_reward_bsk?: number
+          p_notes?: string
+          p_require_kyc?: boolean
         }
         Returns: Json
       }
@@ -16499,6 +16908,7 @@ export type Database = {
       run_disk_cleanup: { Args: never; Returns: Json }
       run_full_reconciliation_check: { Args: never; Returns: Json }
       scan_hotwallet_security_alerts: { Args: never; Returns: Json }
+      scratch_card_reveal: { Args: { p_card_id: string }; Returns: Json }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       set_withdrawal_circuit_breaker: {
         Args: {
