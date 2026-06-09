@@ -648,8 +648,28 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      // Scratch Card dedup guard (Phase 2A): the scratch system OWNS its reward
+      // rows (source='scratch_card_reward'). Never overwrite or duplicate them
+      // with a normal ONCHAIN deposit row, even if the scanner sees the transfer.
+      let recordsToUpsert = records;
       if (records.length > 0) {
-        const { error: upsertError } = await adminClient.from("onchain_transactions").upsert(records, {
+        const { data: scratchRows } = await adminClient
+          .from("onchain_transactions")
+          .select("tx_hash")
+          .eq("user_id", userId)
+          .eq("source", "scratch_card_reward");
+        if (scratchRows && scratchRows.length > 0) {
+          const scratchHashes = new Set(
+            scratchRows.map((r: { tx_hash: string }) => String(r.tx_hash).toLowerCase()),
+          );
+          recordsToUpsert = records.filter(
+            (r) => !scratchHashes.has(String(r.tx_hash).toLowerCase()),
+          );
+        }
+      }
+
+      if (recordsToUpsert.length > 0) {
+        const { error: upsertError } = await adminClient.from("onchain_transactions").upsert(recordsToUpsert, {
           onConflict: "tx_hash,log_index,user_id,direction",
           ignoreDuplicates: false,
         });
