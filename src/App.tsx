@@ -501,6 +501,7 @@ function AppContent() {
               <Route path="trade-pro" element={<React.Suspense fallback={<LoadingFallback />}><TradingPro /></React.Suspense>} />
               <Route path="trading" element={<Navigate to="/app/trade" replace />} />
               <Route path="swap" element={<SwapScreen />} />
+              <Route path="scratch-cards" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/ScratchCardsPage')))}</React.Suspense>} />
               
               {/* On-chain Crypto Staking */}
               <Route path="staking" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
