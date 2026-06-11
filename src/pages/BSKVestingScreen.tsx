@@ -71,7 +71,7 @@ export default function BSKVestingScreen() {
     try {
       // Fetch vesting config
       const { data: configData, error: configError } = await supabase
-        .from('bsk_vesting_config')
+        .from('bsk_vesting_config_public')
         .select('*')
         .eq('is_enabled', true)
         .order('created_at', { ascending: false })
