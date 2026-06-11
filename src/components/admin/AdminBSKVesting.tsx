@@ -32,7 +32,7 @@ interface VestingConfig {
   min_ipg_swap_amount: number;
   max_ipg_swap_amount?: number;
   max_vesting_per_user?: number;
-  anti_sybil_max_per_ip: number;
+  
   eligible_chains: string[];
 }
 
