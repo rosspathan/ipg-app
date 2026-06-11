@@ -16942,6 +16942,7 @@ export type Database = {
         Returns: Json
       }
       scratch_card_reveal: { Args: { p_card_id: string }; Returns: Json }
+      scratch_confirm_sweep: { Args: never; Returns: number }
       scratch_create_claim_batch_internal: {
         Args: { p_card_ids: string[]; p_user_id: string }
         Returns: Json
