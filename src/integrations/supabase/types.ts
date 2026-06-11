@@ -13266,6 +13266,13 @@ export type Database = {
             referencedRelation: "bsk_vesting_config"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_bsk_vesting_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_vesting_config_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_compliance_acceptances: {
@@ -15292,6 +15299,48 @@ export type Database = {
           min_purchase_amount?: number | null
           payment_methods_enabled?: string[] | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      bsk_vesting_config_public: {
+        Row: {
+          created_at: string | null
+          daily_release_percent: number | null
+          eligible_chains: string[] | null
+          id: string | null
+          is_enabled: boolean | null
+          max_ipg_swap_amount: number | null
+          max_vesting_per_user: number | null
+          min_ipg_swap_amount: number | null
+          referral_reward_percent: number | null
+          updated_at: string | null
+          vesting_duration_days: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          daily_release_percent?: number | null
+          eligible_chains?: string[] | null
+          id?: string | null
+          is_enabled?: boolean | null
+          max_ipg_swap_amount?: number | null
+          max_vesting_per_user?: number | null
+          min_ipg_swap_amount?: number | null
+          referral_reward_percent?: number | null
+          updated_at?: string | null
+          vesting_duration_days?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          daily_release_percent?: number | null
+          eligible_chains?: string[] | null
+          id?: string | null
+          is_enabled?: boolean | null
+          max_ipg_swap_amount?: number | null
+          max_vesting_per_user?: number | null
+          min_ipg_swap_amount?: number | null
+          referral_reward_percent?: number | null
+          updated_at?: string | null
+          vesting_duration_days?: number | null
         }
         Relationships: []
       }
