@@ -10939,6 +10939,7 @@ export type Database = {
           revealed_at: string | null
           reward_amount_bsk: number | null
           source: string
+          source_ref: string | null
           status: string
           updated_at: string
           user_id: string
@@ -10953,6 +10954,7 @@ export type Database = {
           revealed_at?: string | null
           reward_amount_bsk?: number | null
           source?: string
+          source_ref?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -10967,6 +10969,7 @@ export type Database = {
           revealed_at?: string | null
           reward_amount_bsk?: number | null
           source?: string
+          source_ref?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -16942,6 +16945,19 @@ export type Database = {
       scratch_create_claim_batch_internal: {
         Args: { p_card_ids: string[]; p_user_id: string }
         Returns: Json
+      }
+      scratch_fund_treasury_from_deposit: {
+        Args: {
+          p_amount: number
+          p_from_address?: string
+          p_notes?: string
+          p_tx_hash: string
+        }
+        Returns: Json
+      }
+      scratch_issue_card: {
+        Args: { p_referee_id: string; p_sponsor_id: string }
+        Returns: string
       }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       set_withdrawal_circuit_breaker: {
