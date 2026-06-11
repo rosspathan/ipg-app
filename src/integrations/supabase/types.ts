@@ -3762,7 +3762,6 @@ export type Database = {
       }
       bsk_vesting_config: {
         Row: {
-          anti_sybil_max_per_ip: number | null
           created_at: string
           daily_release_percent: number
           eligible_chains: string[]
@@ -3776,7 +3775,6 @@ export type Database = {
           vesting_duration_days: number
         }
         Insert: {
-          anti_sybil_max_per_ip?: number | null
           created_at?: string
           daily_release_percent?: number
           eligible_chains?: string[]
@@ -3790,7 +3788,6 @@ export type Database = {
           vesting_duration_days?: number
         }
         Update: {
-          anti_sybil_max_per_ip?: number | null
           created_at?: string
           daily_release_percent?: number
           eligible_chains?: string[]
@@ -3892,6 +3889,38 @@ export type Database = {
             columns: ["vesting_id"]
             isOneToOne: false
             referencedRelation: "user_bsk_vesting"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_vesting_security_config: {
+        Row: {
+          anti_sybil_max_per_ip: number
+          config_id: string | null
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          anti_sybil_max_per_ip?: number
+          config_id?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          anti_sybil_max_per_ip?: number
+          config_id?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_vesting_security_config_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_vesting_config"
             referencedColumns: ["id"]
           },
         ]
@@ -13266,13 +13295,6 @@ export type Database = {
             referencedRelation: "bsk_vesting_config"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_bsk_vesting_config_id_fkey"
-            columns: ["config_id"]
-            isOneToOne: false
-            referencedRelation: "bsk_vesting_config_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       user_compliance_acceptances: {
@@ -15299,48 +15321,6 @@ export type Database = {
           min_purchase_amount?: number | null
           payment_methods_enabled?: string[] | null
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      bsk_vesting_config_public: {
-        Row: {
-          created_at: string | null
-          daily_release_percent: number | null
-          eligible_chains: string[] | null
-          id: string | null
-          is_enabled: boolean | null
-          max_ipg_swap_amount: number | null
-          max_vesting_per_user: number | null
-          min_ipg_swap_amount: number | null
-          referral_reward_percent: number | null
-          updated_at: string | null
-          vesting_duration_days: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          daily_release_percent?: number | null
-          eligible_chains?: string[] | null
-          id?: string | null
-          is_enabled?: boolean | null
-          max_ipg_swap_amount?: number | null
-          max_vesting_per_user?: number | null
-          min_ipg_swap_amount?: number | null
-          referral_reward_percent?: number | null
-          updated_at?: string | null
-          vesting_duration_days?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          daily_release_percent?: number | null
-          eligible_chains?: string[] | null
-          id?: string | null
-          is_enabled?: boolean | null
-          max_ipg_swap_amount?: number | null
-          max_vesting_per_user?: number | null
-          min_ipg_swap_amount?: number | null
-          referral_reward_percent?: number | null
-          updated_at?: string | null
-          vesting_duration_days?: number | null
         }
         Relationships: []
       }
