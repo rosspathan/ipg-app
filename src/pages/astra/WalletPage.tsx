@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils"
 import { useTradingPairs } from "@/hooks/useTradingPairs"
 import { useTradingBalances } from "@/hooks/useTradingBalances"
 import { TradingBalancesCard } from "@/components/wallet/TradingBalancesCard"
+import { ScratchSummaryCard } from "@/components/scratch/ScratchSummaryCard"
 
 // ── Section label component
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -408,6 +409,11 @@ export function WalletPage() {
             <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5" />
           </div>
         </button>
+      </div>
+
+      {/* ── SCRATCH & WIN ── */}
+      <div className="px-4 animate-fade-in" style={{ animationDelay: '90ms' }}>
+        <ScratchSummaryCard />
       </div>
 
       {/* ── TRADING BALANCES ── */}
