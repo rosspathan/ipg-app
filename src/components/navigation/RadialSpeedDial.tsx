@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowUpCircle, Grid3x3, Repeat, TrendingUp } from 'lucide-react';
+import { X, ArrowUpCircle, Grid3x3, Repeat, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface RadialSpeedDialProps {
@@ -36,12 +36,12 @@ const speedDialItems = [
     color: 'hsl(199, 89%, 48%)', // cyan
   },
   {
-    id: 'trade',
-    label: 'Trade',
-    icon: TrendingUp,
-    path: '/app/trade',
+    id: 'scratch',
+    label: 'Scratch & Win',
+    icon: Gift,
+    path: '/app/scratch-cards',
     angle: 315, // bottom-right
-    color: 'hsl(31, 97%, 52%)', // orange
+    color: 'hsl(45, 90%, 52%)', // gold
   },
 ];
 
