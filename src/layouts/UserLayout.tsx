@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { BottomTabBar } from '@/components/navigation/BottomTabBar';
 import { NavigationStateManager } from '@/components/navigation/NavigationGuards';
 import RestrictedAccountGate from '@/components/account/RestrictedAccountGate';
+import { ScratchCardPopup } from '@/components/scratch/ScratchCardPopup';
 import { useHardwareBackButton, useNavigation } from '@/hooks/useNavigation';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'react-router-dom';
@@ -79,6 +80,9 @@ const UserLayout = () => {
 
           {/* Enhanced bottom navigation */}
           <BottomTabBar />
+
+          {/* Premium scratch card reward popup (auto-shows for new cards) */}
+          <ScratchCardPopup />
         </div>
       </RestrictedAccountGate>
     </NavigationStateManager>

@@ -349,7 +349,42 @@ const ProgramsScreen = () => {
           </div>
         </div>
 
-        {/* ── DEFAULT NOTICE ─────────────────────────────────────────────── */}
+        {/* ── SCRATCH & WIN BANNER (referral reward discovery) ───────────── */}
+        <Link
+          to="/app/scratch-cards"
+          className="relative block overflow-hidden rounded-2xl p-[1.5px] active:scale-[0.99] transition-transform"
+          style={{
+            background:
+              "linear-gradient(140deg, hsl(45 90% 60% / 0.55), hsl(186 100% 50% / 0.25), hsl(45 90% 60% / 0.15))",
+          }}
+        >
+          <div
+            className="relative flex items-center gap-3 overflow-hidden rounded-[15px] p-4"
+            style={{ background: "radial-gradient(120% 120% at 0% 0%, hsl(223 32% 13%), hsl(222 39% 8%) 70%)" }}
+          >
+            <div
+              className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-40 blur-2xl"
+              style={{ background: "radial-gradient(circle, hsl(45 95% 60% / 0.6), transparent 70%)" }}
+            />
+            <div
+              className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              style={{
+                background: "linear-gradient(135deg, hsl(45 90% 55% / 0.25), hsl(186 100% 50% / 0.12))",
+                border: "1px solid hsl(45 90% 55% / 0.35)",
+              }}
+            >
+              <Sparkles className="h-5 w-5 text-amber-300" />
+            </div>
+            <div className="relative z-10 flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">Scratch &amp; Win</p>
+              <p className="text-xs text-muted-foreground">
+                Refer a user and both of you get Scratch Cards.
+              </p>
+            </div>
+            <ArrowRight className="relative z-10 h-4 w-4 shrink-0 text-amber-300" />
+          </div>
+        </Link>
+
         {isUsingDefaults && (
           <div className="p-3 rounded-xl bg-muted/50 border border-border/50">
             <p className="text-xs text-muted-foreground text-center">
