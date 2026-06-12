@@ -1,51 +1,34 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Gift, Loader2, ExternalLink, Sparkles, Lock, CheckCircle2, Clock } from "lucide-react";
-import { useScratchCards, type ScratchCard } from "@/hooks/useScratchCards";
+import { Gift, Loader2, Sparkles, Lock, ShieldCheck, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useScratchCards } from "@/hooks/useScratchCards";
+import { useKYCStatus } from "@/hooks/useKYCStatus";
+import { ScratchCardTile } from "@/components/scratch/ScratchCardTile";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-const BSCSCAN_TX = "https://bscscan.com/tx/";
-
-function statusLabel(card: ScratchCard): { label: string; tone: "muted" | "accent" | "success" | "warn" } {
-  switch (card.status) {
-    case "unscratched":
-      return { label: "Ready to scratch", tone: "accent" };
-    case "claimable":
-      return { label: "Won — claim now", tone: "success" };
-    case "treasury_pending":
-      return { label: "Pending funding", tone: "warn" };
-    case "claiming":
-      return { label: "Sending to wallet…", tone: "accent" };
-    case "claimed":
-      return { label: "Paid out", tone: "success" };
-    case "voided":
-      return { label: "Voided", tone: "muted" };
-    default:
-      return { label: card.status, tone: "muted" };
-  }
-}
-
 export default function ScratchCardsPage() {
-  const { cards, payouts, batches, config, loading, reveal, claim, reload } = useScratchCards();
+  const navigate = useNavigate();
+  const { cards, payouts, batches, config, summary, loading, reveal, claim, reload } =
+    useScratchCards();
+  const { data: kyc } = useKYCStatus();
   const [busy, setBusy] = useState<string | null>(null);
+
+  const locked = !!config?.require_kyc && !kyc?.isApproved;
+  const range = config ? `${config.min_reward_bsk}–${config.max_reward_bsk}` : "1–5";
 
   const handleReveal = async (cardId: string) => {
     setBusy(cardId);
     try {
       const res = await reveal(cardId);
-      if (res.status === "claimable") {
-        toast.success(`You won ${res.reward_bsk} BSK! Claim it to your wallet.`);
-      } else {
-        toast.info(`Revealed ${res.reward_bsk} BSK — pending treasury funding.`);
-      }
+      if (res?.status === "claimable") toast.success(`You won ${res.reward_bsk} BSK!`);
+      else toast.info(`Revealed ${res?.reward_bsk ?? ""} BSK — pending reward pool funding.`);
     } catch (e) {
-      const msg = (e as Error).message;
-      if (msg.includes("KYC")) toast.error("KYC approval required before scratching.");
-      else if (msg.includes("DISABLED")) toast.error("The scratch card campaign is not active.");
-      else toast.error(msg);
+      const m = (e as Error).message;
+      if (m.includes("KYC")) toast.error("KYC approval required before scratching.");
+      else if (m.includes("DISABLED")) toast.error("The scratch card campaign is not active.");
+      else toast.error(m);
     } finally {
       setBusy(null);
     }
@@ -55,42 +38,73 @@ export default function ScratchCardsPage() {
     setBusy(cardId);
     try {
       const res = await claim(cardId);
-      toast.success(res.tx_hash ? "Claim broadcast on-chain!" : "Claim submitted.");
+      toast.success(res?.tx_hash ? "Claim broadcast on-chain!" : "Claim submitted.");
     } catch (e) {
-      const msg = (e as Error).message;
-      if (msg.includes("WALLET_ADDRESS")) toast.error("Set a valid wallet address in your profile first.");
-      else if (msg.includes("KYC")) toast.error("KYC approval required before claiming.");
-      else toast.error(msg);
+      const m = (e as Error).message;
+      if (m.includes("WALLET_ADDRESS")) toast.error("Set a valid wallet address in your profile first.");
+      else if (m.includes("KYC")) toast.error("KYC approval required before claiming.");
+      else toast.error(m);
     } finally {
       setBusy(null);
     }
   };
 
-  const toneClass: Record<string, string> = {
-    muted: "bg-muted text-muted-foreground",
-    accent: "bg-primary/15 text-primary",
-    success: "bg-emerald-500/15 text-emerald-500",
-    warn: "bg-amber-500/15 text-amber-500",
-  };
-
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-6">
-      <header className="space-y-1">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-          <Sparkles className="h-6 w-6 text-primary" />
-          Scratch &amp; Win
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Earn a scratch card every time someone you referred joins. Scratch to reveal{" "}
-          {config ? `${config.min_reward_bsk}–${config.max_reward_bsk}` : "1–5"} BSK, then claim it
-          straight to your on-chain wallet.
-        </p>
+    <div className="mx-auto w-full max-w-2xl space-y-5 px-4 py-6">
+      {/* Hero header */}
+      <header
+        className="relative overflow-hidden rounded-3xl p-5"
+        style={{
+          background:
+            "radial-gradient(130% 120% at 0% 0%, hsl(223 32% 13%), hsl(222 39% 8%) 70%)",
+          border: "1px solid hsl(45 90% 55% / 0.2)",
+        }}
+      >
+        <div
+          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-40 blur-3xl"
+          style={{ background: "radial-gradient(circle, hsl(45 95% 60% / 0.6), transparent 70%)" }}
+        />
+        <div className="relative z-10">
+          <h1 className="flex items-center gap-2 text-2xl font-extrabold text-foreground">
+            <Sparkles className="h-6 w-6 text-amber-300" />
+            Scratch &amp; Win
+          </h1>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            Earn a scratch card every time someone you referred joins. Scratch to reveal {range} BSK,
+            then claim it straight to your on-chain wallet.
+          </p>
+          {summary.total > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {summary.scratchable > 0 && (
+                <Stat label="Ready" value={summary.scratchable} />
+              )}
+              {summary.claimable > 0 && <Stat label="Claimable" value={summary.claimable} />}
+              {summary.pending > 0 && <Stat label="Pending" value={summary.pending} />}
+              {summary.claimed > 0 && <Stat label="Claimed" value={summary.claimed} />}
+            </div>
+          )}
+        </div>
       </header>
 
       {config && !config.is_enabled && (
-        <Card className="flex items-center gap-3 border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-600">
+        <Card className="flex items-center gap-3 border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-500">
           <Lock className="h-4 w-4 shrink-0" />
           The scratch card campaign is currently paused.
+        </Card>
+      )}
+
+      {locked && (
+        <Card className="flex items-start gap-3 border-amber-500/30 bg-amber-500/5 p-4">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-300">KYC required to unlock rewards</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Complete and get KYC approved to unlock your Scratch Card reward.
+            </p>
+            <Button size="sm" className="mt-3" onClick={() => navigate("/app/profile/kyc")}>
+              Complete KYC
+            </Button>
+          </div>
         </Card>
       )}
 
@@ -103,102 +117,30 @@ export default function ScratchCardsPage() {
           <Gift className="h-10 w-10 text-muted-foreground" />
           <p className="font-medium text-foreground">No scratch cards yet</p>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Invite friends with your referral link. Each referral that signs up earns you a card.
+            Invite friends with your referral link — each referral that signs up earns you a card.
           </p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate("/app/profile/referrals")}>
+            <Users className="mr-2 h-4 w-4" /> Invite friends
+          </Button>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {cards.map((card) => {
-            const st = statusLabel(card);
-            const payout = payouts[card.id];
-            const batch = payout?.batch_id ? batches[payout.batch_id] : undefined;
-            const isBusy = busy === card.id;
-            return (
-              <Card key={card.id} className="relative overflow-hidden p-5">
-                <div className="mb-3 flex items-center justify-between">
-                  <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                    {card.source === "referral_signup" ? "Referral reward" : "Reward"}
-                  </Badge>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${toneClass[st.tone]}`}>
-                    {st.label}
-                  </span>
-                </div>
-
-                {card.status === "unscratched" ? (
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    disabled={isBusy || !config?.is_enabled}
-                    onClick={() => handleReveal(card.id)}
-                    className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-primary/80 to-primary text-primary-foreground disabled:opacity-60"
-                  >
-                    {isBusy ? (
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="h-6 w-6" />
-                        <span className="text-sm font-semibold">Tap to scratch</span>
-                      </>
-                    )}
-                  </motion.button>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex h-28 w-full flex-col items-center justify-center gap-1 rounded-xl bg-muted/50"
-                  >
-                    <span className="text-3xl font-bold text-foreground tabular-nums">
-                      {card.reward_amount_bsk ?? "—"}
-                    </span>
-                    <span className="text-xs font-medium text-muted-foreground">BSK</span>
-                  </motion.div>
-                )}
-
-                <div className="mt-4 min-h-[40px]">
-                  {card.status === "claimable" && (
-                    <Button
-                      className="w-full"
-                      disabled={isBusy || !config?.is_enabled}
-                      onClick={() => handleClaim(card.id)}
-                    >
-                      {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Claim to my wallet
-                    </Button>
-                  )}
-
-                  {card.status === "treasury_pending" && (
-                    <p className="flex items-center gap-1.5 text-xs text-amber-600">
-                      <Clock className="h-3.5 w-3.5" />
-                      Reward reserved — claimable once the reward pool is funded.
-                    </p>
-                  )}
-
-                  {(card.status === "claiming" || (card.status === "claimed" && batch?.tx_hash)) && batch?.tx_hash && (
-                    <a
-                      href={`${BSCSCAN_TX}${batch.tx_hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                    >
-                      {card.status === "claimed" ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                      ) : (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      )}
-                      View transaction on BscScan
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
-
-                  {card.status === "claiming" && !batch?.tx_hash && (
-                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Broadcasting your reward…
-                    </p>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
+          {cards.map((card) => (
+            <ScratchCardTile
+              key={card.id}
+              card={card}
+              payout={payouts[card.id]}
+              batch={payouts[card.id]?.batch_id ? batches[payouts[card.id].batch_id as string] : undefined}
+              campaignEnabled={!!config?.is_enabled}
+              requireKyc={!!config?.require_kyc}
+              kycApproved={!!kyc?.isApproved}
+              busy={busy === card.id}
+              onReveal={handleReveal}
+              onClaim={handleClaim}
+              onCompleteKyc={() => navigate("/app/profile/kyc")}
+              celebrate
+            />
+          ))}
         </div>
       )}
 
@@ -208,5 +150,13 @@ export default function ScratchCardsPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
+      <span className="font-bold text-foreground">{value}</span> {label}
+    </span>
   );
 }
