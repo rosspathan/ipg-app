@@ -98,7 +98,7 @@ const LandingScreen: React.FC = () => {
             </motion.div>
             
             <h1 className="text-4xl font-bold text-white">
-              IPG I-Smart Exchange
+              WORLD I-Smart Exchange
             </h1>
             <p className="text-white/80 text-lg">
               World's most trusted crypto trading platform
