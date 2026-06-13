@@ -224,7 +224,7 @@ const SignupScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[#3b0764] via-[#6d28d9] to-[#a855f7] flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8 overflow-y-auto">
         {/* Header */}
         <div className="flex items-center mb-8">

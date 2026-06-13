@@ -166,7 +166,7 @@ const ResetPasswordScreen: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex flex-col items-center justify-center px-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#3b0764] via-[#6d28d9] to-[#a855f7] flex flex-col items-center justify-center px-6">
         {showConfetti && <Confetti recycle={false} numberOfPieces={500} />}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -200,7 +200,7 @@ const ResetPasswordScreen: React.FC = () => {
   const strength = passwordStrength(password);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[#3b0764] via-[#6d28d9] to-[#a855f7] flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8">
         {/* Header */}
         <div className="flex items-center mb-8">

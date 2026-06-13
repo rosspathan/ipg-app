@@ -240,7 +240,7 @@ const OnboardingFlow: React.FC = () => {
   // Show message if user arrives without proper auth
   if (!user && !loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#3b0764] via-[#6d28d9] to-[#a855f7] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center space-y-4">
           <AlertCircle className="w-16 h-16 text-yellow-400 mx-auto" />
           <h2 className="text-2xl font-bold text-white">Account Required</h2>
