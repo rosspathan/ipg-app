@@ -121,8 +121,8 @@ const LandingScreen: React.FC = () => {
                 className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20"
               >
                 <div className="text-white/90 mb-2">{feature.icon}</div>
-                <h3 className="text-white font-semibold text-sm mb-1">{feature.title}</h3>
-                <p className="text-white/70 text-xs">{feature.description}</p>
+                <h3 className="text-white font-semibold text-sm mb-1 uppercase">{feature.title}</h3>
+                <p className="text-white/70 text-xs uppercase">{feature.description}</p>
               </motion.div>
             ))}
           </motion.div>
