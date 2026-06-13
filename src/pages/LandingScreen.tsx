@@ -97,10 +97,10 @@ const LandingScreen: React.FC = () => {
               <span className="text-4xl">💎</span>
             </motion.div>
             
-            <h1 className="text-4xl font-bold text-white">
-              WORLD I-Smart Exchange
+            <h1 className="text-4xl font-bold text-white uppercase">
+              WORLD I-SMART EXCHANGE
             </h1>
-            <p className="text-white/80 text-lg">
+            <p className="text-white/80 text-lg uppercase">
               World's most trusted crypto trading platform
             </p>
           </div>
@@ -121,8 +121,8 @@ const LandingScreen: React.FC = () => {
                 className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20"
               >
                 <div className="text-white/90 mb-2">{feature.icon}</div>
-                <h3 className="text-white font-semibold text-sm mb-1">{feature.title}</h3>
-                <p className="text-white/70 text-xs">{feature.description}</p>
+                <h3 className="text-white font-semibold text-sm mb-1 uppercase">{feature.title}</h3>
+                <p className="text-white/70 text-xs uppercase">{feature.description}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -136,7 +136,7 @@ const LandingScreen: React.FC = () => {
           >
             <Button
               onClick={() => navigate('/auth/signup')}
-              className="w-full bg-white text-primary hover:bg-white/90 font-semibold py-6 rounded-2xl text-lg"
+              className="w-full bg-white text-primary hover:bg-white/90 font-semibold py-6 rounded-2xl text-lg uppercase"
               size="lg"
             >
               Create Account
@@ -145,7 +145,7 @@ const LandingScreen: React.FC = () => {
             <Button
               onClick={() => navigate('/auth/login')}
               variant="outline"
-              className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 font-semibold py-6 rounded-2xl text-lg backdrop-blur-sm"
+              className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 font-semibold py-6 rounded-2xl text-lg backdrop-blur-sm uppercase"
               size="lg"
             >
               Sign In
@@ -153,7 +153,7 @@ const LandingScreen: React.FC = () => {
 
             <button
               onClick={() => navigate('/auth/recover')}
-              className="w-full text-white/70 hover:text-white text-sm py-2 transition-colors"
+              className="w-full text-white/70 hover:text-white text-sm py-2 transition-colors uppercase"
             >
               Recover existing wallet
             </button>
@@ -163,7 +163,7 @@ const LandingScreen: React.FC = () => {
 
       {/* Footer */}
       <div className="text-center pb-6 px-6">
-        <p className="text-white/60 text-xs">
+        <p className="text-white/60 text-xs uppercase">
           By continuing, you agree to our Terms of Service and Privacy Policy
         </p>
       </div>
