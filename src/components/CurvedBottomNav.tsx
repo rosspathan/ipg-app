@@ -127,7 +127,7 @@ return (
             >
               <img 
                 src={ipgLogo}
-                alt="IPG I-SMART Logo"
+                alt="WORLD I-SMART Logo"
                 className="w-full h-full object-cover rounded-full"
               />
             </FloatingActionButton>

@@ -114,7 +114,7 @@ const BrandLoader: React.FC<BrandLoaderProps> = ({
         >
           <img 
             src={ipgLogo} 
-            alt="IPG I-SMART Loading" 
+            alt="WORLD I-SMART Loading" 
             className="object-contain rounded-lg"
             style={{
               width: currentSize.width,

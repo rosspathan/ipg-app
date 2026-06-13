@@ -157,7 +157,7 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
           >
             <motion.img 
               src={ipgLogo} 
-              alt="IPG I-SMART Logo" 
+              alt="WORLD I-SMART Logo" 
               className="w-36 h-36 object-contain drop-shadow-2xl rounded-2xl"
               animate={{
                 filter: [
@@ -178,7 +178,7 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
             animate={animationPhase === 'text' || animationPhase === 'spark' || animationPhase === 'complete' ? 'visible' : 'hidden'}
           >
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent font-space-grotesk tracking-wider">
-              IPG I-SMART
+              WORLD I-SMART
             </h1>
             <motion.div 
               className="h-0.5 w-32 mx-auto mt-3 bg-gradient-to-r from-transparent via-accent to-transparent rounded"

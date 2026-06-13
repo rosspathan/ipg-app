@@ -57,7 +57,7 @@ const CyberHeader: React.FC<CyberHeaderProps> = ({
                 <div className="w-full h-full rounded-xl bg-black/90 backdrop-blur-sm flex items-center justify-center overflow-hidden">
                   <img 
                     src={logo}
-                    alt="IPG I-SMART Logo" 
+                    alt="WORLD I-SMART Logo" 
                     className="w-14 h-14 object-contain filter drop-shadow-lg"
                   />
                 </div>

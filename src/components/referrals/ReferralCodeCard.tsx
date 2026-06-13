@@ -24,7 +24,7 @@ export function ReferralCodeCard({ referralCode, onShare }: ReferralCodeCardProp
   }
 
   const handleShare = async () => {
-    const shareText = `Join IPG I-SMART! Use my referral code: ${referralCode}`;
+    const shareText = `Join WORLD I-SMART! Use my referral code: ${referralCode}`;
     if (navigator.share) {
       try {
         await navigator.share({

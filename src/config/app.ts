@@ -5,7 +5,7 @@
 
 export const APP_CONFIG = {
   // Brand
-  APP_NAME: "IPG I-SMART CRYPTO EXCHANGE",
+  APP_NAME: "WORLD I-SMART CRYPTO EXCHANGE",
   APP_TAGLINE: "World No. 1 Trusted Crypto Exchange",
   
   // Logos

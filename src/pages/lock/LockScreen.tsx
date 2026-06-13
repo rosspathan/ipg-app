@@ -180,7 +180,7 @@ export default function LockScreen() {
         >
           <img 
             src={ipgLogo} 
-            alt="IPG I-SMART Logo" 
+            alt="WORLD I-SMART Logo" 
             className="w-20 h-20 object-contain drop-shadow-2xl rounded-2xl"
           />
         </motion.div>

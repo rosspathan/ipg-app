@@ -46,7 +46,7 @@ export default function AdminMobileLinking() {
     sha256_fingerprints_release: [],
     sha256_fingerprints_debug: [],
     custom_scheme: "ismart",
-    whatsapp_template: "Join me on IPG I-SMART! Use my link: {{link}} 🚀"
+    whatsapp_template: "Join me on WORLD I-SMART! Use my link: {{link}} 🚀"
   });
 
   // Fingerprints as text (one per line)
@@ -409,7 +409,7 @@ export default function AdminMobileLinking() {
               id="whatsapp_template"
               value={settings.whatsapp_template}
               onChange={(e) => setSettings({ ...settings, whatsapp_template: e.target.value })}
-              placeholder="Join me on IPG I-SMART! Use my link: {{link}} 🚀"
+              placeholder="Join me on WORLD I-SMART! Use my link: {{link}} 🚀"
               rows={3}
             />
             <p className="text-xs text-muted-foreground mt-1">

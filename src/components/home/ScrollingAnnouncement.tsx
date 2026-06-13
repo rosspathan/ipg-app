@@ -39,7 +39,7 @@ export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps)
     staleTime: 60000, // Cache for 1 minute
   });
 
-  const displayText = announcement?.content || "🎉 Welcome to IPG I-SMART! Earn rewards daily through our premium programs. Trade crypto, stake tokens, and win big prizes! 🎉";
+  const displayText = announcement?.content || "🎉 Welcome to WORLD I-SMART! Earn rewards daily through our premium programs. Trade crypto, stake tokens, and win big prizes! 🎉";
   return (
     <div 
       className={cn(

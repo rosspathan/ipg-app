@@ -90,7 +90,7 @@ export function BrandLogoBlink({
         )}
       />
 
-      {/* Logo mark - IPG I-SMART */}
+      {/* Logo mark - WORLD I-SMART */}
       <div className={cn(
         "relative z-10 flex items-center justify-center w-full h-full p-1",
         "transition-all duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -98,7 +98,7 @@ export function BrandLogoBlink({
       )}>
         <img 
           src={logoImage} 
-          alt="IPG I-SMART" 
+          alt="WORLD I-SMART" 
           className="w-full h-full object-contain rounded-full drop-shadow-[0_2px_8px_rgba(255,255,255,0.3)]"
         />
       </div>
