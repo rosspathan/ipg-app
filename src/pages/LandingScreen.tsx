@@ -163,7 +163,7 @@ const LandingScreen: React.FC = () => {
 
       {/* Footer */}
       <div className="text-center pb-6 px-6">
-        <p className="text-white/60 text-xs">
+        <p className="text-white/60 text-xs uppercase">
           By continuing, you agree to our Terms of Service and Privacy Policy
         </p>
       </div>
