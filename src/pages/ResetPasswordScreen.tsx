@@ -17,7 +17,7 @@ const ResetPasswordScreen = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Reset Password | IPG i-SMART";
+    document.title = "Reset Password | WORLD i-SMART";
     // Detect recovery session from email link
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || !!session) {

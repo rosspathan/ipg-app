@@ -112,7 +112,7 @@ const Index = () => {
           {/* Logo & Title */}
           <div className="space-y-4">
             <h1 className="text-5xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              IPG i-SMART
+              WORLD i-SMART
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground">
               Your Gateway to Smart Crypto Trading & Earning
@@ -199,7 +199,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-6 px-6 border-t border-border/40">
         <div className="max-w-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© 2024 IPG i-SMART. All rights reserved.</p>
+          <p>© 2024 WORLD i-SMART. All rights reserved.</p>
           <button
             onClick={() => navigate("/admin/login")}
             className="hover:text-foreground transition-colors"

@@ -12,7 +12,7 @@ const DesignReview: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4">Astra Grid Design System</h1>
           <p className="text-xl text-muted-foreground mb-6">
-            Complete brand and UI system for IPG i-SMART Exchange
+            Complete brand and UI system for WORLD i-SMART Exchange
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             <Badge variant="secondary">Dark Theme</Badge>

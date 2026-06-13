@@ -263,7 +263,7 @@ const AdminSystemScreen = () => {
                   <Input
                     value={smtpSettings.smtp_from_name}
                     onChange={(e) => setSmtpSettings(prev => ({ ...prev, smtp_from_name: e.target.value }))}
-                    placeholder="IPG i-SMART"
+                    placeholder="WORLD i-SMART"
                   />
                 </div>
               </div>
@@ -350,7 +350,7 @@ const AdminSystemScreen = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium">App Name</p>
-                    <p className="text-sm text-muted-foreground">IPG i-SMART</p>
+                    <p className="text-sm text-muted-foreground">WORLD i-SMART</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Version</p>

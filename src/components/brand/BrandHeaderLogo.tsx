@@ -117,7 +117,7 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
           
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              IPG i-SMART Exchange - The future of digital trading and crypto earnings.
+              WORLD i-SMART Exchange - The future of digital trading and crypto earnings.
             </p>
             
             <div className="space-y-2">
