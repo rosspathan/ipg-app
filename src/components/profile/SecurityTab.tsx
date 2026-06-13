@@ -458,7 +458,7 @@ const SecurityTab = () => {
               disabled={loading}
             />
             <p className="text-xs text-muted-foreground">
-              This code will appear in official emails from IPG i-SMART to verify authenticity
+              This code will appear in official emails from WORLD i-SMART to verify authenticity
             </p>
           </div>
 

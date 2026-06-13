@@ -68,11 +68,11 @@ export default function TeamReferralsPageNew() {
   }
 
   const handleShare = async () => {
-    const shareText = `Join me on IPG I-SMART! Use my referral code: ${referralCode}`
+    const shareText = `Join me on WORLD I-SMART! Use my referral code: ${referralCode}`
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join IPG I-SMART',
+          title: 'Join WORLD I-SMART',
           text: shareText
         })
       } catch (err) {

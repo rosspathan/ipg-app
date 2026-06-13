@@ -152,7 +152,7 @@ export function HeaderLogoFlipper({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         tabIndex={0}
-        aria-label={`IPG I-SMART logo — ${logoLabel}`}
+        aria-label={`WORLD I-SMART logo — ${logoLabel}`}
         whileTap={{ scale: 0.95 }}
       >
         {/* Inner glow ring */}
@@ -191,7 +191,7 @@ export function HeaderLogoFlipper({
             >
               <LogoCropper
                 src={currentLogo}
-                alt={`IPG I-SMART Logo ${logoLabel}`}
+                alt={`WORLD I-SMART Logo ${logoLabel}`}
                 className="w-full h-full"
               />
             </Motion.div>
@@ -218,7 +218,7 @@ export function HeaderLogoFlipper({
                 <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-card border-2 border-primary/20">
                   <img
                     src={logoPrimary}
-                    alt="IPG I-SMART Logo"
+                    alt="WORLD I-SMART Logo"
                     className="w-10 h-10 object-contain"
                   />
                 </div>

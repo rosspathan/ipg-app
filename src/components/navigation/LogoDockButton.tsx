@@ -63,11 +63,11 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
         />
       )}
 
-      {/* IPG I-SMART Logo */}
+      {/* WORLD I-SMART Logo */}
       <div className="relative z-10 flex items-center justify-center w-full h-full p-2.5">
         <img 
           src={logoImage} 
-          alt="IPG I-SMART" 
+          alt="WORLD I-SMART" 
           className="w-full h-full object-contain rounded-full drop-shadow-[0_4px_12px_rgba(255,255,255,0.5)]"
         />
       </div>

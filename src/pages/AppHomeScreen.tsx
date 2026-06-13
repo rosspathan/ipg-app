@@ -148,7 +148,7 @@ const AppHomeScreen = () => {
       <div>
         {/* Cyber Header with KPIs */}
         <CyberHeader
-          title="IPG I-SMART"
+          title="WORLD I-SMART"
           subtitle="Welcome back to your digital future"
           logo={ipgLogo}
           kpis={kpis}

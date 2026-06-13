@@ -197,7 +197,7 @@ const WalletLoginScreen = () => {
               <Lock className="h-4 w-4" />
               <AlertDescription className="text-xs">
                 <strong>Warning:</strong> Never share your private key with
-                anyone. Only enter it on official IPG I-SMART EXCHANGE pages.
+                anyone. Only enter it on official WORLD I-SMART EXCHANGE pages.
               </AlertDescription>
             </Alert>
           </TabsContent>

@@ -316,7 +316,7 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
   const handleCopy = () => requestPin("copy");
 
   const doDownload = () => {
-    const content = `IPG i-SMART Recovery Phrase
+    const content = `WORLD i-SMART Recovery Phrase
 ================================
 Keep this file safe and never share it with anyone!
 

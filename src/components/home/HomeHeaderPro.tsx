@@ -55,7 +55,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
       >
           <img
             src={ipgLogo}
-            alt="IPG I-SMART"
+            alt="WORLD I-SMART"
             className="absolute inset-0 w-full h-full object-cover rounded-full"
           />
       </button>

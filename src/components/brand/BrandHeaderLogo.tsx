@@ -91,7 +91,7 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
       >
         <img 
           src={ipgLogo} 
-          alt="IPG I-SMART Logo" 
+          alt="WORLD I-SMART Logo" 
           className="object-contain rounded-lg"
           style={{
             width: currentSize.width,
@@ -108,16 +108,16 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
             <DialogTitle className="flex items-center gap-3">
               <img 
                 src={ipgLogo} 
-                alt="IPG I-SMART Logo" 
+                alt="WORLD I-SMART Logo" 
                 className="w-10 h-10 object-contain rounded"
               />
-              About IPG I-SMART
+              About WORLD I-SMART
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              IPG i-SMART Exchange - The future of digital trading and crypto earnings.
+              WORLD i-SMART Exchange - The future of digital trading and crypto earnings.
             </p>
             
             <div className="space-y-2">
@@ -132,7 +132,7 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
             
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground">
-                Version 1.0.0 • IPG I-SMART Platform
+                Version 1.0.0 • WORLD I-SMART Platform
               </p>
             </div>
             

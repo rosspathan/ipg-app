@@ -69,7 +69,7 @@ const SplashScreen = () => {
             transition={{ delay: 0.6, duration: 0.8 }}
           >
             <h1 className="text-4xl font-bold text-white">
-              IPG I-SMART
+              WORLD I-SMART
             </h1>
             <motion.p 
               className="text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"

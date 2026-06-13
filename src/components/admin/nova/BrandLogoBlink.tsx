@@ -113,7 +113,7 @@ export function BrandLogoBlink({ className }: BrandLogoBlinkProps) {
             
             <div className="pt-2 border-t border-border">
               <p className="text-xs">
-                © 2025 IPG I-SMART Platform • Admin Console
+                © 2025 WORLD I-SMART Platform • Admin Console
               </p>
             </div>
           </div>
