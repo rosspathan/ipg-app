@@ -136,7 +136,7 @@ const LandingScreen: React.FC = () => {
           >
             <Button
               onClick={() => navigate('/auth/signup')}
-              className="w-full bg-white text-primary hover:bg-white/90 font-semibold py-6 rounded-2xl text-lg"
+              className="w-full bg-white text-primary hover:bg-white/90 font-semibold py-6 rounded-2xl text-lg uppercase"
               size="lg"
             >
               Create Account
@@ -145,7 +145,7 @@ const LandingScreen: React.FC = () => {
             <Button
               onClick={() => navigate('/auth/login')}
               variant="outline"
-              className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 font-semibold py-6 rounded-2xl text-lg backdrop-blur-sm"
+              className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 font-semibold py-6 rounded-2xl text-lg backdrop-blur-sm uppercase"
               size="lg"
             >
               Sign In
@@ -153,7 +153,7 @@ const LandingScreen: React.FC = () => {
 
             <button
               onClick={() => navigate('/auth/recover')}
-              className="w-full text-white/70 hover:text-white text-sm py-2 transition-colors"
+              className="w-full text-white/70 hover:text-white text-sm py-2 transition-colors uppercase"
             >
               Recover existing wallet
             </button>
