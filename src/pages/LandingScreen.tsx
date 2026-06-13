@@ -100,7 +100,7 @@ const LandingScreen: React.FC = () => {
             <h1 className="text-4xl font-bold text-white uppercase">
               WORLD I-SMART EXCHANGE
             </h1>
-            <p className="text-white/80 text-lg">
+            <p className="text-white/80 text-lg uppercase">
               World's most trusted crypto trading platform
             </p>
           </div>
