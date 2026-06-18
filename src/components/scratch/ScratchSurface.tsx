@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import logoMark from "@/assets/ismart-logo.png";
 
 interface ScratchSurfaceProps {
   /** Called once the foil is scratched past the threshold (or tapped in reduced-motion mode). */
@@ -44,6 +45,7 @@ export function ScratchSurface({
   const drawingRef = useRef(false);
   const firedRef = useRef(false);
   const lastSampleRef = useRef(0);
+  const logoRef = useRef<HTMLImageElement | null>(null);
   const [cleared, setCleared] = useState(false);
   const reduced = prefersReducedMotion();
 
@@ -73,14 +75,29 @@ export function ScratchSurface({
       }
       ctx.restore();
 
+      // brand logo embossed on the foil
+      const logo = logoRef.current;
+      if (logo && logo.complete && logo.naturalWidth > 0) {
+        const maxW = w * 0.62;
+        const maxH = h * 0.5;
+        const ratio = Math.min(maxW / logo.naturalWidth, maxH / logo.naturalHeight);
+        const lw = logo.naturalWidth * ratio;
+        const lh = logo.naturalHeight * ratio;
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(logo, (w - lw) / 2, (h - lh) / 2 - h * 0.04, lw, lh);
+        ctx.restore();
+      }
+
       ctx.fillStyle = "rgba(60,40,5,0.7)";
       ctx.font = `600 ${Math.max(11, Math.min(14, w / 16))}px Inter, system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(foilLabel.toUpperCase(), w / 2, h / 2);
+      ctx.fillText(foilLabel.toUpperCase(), w / 2, h * 0.82);
     },
     [foilLabel],
   );
+
 
   const setup = useCallback(() => {
     const canvas = canvasRef.current;
@@ -98,6 +115,17 @@ export function ScratchSurface({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     paintFoil(ctx, rect.width, rect.height);
   }, [paintFoil]);
+
+  // Preload the brand logo and repaint the foil once it's ready.
+  useEffect(() => {
+    if (revealed || reduced) return;
+    const img = new Image();
+    img.src = logoMark;
+    logoRef.current = img;
+    img.onload = () => {
+      if (!firedRef.current) setup();
+    };
+  }, [revealed, reduced, setup]);
 
   useEffect(() => {
     if (revealed || reduced) return;
@@ -206,12 +234,13 @@ export function ScratchSurface({
               onComplete();
             }
           }}
-          className="absolute inset-0 flex items-center justify-center rounded-[inherit] text-sm font-bold uppercase tracking-wide disabled:opacity-60"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-[inherit] text-sm font-bold uppercase tracking-wide disabled:opacity-60"
           style={{
             background: "linear-gradient(135deg,#caa24a,#f7e29a,#b8862f)",
             color: "rgba(60,40,5,0.85)",
           }}
         >
+          <img src={logoMark} alt="" className="h-1/2 max-h-16 w-auto object-contain opacity-90" />
           Tap to reveal
         </button>
       )}
