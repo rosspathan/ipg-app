@@ -45,6 +45,7 @@ export function ScratchSurface({
   const drawingRef = useRef(false);
   const firedRef = useRef(false);
   const lastSampleRef = useRef(0);
+  const logoRef = useRef<HTMLImageElement | null>(null);
   const [cleared, setCleared] = useState(false);
   const reduced = prefersReducedMotion();
 
