@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import logoMark from "@/assets/ismart-logo.png";
 
 interface ScratchSurfaceProps {
   /** Called once the foil is scratched past the threshold (or tapped in reduced-motion mode). */
