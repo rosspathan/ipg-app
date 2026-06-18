@@ -234,12 +234,13 @@ export function ScratchSurface({
               onComplete();
             }
           }}
-          className="absolute inset-0 flex items-center justify-center rounded-[inherit] text-sm font-bold uppercase tracking-wide disabled:opacity-60"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-[inherit] text-sm font-bold uppercase tracking-wide disabled:opacity-60"
           style={{
             background: "linear-gradient(135deg,#caa24a,#f7e29a,#b8862f)",
             color: "rgba(60,40,5,0.85)",
           }}
         >
+          <img src={logoMark} alt="" className="h-1/2 max-h-16 w-auto object-contain opacity-90" />
           Tap to reveal
         </button>
       )}
