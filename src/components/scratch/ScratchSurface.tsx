@@ -75,14 +75,29 @@ export function ScratchSurface({
       }
       ctx.restore();
 
+      // brand logo embossed on the foil
+      const logo = logoRef.current;
+      if (logo && logo.complete && logo.naturalWidth > 0) {
+        const maxW = w * 0.62;
+        const maxH = h * 0.5;
+        const ratio = Math.min(maxW / logo.naturalWidth, maxH / logo.naturalHeight);
+        const lw = logo.naturalWidth * ratio;
+        const lh = logo.naturalHeight * ratio;
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(logo, (w - lw) / 2, (h - lh) / 2 - h * 0.04, lw, lh);
+        ctx.restore();
+      }
+
       ctx.fillStyle = "rgba(60,40,5,0.7)";
       ctx.font = `600 ${Math.max(11, Math.min(14, w / 16))}px Inter, system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(foilLabel.toUpperCase(), w / 2, h / 2);
+      ctx.fillText(foilLabel.toUpperCase(), w / 2, h * 0.82);
     },
     [foilLabel],
   );
+
 
   const setup = useCallback(() => {
     const canvas = canvasRef.current;
