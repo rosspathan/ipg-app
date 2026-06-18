@@ -116,6 +116,17 @@ export function ScratchSurface({
     paintFoil(ctx, rect.width, rect.height);
   }, [paintFoil]);
 
+  // Preload the brand logo and repaint the foil once it's ready.
+  useEffect(() => {
+    if (revealed || reduced) return;
+    const img = new Image();
+    img.src = logoMark;
+    logoRef.current = img;
+    img.onload = () => {
+      if (!firedRef.current) setup();
+    };
+  }, [revealed, reduced, setup]);
+
   useEffect(() => {
     if (revealed || reduced) return;
     setup();
