@@ -465,6 +465,17 @@ Generated: ${new Date().toISOString()}
                   )}
                 </Button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate("/auth/import-wallet-backup");
+                }}
+                className="w-full text-center text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Forgot your Backup PIN? Re-import with your 12-word recovery phrase
+              </button>
             </div>
           </>
         )}
