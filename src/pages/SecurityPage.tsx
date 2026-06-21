@@ -25,7 +25,7 @@ export function SecurityPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthUser();
-  const { security, loginHistory, updateSecurity } = useSecurity();
+  const { security, loginHistory, updateSecurity, refetch: refetchSecurity } = useSecurity();
   const { lockState, setPin: setPinLock, checkBiometricAvailability } = useAuthLock();
   
   const [changingPin, setChangingPin] = useState(false);
@@ -38,6 +38,10 @@ export function SecurityPage() {
   const [showRecoveryPhrase, setShowRecoveryPhrase] = useState(false);
   const [showResetPin, setShowResetPin] = useState(false);
   const [antiPhishingInput, setAntiPhishingInput] = useState("");
+  const canSavePin =
+    /^\d{6}$/.test(newPin) &&
+    newPin === confirmPin &&
+    (!security?.pin_set || /^\d{6}$/.test(currentPin));
 
   useEffect(() => {
     checkBiometricAvailability().then(setBiometricAvailable);
@@ -62,7 +66,7 @@ export function SecurityPage() {
   const handleBack = () => navigate("/app/profile");
 
   const handlePinChange = async () => {
-    if (newPin.length !== 6 || confirmPin.length !== 6) {
+    if (!/^\d{6}$/.test(newPin) || !/^\d{6}$/.test(confirmPin)) {
       toast({ title: "Error", description: "PIN must be 6 digits", variant: "destructive" });
       return;
     }
@@ -72,12 +76,19 @@ export function SecurityPage() {
       return;
     }
 
+    if (security?.pin_set && !/^\d{6}$/.test(currentPin)) {
+      toast({ title: "Current PIN Required", description: "Enter your current PIN to change it", variant: "destructive" });
+      return;
+    }
+
     try {
-      await setPinLock(newPin);
+      const success = await setPinLock(newPin, security?.pin_set ? currentPin : undefined);
+      if (!success) return;
       setChangingPin(false);
       setCurrentPin("");
       setNewPin("");
       setConfirmPin("");
+      await refetchSecurity();
       toast({ title: "Success", description: "PIN updated successfully" });
     } catch (error) {
       toast({ title: "Error", description: "Failed to update PIN", variant: "destructive" });
@@ -176,14 +187,30 @@ export function SecurityPage() {
               </div>
             ) : (
               <div className="space-y-3 p-4 bg-background rounded-lg">
+                {security?.pin_set && (
+                  <div>
+                    <Label>Current PIN</Label>
+                    <Input
+                      type={showPins ? "text" : "password"}
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={currentPin}
+                      onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      className="font-mono mt-1"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <Label>New PIN</Label>
                   <div className="relative mt-1">
                     <Input
                       type={showPins ? "text" : "password"}
+                      inputMode="numeric"
                       maxLength={6}
                       value={newPin}
-                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder="000000"
                       className="font-mono"
                     />
@@ -200,9 +227,10 @@ export function SecurityPage() {
                   <Label>Confirm PIN</Label>
                   <Input
                     type={showPins ? "text" : "password"}
+                    inputMode="numeric"
                     maxLength={6}
                     value={confirmPin}
-                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="000000"
                     className="font-mono mt-1"
                   />
@@ -211,14 +239,19 @@ export function SecurityPage() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setChangingPin(false)}
+                    onClick={() => {
+                      setChangingPin(false);
+                      setCurrentPin("");
+                      setNewPin("");
+                      setConfirmPin("");
+                    }}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handlePinChange}
-                    disabled={newPin.length !== 6 || confirmPin.length !== 6}
+                    disabled={!canSavePin}
                     className="flex-1"
                   >
                     Save PIN
@@ -488,7 +521,13 @@ export function SecurityPage() {
       </div>
 
       {/* Reset PIN Dialog */}
-      <ResetPinDialog open={showResetPin} onOpenChange={setShowResetPin} />
+      <ResetPinDialog
+        open={showResetPin}
+        onOpenChange={(open) => {
+          setShowResetPin(open);
+          if (!open) refetchSecurity();
+        }}
+      />
     </div>
   );
 }
