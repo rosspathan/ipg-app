@@ -141,29 +141,7 @@ const SecurityTab = () => {
 
     setLoading(true);
     try {
-      // Verify current PIN first
-      const { data: security } = await supabase
-        .from('security')
-        .select('pin_hash')
-        .eq('user_id', user.id)
-        .single();
-
-      if (security?.pin_hash) {
-        const bcrypt = await import('bcryptjs');
-        const isValid = await bcrypt.compare(currentPin, security.pin_hash);
-        
-        if (!isValid) {
-          toast({
-            title: "Incorrect PIN",
-            description: "Current PIN is incorrect",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-
-      // Set new PIN
-      const success = await setPin(newPin);
+      const success = await setPin(newPin, currentPin);
       if (success) {
         setChangingPin(false);
         setCurrentPin("");
