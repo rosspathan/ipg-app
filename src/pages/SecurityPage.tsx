@@ -239,7 +239,12 @@ export function SecurityPage() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setChangingPin(false)}
+                    onClick={() => {
+                      setChangingPin(false);
+                      setCurrentPin("");
+                      setNewPin("");
+                      setConfirmPin("");
+                    }}
                     className="flex-1"
                   >
                     Cancel
@@ -516,7 +521,13 @@ export function SecurityPage() {
       </div>
 
       {/* Reset PIN Dialog */}
-      <ResetPinDialog open={showResetPin} onOpenChange={setShowResetPin} />
+      <ResetPinDialog
+        open={showResetPin}
+        onOpenChange={(open) => {
+          setShowResetPin(open);
+          if (!open) refetchSecurity();
+        }}
+      />
     </div>
   );
 }
