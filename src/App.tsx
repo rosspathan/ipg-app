@@ -383,12 +383,16 @@ function AppContent() {
           <Route path="/auth/check-email" element={<CheckEmailScreen />} />
           <Route path="/auth/import-wallet" element={
             <AuthProviderUser>
-              {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletAuth')))}
+              <React.Suspense fallback={<LoadingFallback />}>
+                {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletAuth')))}
+              </React.Suspense>
             </AuthProviderUser>
           } />
           <Route path="/auth/import-wallet-backup" element={
             <AuthProviderUser>
-              {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletBackup')))}
+              <React.Suspense fallback={<LoadingFallback />}>
+                {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletBackup')))}
+              </React.Suspense>
             </AuthProviderUser>
           } />
           <Route path="/auth/forgot-password" element={<ForgotPasswordScreen />} />
