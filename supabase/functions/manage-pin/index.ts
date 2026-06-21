@@ -4,7 +4,7 @@
  * Actions:
  *  - "status": returns { pin_set, locked_until } for the current user
  *  - "create": create or change PIN (requires old PIN if one already exists)
- *  - "reset_self": reserved for future flows — currently rejected
+ *  - "reset_self": reset PIN after re-verifying the user's account password
  *
  * Hashing is PBKDF2-SHA256 (200k iters) computed server-side. The PIN value
  * never enters the database. RLS-blocked writes to pin_hash/pin_salt/pin_set
@@ -52,6 +52,10 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
+  const supabaseAnon = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+  );
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -77,6 +81,52 @@ Deno.serve(async (req) => {
         pin_set: !!row?.pin_set,
         locked_until: row?.locked_until ?? null,
       });
+    }
+
+    if (action === "reset_self") {
+      const newPin: string | undefined = body?.new_pin;
+      const password: string | undefined = body?.password;
+
+      if (!newPin || !/^\d{6}$/.test(newPin)) {
+        return json({ success: false, error: "INVALID_PIN", message: "PIN must be exactly 6 digits." });
+      }
+      if (!user.email || !password) {
+        return json({ success: false, error: "PASSWORD_REQUIRED", message: "Enter your account password to reset your PIN." });
+      }
+
+      const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
+        email: user.email,
+        password,
+      });
+      if (signInError || signInData.user?.id !== user.id) {
+        return json({ success: false, error: "PASSWORD_INVALID", message: "Incorrect password. Please try again." });
+      }
+
+      const salt = generateSalt();
+      const hash = await hashPin(newPin, salt);
+      const { error: upsertErr } = await supabase
+        .from("security")
+        .upsert({
+          user_id: user.id,
+          pin_set: true,
+          pin_hash: hash,
+          pin_salt: salt,
+          failed_attempts: 0,
+          locked_until: null,
+        }, { onConflict: "user_id" });
+
+      if (upsertErr) {
+        console.error("[manage-pin] reset_self upsert failed:", upsertErr);
+        return json({ success: false, error: "DB_ERROR", message: "Could not reset PIN. Please try again." }, 500);
+      }
+
+      await supabase.from("login_audit").insert({
+        user_id: user.id,
+        event: "pin_reset_self",
+        device_info: { surface: "manage-pin" },
+      });
+
+      return json({ success: true, pin_set: true });
     }
 
     if (action === "create") {
