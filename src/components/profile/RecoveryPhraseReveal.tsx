@@ -406,13 +406,21 @@ Generated: ${new Date().toISOString()}
                 Cloud Backup Found
               </DialogTitle>
               <DialogDescription className="text-center">
-                Your wallet is backed up securely. Enter your PIN to decrypt it.
+                Enter the <strong>Wallet Backup PIN</strong> you created when you set up or backed up your wallet.
               </DialogDescription>
             </DialogHeader>
 
+            <Alert className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                This is <strong>not</strong> your login / Security PIN. It's the separate 6-digit PIN
+                you chose specifically to encrypt this wallet backup.
+              </AlertDescription>
+            </Alert>
+
             <div className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label htmlFor="pin">Backup PIN</Label>
+                <Label htmlFor="pin">Wallet Backup PIN</Label>
                 <Input
                   id="pin"
                   type="password"
