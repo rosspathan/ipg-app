@@ -466,16 +466,18 @@ Generated: ${new Date().toISOString()}
                 </Button>
               </div>
 
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
                 onClick={() => {
                   onOpenChange(false);
                   navigate("/auth/import-wallet-backup");
                 }}
-                className="w-full text-center text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
               >
-                Forgot your Backup PIN? Re-import with your 12-word recovery phrase
-              </button>
+                <Download className="h-4 w-4 mr-2" />
+                Forgot your Backup PIN? Re-import with recovery phrase
+              </Button>
             </div>
           </>
         )}
