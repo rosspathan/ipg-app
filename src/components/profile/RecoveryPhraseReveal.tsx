@@ -516,6 +516,18 @@ Generated: ${new Date().toISOString()}
                 <Plus className="h-4 w-4 mr-2" />
                 Add Recovery Phrase
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate("/auth/import-wallet-backup");
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Re-import with Recovery Phrase
+              </Button>
               
               <Button 
                 variant="outline"
