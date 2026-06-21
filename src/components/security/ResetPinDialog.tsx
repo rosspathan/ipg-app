@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Loader2, ShieldAlert, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { useAuthLock } from "@/hooks/useAuthLock";
 import { useToast } from "@/hooks/use-toast";
 
 interface ResetPinDialogProps {
@@ -17,7 +16,6 @@ interface ResetPinDialogProps {
 
 export function ResetPinDialog({ open, onOpenChange }: ResetPinDialogProps) {
   const { user } = useAuthUser();
-  const { setPin } = useAuthLock();
   const { toast } = useToast();
 
   const [step, setStep] = useState<'verify' | 'newpin' | 'success'>('verify');
@@ -56,7 +54,6 @@ export function ResetPinDialog({ open, onOpenChange }: ResetPinDialogProps) {
 
       // Password verified, move to new PIN step
       setStep('newpin');
-      setPassword("");
     } catch (err) {
       console.error("Password verification failed:", err);
       setError("Verification failed. Please try again.");
@@ -72,9 +69,13 @@ export function ResetPinDialog({ open, onOpenChange }: ResetPinDialogProps) {
     setError("");
 
     try {
-      const success = await setPin(newPin);
-      if (success) {
+      const { data, error: invokeError } = await supabase.functions.invoke('manage-pin', {
+        body: { action: 'reset_self', new_pin: newPin, password },
+      });
+
+      if (data?.success) {
         setStep('success');
+        setPassword("");
         
         // Clear lock state for fresh start
         localStorage.setItem('ipg_fresh_setup', 'true');
@@ -84,7 +85,7 @@ export function ResetPinDialog({ open, onOpenChange }: ResetPinDialogProps) {
           description: "Your new PIN is now active"
         });
       } else {
-        setError("Failed to set new PIN. Please try again.");
+        setError(data?.message || invokeError?.message || "Failed to set new PIN. Please try again.");
       }
     } catch (err) {
       console.error("PIN reset failed:", err);
