@@ -212,14 +212,14 @@ export function WalletPage() {
 
       {/* ── 1. PORTFOLIO HERO CARD ── */}
       <div className="px-4 pt-4 animate-fade-in">
-        <div className="relative overflow-hidden glass-card p-6" style={{ borderRadius: '24px' }}>
+        <div className="relative overflow-hidden glass-card card-glow-primary p-6" style={{ borderRadius: '24px' }}>
           {/* Ambient radial glow behind card */}
           <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-64 h-32 rounded-full pointer-events-none opacity-60"
-            style={{ background: 'radial-gradient(ellipse at 50% 0%, hsl(186 100% 50% / 0.18), transparent 70%)' }}
+            style={{ background: 'radial-gradient(ellipse at 50% 0%, hsl(var(--accent) / 0.18), transparent 70%)' }}
           />
           {/* Top rim light gradient */}
           <div className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, transparent, hsl(186 100% 50% / 0.5), hsl(245 80% 68% / 0.3), transparent)' }}
+            style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--accent) / 0.5), hsl(var(--secondary) / 0.3), transparent)' }}
           />
 
           <div className="relative z-10 space-y-5">
@@ -256,7 +256,7 @@ export function WalletPage() {
 
             {/* Gradient divider */}
             <div className="h-px" style={{
-              background: 'linear-gradient(90deg, hsl(186 100% 50% / 0.4), hsl(186 100% 50% / 0.1) 40%, hsl(245 80% 68% / 0.1) 60%, transparent)'
+              background: 'linear-gradient(90deg, hsl(var(--accent) / 0.4), hsl(var(--accent) / 0.1) 40%, hsl(var(--secondary) / 0.1) 60%, transparent)'
             }} />
 
             {/* Available & In Orders */}
@@ -597,11 +597,11 @@ export function WalletPage() {
         >
           {/* Top accent gradient overlay */}
           <div className="absolute top-0 left-0 right-0 h-24 pointer-events-none"
-            style={{ background: 'linear-gradient(180deg, hsl(186 100% 50% / 0.06), transparent)' }}
+            style={{ background: 'linear-gradient(180deg, hsl(var(--accent) / 0.06), transparent)' }}
           />
           {/* Top rim */}
           <div className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, transparent, hsl(186 100% 50% / 0.4), transparent)' }}
+            style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--accent) / 0.4), transparent)' }}
           />
 
           <div className="relative z-10 flex items-center justify-between">

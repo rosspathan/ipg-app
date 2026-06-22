@@ -74,6 +74,11 @@ export default {
 					DEFAULT: 'hsl(var(--danger))',
 					foreground: 'hsl(var(--danger-foreground))'
 				},
+				premium: {
+					DEFAULT: 'hsl(var(--premium))',
+					foreground: 'hsl(var(--premium-foreground))',
+					glow: 'hsl(var(--premium-glow))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -95,7 +100,8 @@ export default {
 			'gradient-card': 'var(--gradient-card)',
 			'gradient-neon': 'var(--gradient-neon)',
 			'gradient-glow': 'var(--gradient-glow)',
-			'gradient-ring': 'var(--gradient-ring)'
+			'gradient-ring': 'var(--gradient-ring)',
+			'gradient-premium': 'var(--gradient-premium)'
 		},
 			backdropBlur: {
 				'glass': 'var(--card-blur)'
