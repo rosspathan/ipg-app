@@ -228,6 +228,13 @@ All colors MUST be HSL.
     
     --danger: 0 84% 60%;
     --danger-foreground: 0 0% 100%;
+
+    /* Gold premium highlight */
+    --premium: 41 82% 50%;
+    --premium-foreground: 0 0% 100%;
+    --premium-glow: 41 90% 62%;
+    --gradient-premium: linear-gradient(135deg, hsl(41 82% 52%), hsl(36 90% 46%));
+    
     
     /* Premium Fintech Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(220 100% 50%), hsl(245 58% 57%));
