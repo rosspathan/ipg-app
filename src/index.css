@@ -803,7 +803,10 @@ All colors MUST be HSL.
     inset: 0;
     background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.06), transparent);
     transform: translateX(-100%);
-    animation: shimmer 1.6s ease-in-out infinite;
+    animation: skeletonSweep 1.6s ease-in-out infinite;
+  }
+  @keyframes skeletonSweep {
+    100% { transform: translateX(100%); }
   }
 
   /* Theme-aware balance gradient text */
