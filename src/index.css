@@ -36,6 +36,12 @@ All colors MUST be HSL.
     --danger: 0 70% 68%; /* #FF5C5C */
     --danger-foreground: 0 0% 98%;
 
+    /* Gold premium highlight */
+    --premium: 41 88% 60%;
+    --premium-foreground: 230 80% 4%;
+    --premium-glow: 41 95% 72%;
+    --gradient-premium: linear-gradient(135deg, hsl(41 88% 60%), hsl(38 92% 52%));
+
     --destructive: 0 70% 68%;
     --destructive-foreground: 0 0% 98%;
 
