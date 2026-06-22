@@ -771,16 +771,39 @@ All colors MUST be HSL.
 
   /* Card glow utilities for Tradable/Locked cards */
   .card-glow-success {
-    box-shadow: 0 4px 24px hsl(154 67% 52% / 0.10), var(--shadow-card);
+    box-shadow: 0 4px 24px hsl(var(--success) / 0.12), var(--shadow-card);
   }
   .card-glow-primary {
-    box-shadow: 0 4px 24px hsl(186 100% 50% / 0.10), var(--shadow-card);
+    box-shadow: 0 4px 24px hsl(var(--accent) / 0.12), var(--shadow-card);
+  }
+  .card-glow-premium {
+    box-shadow: 0 4px 28px hsl(var(--premium) / 0.16), var(--shadow-card);
+    border-color: hsl(var(--premium) / 0.22) !important;
+  }
+  .card-glow-danger {
+    box-shadow: 0 4px 24px hsl(var(--danger) / 0.12), var(--shadow-card);
   }
   .light .card-glow-success {
     box-shadow: 0 4px 24px hsl(152 64% 42% / 0.12), var(--shadow-card);
   }
   .light .card-glow-primary {
     box-shadow: 0 4px 24px hsl(220 100% 50% / 0.10), var(--shadow-card);
+  }
+
+  /* Premium soft loading skeleton */
+  .skeleton-premium {
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--muted) / 0.6);
+    border-radius: 12px;
+  }
+  .skeleton-premium::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.06), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 1.6s ease-in-out infinite;
   }
 
   /* Theme-aware balance gradient text */
