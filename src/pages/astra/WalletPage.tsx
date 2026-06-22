@@ -256,7 +256,7 @@ export function WalletPage() {
 
             {/* Gradient divider */}
             <div className="h-px" style={{
-              background: 'linear-gradient(90deg, hsl(186 100% 50% / 0.4), hsl(186 100% 50% / 0.1) 40%, hsl(245 80% 68% / 0.1) 60%, transparent)'
+              background: 'linear-gradient(90deg, hsl(var(--accent) / 0.4), hsl(var(--accent) / 0.1) 40%, hsl(var(--secondary) / 0.1) 60%, transparent)'
             }} />
 
             {/* Available & In Orders */}
