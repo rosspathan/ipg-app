@@ -268,15 +268,15 @@ All colors MUST be HSL.
 
   /* Dark mode - Premium Crypto Exchange (Deep Navy / Onyx) */
   .dark {
-    --background: 222 44% 4%;         /* #060A12 deep navy-onyx */
-    --foreground: 210 30% 97%;        /* clean soft white */
+    --background: 215 54% 5%;         /* #060C16 deep navy-blue */
+    --foreground: 205 30% 97%;        /* clean soft white */
     
-    --card: 221 36% 7%;               /* refined deep surface */
-    --card-foreground: 210 30% 97%;
-    --card-glass: 221 38% 8% / 0.55;
+    --card: 214 40% 8%;               /* refined deep blue surface */
+    --card-foreground: 205 30% 97%;
+    --card-glass: 214 42% 9% / 0.55;
     
-    --popover: 222 38% 6%;
-    --popover-foreground: 210 30% 97%;
+    --popover: 215 44% 6%;
+    --popover-foreground: 205 30% 97%;
     
     --primary: 211 92% 56%;           /* royal azure blue */
     --primary-foreground: 0 0% 100%;
