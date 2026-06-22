@@ -113,8 +113,21 @@ export function BottomNavBar() {
             className="absolute -top-7 flex items-center justify-center"
           >
             {/* Soft blue + green glow */}
-            <span className="pointer-events-none absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.55),transparent_70%)] blur-md" />
+            <span className="pointer-events-none absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.55),transparent_70%)] blur-md animate-pulse" />
             <span className="pointer-events-none absolute inset-0 -m-1 rounded-full bg-[radial-gradient(circle,hsl(var(--secondary)/0.45),transparent_70%)] blur-md" />
+            {/* Shining rotating circumference */}
+            <span
+              className="pointer-events-none absolute -inset-[3px] rounded-full motion-safe:animate-spin"
+              style={{
+                animationDuration: "3s",
+                background:
+                  "conic-gradient(from 0deg, transparent 0deg, hsl(var(--accent)) 70deg, hsl(var(--secondary)) 130deg, transparent 200deg, transparent 360deg)",
+                WebkitMask:
+                  "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))",
+                mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))"
+              }}
+            />
+            <span className="pointer-events-none absolute -inset-[3px] rounded-full shadow-[0_0_16px_2px_hsl(var(--accent)/0.6)]" />
             {/* Glass ring */}
             <span className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-[hsl(var(--card)/0.6)] p-[3px] backdrop-blur-xl shadow-[0_8px_24px_-6px_hsl(var(--primary)/0.5)]">
               <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 via-transparent to-secondary/30" />
