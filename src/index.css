@@ -386,11 +386,10 @@ All colors MUST be HSL.
     z-index: -3;
     background: 
       linear-gradient(165deg, 
-        hsl(230 80% 4%) 0%, 
-        hsl(232 60% 6%) 25%, 
-        hsl(235 50% 5%) 50%, 
-        hsl(228 70% 5%) 75%, 
-        hsl(230 80% 4%) 100%
+        hsl(222 44% 4%) 0%, 
+        hsl(221 40% 6%) 30%, 
+        hsl(223 38% 5%) 60%, 
+        hsl(222 44% 4%) 100%
       );
     pointer-events: none;
   }
@@ -401,19 +400,18 @@ All colors MUST be HSL.
     inset: 0;
     z-index: -2;
     background: 
-      /* Large cyan orb - top left light source */
-      radial-gradient(ellipse 700px 500px at 15% 15%, hsl(186 100% 50% / 0.09), transparent 70%),
-      /* Large indigo orb - bottom right */
-      radial-gradient(ellipse 600px 600px at 85% 80%, hsl(245 80% 68% / 0.08), transparent 70%),
-      /* Subtle cyan secondary orb */
-      radial-gradient(ellipse 400px 400px at 65% 25%, hsl(186 100% 50% / 0.05), transparent 60%),
-      /* Warm top-left light source */
-      radial-gradient(ellipse 500px 300px at 5% 5%, hsl(200 80% 60% / 0.04), transparent 60%),
-      /* Deep center vignette */
-      radial-gradient(ellipse 120% 100% at 50% 50%, transparent 40%, hsl(230 80% 2% / 0.4) 100%);
-    animation: galaxy-drift-ultra 25s ease-in-out infinite alternate;
+      /* Subtle cyan light source - top left */
+      radial-gradient(ellipse 720px 520px at 12% 12%, hsl(187 92% 49% / 0.06), transparent 70%),
+      /* Indigo depth - bottom right */
+      radial-gradient(ellipse 620px 620px at 88% 82%, hsl(244 72% 66% / 0.05), transparent 72%),
+      /* Faint gold premium warmth */
+      radial-gradient(ellipse 420px 320px at 70% 18%, hsl(41 88% 60% / 0.025), transparent 65%),
+      /* Deep center vignette for focus */
+      radial-gradient(ellipse 120% 100% at 50% 50%, transparent 38%, hsl(222 60% 1% / 0.45) 100%);
+    animation: galaxy-drift-ultra 28s ease-in-out infinite alternate;
     pointer-events: none;
   }
+
 
   @keyframes galaxy-drift-ultra {
     0% {
