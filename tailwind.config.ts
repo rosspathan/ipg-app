@@ -100,7 +100,8 @@ export default {
 			'gradient-card': 'var(--gradient-card)',
 			'gradient-neon': 'var(--gradient-neon)',
 			'gradient-glow': 'var(--gradient-glow)',
-			'gradient-ring': 'var(--gradient-ring)'
+			'gradient-ring': 'var(--gradient-ring)',
+			'gradient-premium': 'var(--gradient-premium)'
 		},
 			backdropBlur: {
 				'glass': 'var(--card-blur)'
