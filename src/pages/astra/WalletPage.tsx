@@ -597,11 +597,11 @@ export function WalletPage() {
         >
           {/* Top accent gradient overlay */}
           <div className="absolute top-0 left-0 right-0 h-24 pointer-events-none"
-            style={{ background: 'linear-gradient(180deg, hsl(186 100% 50% / 0.06), transparent)' }}
+            style={{ background: 'linear-gradient(180deg, hsl(var(--accent) / 0.06), transparent)' }}
           />
           {/* Top rim */}
           <div className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, transparent, hsl(186 100% 50% / 0.4), transparent)' }}
+            style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--accent) / 0.4), transparent)' }}
           />
 
           <div className="relative z-10 flex items-center justify-between">
