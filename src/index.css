@@ -386,10 +386,10 @@ All colors MUST be HSL.
     z-index: -3;
     background: 
       linear-gradient(165deg, 
-        hsl(222 44% 4%) 0%, 
-        hsl(221 40% 6%) 30%, 
-        hsl(223 38% 5%) 60%, 
-        hsl(222 44% 4%) 100%
+        hsl(215 54% 5%) 0%, 
+        hsl(212 46% 7%) 30%, 
+        hsl(160 38% 6%) 60%, 
+        hsl(215 54% 5%) 100%
       );
     pointer-events: none;
   }
