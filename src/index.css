@@ -268,75 +268,75 @@ All colors MUST be HSL.
 
   /* Dark mode - Premium Crypto Exchange (Deep Navy / Onyx) */
   .dark {
-    --background: 222 44% 4%;         /* #060A12 deep navy-onyx */
-    --foreground: 210 30% 97%;        /* clean soft white */
+    --background: 215 54% 5%;         /* #060C16 deep navy-blue */
+    --foreground: 205 30% 97%;        /* clean soft white */
     
-    --card: 221 36% 7%;               /* refined deep surface */
-    --card-foreground: 210 30% 97%;
-    --card-glass: 221 38% 8% / 0.55;
+    --card: 214 40% 8%;               /* refined deep blue surface */
+    --card-foreground: 205 30% 97%;
+    --card-glass: 214 42% 9% / 0.55;
     
-    --popover: 222 38% 6%;
-    --popover-foreground: 210 30% 97%;
+    --popover: 215 44% 6%;
+    --popover-foreground: 205 30% 97%;
     
-    --primary: 187 92% 49%;           /* refined cyan */
-    --primary-foreground: 222 44% 4%;
-    --primary-glow: 187 95% 70%;
+    --primary: 211 92% 56%;           /* royal azure blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 202 96% 70%;
     
-    --secondary: 244 72% 66%;         /* indigo */
-    --secondary-foreground: 210 30% 97%;
+    --secondary: 158 80% 44%;         /* emerald green */
+    --secondary-foreground: 0 0% 100%;
     
-    --muted: 221 24% 12%;
-    --muted-foreground: 217 14% 62%;  /* soft, readable muted text */
+    --muted: 215 24% 12%;
+    --muted-foreground: 213 16% 64%;  /* soft, readable muted text */
     
-    --accent: 187 92% 49%;            /* cyan */
-    --accent-foreground: 222 44% 4%;
-    --accent-glow: 187 95% 70%;
+    --accent: 189 88% 50%;            /* cyan-teal bridge */
+    --accent-foreground: 217 60% 6%;
+    --accent-glow: 168 82% 56%;       /* teal-green */
     
     --destructive: 0 74% 60%;
     --destructive-foreground: 210 30% 97%;
     
-    --border: 220 22% 15%;            /* neutral hairline */
-    --input: 221 26% 10%;
-    --ring: 187 92% 49%;
+    --border: 210 26% 16%;            /* cool blue hairline */
+    --input: 214 28% 10%;
+    --ring: 189 88% 50%;
     
-    --success: 152 68% 47%;           /* rich emerald */
-    --success-foreground: 210 30% 97%;
+    --success: 156 76% 46%;           /* rich emerald */
+    --success-foreground: 0 0% 100%;
     
     --warning: 38 92% 58%;            /* amber */
-    --warning-foreground: 222 44% 4%;
+    --warning-foreground: 217 60% 6%;
     
     --danger: 0 74% 60%;              /* clean red */
     --danger-foreground: 210 30% 97%;
 
     /* Gold premium highlight (VIP / premium surfaces) */
     --premium: 41 88% 60%;            /* #EBC04E gold */
-    --premium-foreground: 222 44% 4%;
+    --premium-foreground: 217 60% 6%;
     --premium-glow: 41 95% 72%;
     
-    /* Premium Layered Shadows & Glows */
+    /* Premium Layered Shadows & Glows — blue/green */
     --shadow-card: 
-      0 2px 8px hsl(222 60% 1% / 0.55),
-      0 16px 48px hsl(222 60% 1% / 0.45),
-      0 0 0 0.5px hsl(187 92% 49% / 0.06);
+      0 2px 8px hsl(215 60% 1% / 0.55),
+      0 16px 48px hsl(215 60% 1% / 0.45),
+      0 0 0 0.5px hsl(189 88% 50% / 0.06);
     --shadow-elevated: 
-      0 8px 24px hsl(222 60% 1% / 0.6),
-      0 28px 80px hsl(222 60% 1% / 0.5),
-      0 0 0 0.5px hsl(187 92% 49% / 0.10);
-    --shadow-button: 0 4px 20px hsl(187 92% 49% / 0.30), 0 0 1px hsl(187 92% 49% / 0.4);
-    --shadow-neon: 0 0 18px hsl(187 92% 49% / 0.32), 0 0 54px hsl(187 92% 49% / 0.12), 0 0 90px hsl(244 72% 66% / 0.06);
-    --shadow-fab: 0 8px 36px hsl(187 92% 49% / 0.30), 0 0 2px hsl(187 92% 49% / 0.5);
-    --shadow-ambient: 0 8px 40px hsl(244 72% 66% / 0.12), 0 0 70px hsl(187 92% 49% / 0.04);
+      0 8px 24px hsl(215 60% 1% / 0.6),
+      0 28px 80px hsl(215 60% 1% / 0.5),
+      0 0 0 0.5px hsl(189 88% 50% / 0.10);
+    --shadow-button: 0 4px 20px hsl(211 92% 56% / 0.32), 0 0 1px hsl(189 88% 50% / 0.4);
+    --shadow-neon: 0 0 18px hsl(189 88% 50% / 0.32), 0 0 54px hsl(189 88% 50% / 0.12), 0 0 90px hsl(158 80% 44% / 0.08);
+    --shadow-fab: 0 8px 36px hsl(211 92% 56% / 0.32), 0 0 2px hsl(189 88% 50% / 0.5);
+    --shadow-ambient: 0 8px 40px hsl(158 80% 44% / 0.12), 0 0 70px hsl(189 88% 50% / 0.05);
     
-    --glow-primary: hsl(187 92% 49% / 0.30);
-    --glow-accent: hsl(244 72% 66% / 0.22);
+    --glow-primary: hsl(211 92% 56% / 0.30);
+    --glow-accent: hsl(158 80% 44% / 0.24);
     --rim-light: hsl(0 0% 100% / 0.07);
     
-    /* Premium Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(187 92% 49%), hsl(244 72% 66%));
-    --gradient-card: linear-gradient(145deg, hsl(221 38% 10% / 0.9), hsl(222 40% 6% / 0.5));
-    --gradient-neon: linear-gradient(90deg, hsl(187 92% 49%), hsl(244 72% 66%));
-    --gradient-glow: radial-gradient(circle at center, hsl(187 92% 49% / 0.13), transparent 70%);
-    --gradient-ring: conic-gradient(from 0deg, hsl(187 92% 49%), hsl(244 72% 66%), hsl(187 92% 49%));
+    /* Premium Gradients — blue → teal → green */
+    --gradient-primary: linear-gradient(135deg, hsl(211 92% 56%), hsl(158 80% 44%));
+    --gradient-card: linear-gradient(145deg, hsl(214 40% 11% / 0.9), hsl(215 44% 6% / 0.5));
+    --gradient-neon: linear-gradient(90deg, hsl(189 88% 50%), hsl(158 80% 44%));
+    --gradient-glow: radial-gradient(circle at center, hsl(189 88% 50% / 0.14), transparent 70%);
+    --gradient-ring: conic-gradient(from 0deg, hsl(211 92% 56%), hsl(158 80% 44%), hsl(211 92% 56%));
     --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.07), hsl(0 0% 100% / 0.015));
     --gradient-premium: linear-gradient(135deg, hsl(41 88% 60%), hsl(38 92% 52%));
     
@@ -386,10 +386,10 @@ All colors MUST be HSL.
     z-index: -3;
     background: 
       linear-gradient(165deg, 
-        hsl(222 44% 4%) 0%, 
-        hsl(221 40% 6%) 30%, 
-        hsl(223 38% 5%) 60%, 
-        hsl(222 44% 4%) 100%
+        hsl(215 54% 5%) 0%, 
+        hsl(212 46% 7%) 30%, 
+        hsl(160 38% 6%) 60%, 
+        hsl(215 54% 5%) 100%
       );
     pointer-events: none;
   }
@@ -400,14 +400,14 @@ All colors MUST be HSL.
     inset: 0;
     z-index: -2;
     background: 
-      /* Subtle cyan light source - top left */
-      radial-gradient(ellipse 720px 520px at 12% 12%, hsl(187 92% 49% / 0.06), transparent 70%),
-      /* Indigo depth - bottom right */
-      radial-gradient(ellipse 620px 620px at 88% 82%, hsl(244 72% 66% / 0.05), transparent 72%),
-      /* Faint gold premium warmth */
-      radial-gradient(ellipse 420px 320px at 70% 18%, hsl(41 88% 60% / 0.025), transparent 65%),
+      /* Blue light source - top left */
+      radial-gradient(ellipse 720px 520px at 12% 12%, hsl(211 92% 56% / 0.07), transparent 70%),
+      /* Emerald green depth - bottom right */
+      radial-gradient(ellipse 620px 620px at 88% 82%, hsl(158 80% 44% / 0.06), transparent 72%),
+      /* Soft teal mid accent */
+      radial-gradient(ellipse 420px 320px at 70% 30%, hsl(189 88% 50% / 0.04), transparent 65%),
       /* Deep center vignette for focus */
-      radial-gradient(ellipse 120% 100% at 50% 50%, transparent 38%, hsl(222 60% 1% / 0.45) 100%);
+      radial-gradient(ellipse 120% 100% at 50% 50%, transparent 38%, hsl(215 60% 1% / 0.45) 100%);
     animation: galaxy-drift-ultra 28s ease-in-out infinite alternate;
     pointer-events: none;
   }
@@ -809,7 +809,7 @@ All colors MUST be HSL.
 
   /* Theme-aware balance gradient text */
   .balance-gradient-text {
-    background: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(187 95% 80%) 58%, hsl(244 80% 82%) 100%);
+    background: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(200 95% 80%) 50%, hsl(156 78% 70%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
