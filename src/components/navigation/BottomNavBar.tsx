@@ -1,8 +1,9 @@
 import * as React from "react"
-import { Home, Wallet, Coins, Gift, TrendingUp, User } from "lucide-react"
+import { Home, Wallet, TrendingUp, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocation } from "react-router-dom"
 import { useNavigation } from "@/hooks/useNavigation"
+import bskCoinLogo from "@/assets/bsk-coin-logo.jpeg.asset.json"
 
 const navItems = [
   {
@@ -12,22 +13,10 @@ const navItems = [
     route: "/app"
   },
   {
-    id: "wallet", 
+    id: "wallet",
     label: "Wallet",
     icon: Wallet,
     route: "/app/wallet"
-  },
-  {
-    id: "staking",
-    label: "Staking", 
-    icon: Coins,
-    route: "/app/staking"
-  },
-  {
-    id: "programs",
-    label: "Programs",
-    icon: Gift,
-    route: "/app/programs"
   },
   {
     id: "trading",
@@ -54,51 +43,94 @@ export function BottomNavBar() {
     return location.pathname.startsWith(route)
   }
 
+  // Split nav items around the center logo: Home | Wallet | [Logo] | Trading | Profile
+  const leftItems = navItems.slice(0, 2)
+  const rightItems = navItems.slice(2)
+
+  const renderItem = (item: typeof navItems[number]) => {
+    const Icon = item.icon
+    const active = isActive(item.route)
+
+    return (
+      <button
+        key={item.id}
+        onClick={() => navigate(item.route)}
+        aria-label={item.label}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 rounded-xl transition-colors duration-300",
+          active ? "text-accent" : "text-muted-foreground hover:text-foreground/80"
+        )}
+      >
+        <Icon
+          className={cn(
+            "h-[22px] w-[22px] transition-all duration-300",
+            active && "drop-shadow-[0_0_8px_hsl(var(--accent)/0.6)]"
+          )}
+        />
+        <span className="text-[10px] font-medium tracking-wide">
+          {item.label}
+        </span>
+        {active && (
+          <span className="absolute -top-0.5 h-1 w-1 rounded-full bg-accent shadow-[0_0_8px_hsl(var(--accent)/0.9)]" />
+        )}
+      </button>
+    )
+  }
+
   return (
-    <nav 
-      className="mobile-fixed z-50 bg-card border-t border-border"
+    <nav
+      className="mobile-fixed z-50"
       style={{
-        bottom: 'var(--bso)',
-        height: 'var(--dock-h)'
+        bottom: "var(--bso)",
+        height: "var(--dock-h)"
       }}
     >
-      <div 
-        className="h-full flex items-center justify-around"
+      {/* Glass footer surface */}
+      <div className="absolute inset-0 border-t border-white/[0.07] bg-[hsl(var(--card)/0.85)] backdrop-blur-xl">
+        {/* Ambient blue + green glow line */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+      </div>
+
+      <div
+        className="relative h-full flex items-stretch"
         style={{
-          paddingLeft: 'var(--bsl)',
-          paddingRight: 'var(--bsr)',
-          paddingBottom: '8px',
-          paddingTop: '8px'
+          paddingLeft: "var(--bsl)",
+          paddingRight: "var(--bsr)",
+          paddingBottom: "6px",
+          paddingTop: "6px"
         }}
       >
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const active = isActive(item.route)
-          
-          return (
-            <button
-              key={item.id}
-              onClick={(e) => {
-                console.log('[NAV] Button clicked:', {
-                  id: item.id,
-                  route: item.route,
-                  target: e.target,
-                  timestamp: Date.now()
-                });
-                navigate(item.route);
-              }}
-              className={cn(
-                "flex flex-col items-center justify-center px-1 py-1 rounded-md min-w-[48px]",
-                active ? "text-accent" : "text-muted-foreground"
-              )}
-            >
-              <Icon className="h-6 w-6" />
-              <span className="text-[11px] font-medium mt-0.5">
-                {item.label}
-              </span>
-            </button>
-          )
-        })}
+        <div className="flex flex-1 items-stretch">
+          {leftItems.map(renderItem)}
+        </div>
+
+        {/* Center floating logo */}
+        <div className="relative flex w-[72px] shrink-0 items-end justify-center">
+          <button
+            onClick={() => navigate("/app")}
+            aria-label="Home"
+            className="absolute -top-7 flex items-center justify-center"
+          >
+            {/* Soft blue + green glow */}
+            <span className="pointer-events-none absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.55),transparent_70%)] blur-md" />
+            <span className="pointer-events-none absolute inset-0 -m-1 rounded-full bg-[radial-gradient(circle,hsl(var(--secondary)/0.45),transparent_70%)] blur-md" />
+            {/* Glass ring */}
+            <span className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-[hsl(var(--card)/0.6)] p-[3px] backdrop-blur-xl shadow-[0_8px_24px_-6px_hsl(var(--primary)/0.5)]">
+              <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 via-transparent to-secondary/30" />
+              <img
+                src={bskCoinLogo.url}
+                alt="BSK Coin"
+                className="relative h-full w-full rounded-full object-cover"
+                draggable={false}
+              />
+            </span>
+          </button>
+        </div>
+
+        <div className="flex flex-1 items-stretch">
+          {rightItems.map(renderItem)}
+        </div>
       </div>
     </nav>
   )
