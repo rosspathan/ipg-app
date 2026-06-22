@@ -213,13 +213,17 @@ export function WalletPage() {
       {/* ── 1. PORTFOLIO HERO CARD ── */}
       <div className="px-4 pt-4 animate-fade-in">
         <div className="relative overflow-hidden glass-card card-glow-primary p-6" style={{ borderRadius: '24px' }}>
-          {/* Ambient radial glow behind card */}
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-64 h-32 rounded-full pointer-events-none opacity-60"
-            style={{ background: 'radial-gradient(ellipse at 50% 0%, hsl(var(--accent) / 0.18), transparent 70%)' }}
+          {/* Ambient blue glow — top left */}
+          <div className="absolute -top-10 -left-6 w-56 h-40 rounded-full pointer-events-none opacity-50"
+            style={{ background: 'radial-gradient(ellipse at 30% 0%, hsl(var(--primary) / 0.22), transparent 70%)' }}
           />
-          {/* Top rim light gradient */}
+          {/* Ambient green glow — bottom right */}
+          <div className="absolute -bottom-12 -right-8 w-56 h-40 rounded-full pointer-events-none opacity-40"
+            style={{ background: 'radial-gradient(ellipse at 70% 100%, hsl(var(--secondary) / 0.20), transparent 70%)' }}
+          />
+          {/* Top rim light gradient — blue → teal → green */}
           <div className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--accent) / 0.5), hsl(var(--secondary) / 0.3), transparent)' }}
+            style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), hsl(var(--accent) / 0.4), hsl(var(--secondary) / 0.3), transparent)' }}
           />
 
           <div className="relative z-10 space-y-5">
