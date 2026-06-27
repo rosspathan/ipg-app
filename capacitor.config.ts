@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.ismart.ipgexchange',
-  appName: 'IPG Exchange',
+  appName: 'WORLD I-SMART',
   webDir: 'dist',
   server: {
     url: 'https://i-smartapp.com',
