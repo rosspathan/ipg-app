@@ -10,6 +10,7 @@ import { format, subDays, startOfMonth } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { generateUserBskReportPDF } from "@/lib/generateUserBskReport";
 import { useToast } from "@/hooks/use-toast";
+import { AdminBSKUserReport } from "@/components/admin/AdminBSKUserReport";
 
 export default function FinancialReports() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
