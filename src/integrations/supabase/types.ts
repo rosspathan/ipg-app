@@ -15751,6 +15751,26 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_bsk_user_report: {
+        Args: never
+        Returns: {
+          completed_withdrawals_amount: number
+          completed_withdrawals_count: number
+          created_at: string
+          email: string
+          fees_paid: number
+          holding_balance: number
+          pending_withdrawals_amount: number
+          pending_withdrawals_count: number
+          total_deducted: number
+          total_earned: number
+          total_held: number
+          user_id: string
+          username: string
+          wallet_address: string
+          withdrawable_balance: number
+        }[]
+      }
       admin_credit_bsk_manual: {
         Args: {
           p_amount: number

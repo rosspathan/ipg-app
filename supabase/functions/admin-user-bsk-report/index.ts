@@ -48,65 +48,60 @@ serve(async (req) => {
       });
     }
 
-    console.log('[Admin BSK Report] Fetching all user data...');
+    console.log('[Admin BSK Report] Fetching complete per-user BSK breakdown...');
 
-    // Fetch all profiles
-    const allProfiles: any[] = [];
-    let from = 0;
-    const batchSize = 1000;
-    while (true) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, username, email, full_name, wallet_address, bsc_wallet_address, created_at')
-        .range(from, from + batchSize - 1);
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      allProfiles.push(...data);
-      if (data.length < batchSize) break;
-      from += batchSize;
-    }
+    // Pull the full per-user BSK breakdown from the secure aggregation function.
+    const { data: rows, error: rpcError } = await supabase.rpc('admin_bsk_user_report');
+    if (rpcError) throw rpcError;
 
-    // Fetch all BSK balances
-    const allBalances: any[] = [];
-    from = 0;
-    while (true) {
-      const { data, error } = await supabase
-        .from('user_bsk_balances')
-        .select('user_id, withdrawable_balance, holding_balance, total_earned_withdrawable, total_earned_holding')
-        .range(from, from + batchSize - 1);
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      allBalances.push(...data);
-      if (data.length < batchSize) break;
-      from += batchSize;
-    }
-
-    // Create balance lookup
-    const balanceMap = new Map<string, any>();
-    for (const b of allBalances) {
-      balanceMap.set(b.user_id, b);
-    }
-
-    // Merge data
-    let reportData = allProfiles.map(p => {
-      const bal = balanceMap.get(p.user_id);
-      const walletAddr = p.bsc_wallet_address || p.wallet_address || null;
+    let reportData = (rows || []).map((r: any) => {
+      const withdrawable = Number(r.withdrawable_balance || 0);
+      const holding = Number(r.holding_balance || 0);
+      const walletAddr = r.wallet_address || null;
       return {
-        username: p.username || p.full_name || 'N/A',
-        email: p.email || 'N/A',
-        withdrawable_balance: Number(bal?.withdrawable_balance || 0),
-        holding_balance: Number(bal?.holding_balance || 0),
-        total_balance: Number(bal?.withdrawable_balance || 0) + Number(bal?.holding_balance || 0),
+        username: r.username || 'N/A',
+        email: r.email || 'N/A',
         wallet_status: walletAddr ? 'Created' : 'Not Created',
         wallet_address: walletAddr || 'N/A',
-        created_at: p.created_at,
+        withdrawable_balance: withdrawable,
+        holding_balance: holding,
+        // total_balance kept for backwards compatibility with the legacy PDF
+        total_balance: withdrawable + holding,
+        total_held: Number(r.total_held || 0),
+        total_earned: Number(r.total_earned || 0),
+        total_deducted: Number(r.total_deducted || 0),
+        fees_paid: Number(r.fees_paid || 0),
+        pending_withdrawals_count: Number(r.pending_withdrawals_count || 0),
+        pending_withdrawals_amount: Number(r.pending_withdrawals_amount || 0),
+        completed_withdrawals_count: Number(r.completed_withdrawals_count || 0),
+        completed_withdrawals_amount: Number(r.completed_withdrawals_amount || 0),
+        created_at: r.created_at,
       };
     });
 
     // Apply minimum withdrawable balance filter
     if (minBalance > 0) {
-      reportData = reportData.filter(u => u.withdrawable_balance >= minBalance);
+      reportData = reportData.filter((u: any) => u.withdrawable_balance >= minBalance);
     }
+
+    // Sort by total held (descending) so the biggest holders appear first
+    reportData.sort((a: any, b: any) => b.total_held - a.total_held);
+
+    // Aggregate totals for verification
+    const totals = reportData.reduce((acc: any, u: any) => {
+      acc.withdrawable_balance += u.withdrawable_balance;
+      acc.holding_balance += u.holding_balance;
+      acc.total_held += u.total_held;
+      acc.total_earned += u.total_earned;
+      acc.total_deducted += u.total_deducted;
+      acc.fees_paid += u.fees_paid;
+      acc.pending_withdrawals_amount += u.pending_withdrawals_amount;
+      acc.completed_withdrawals_amount += u.completed_withdrawals_amount;
+      return acc;
+    }, {
+      withdrawable_balance: 0, holding_balance: 0, total_held: 0, total_earned: 0,
+      total_deducted: 0, fees_paid: 0, pending_withdrawals_amount: 0, completed_withdrawals_amount: 0,
+    });
 
     console.log(`[Admin BSK Report] Generated report for ${reportData.length} users`);
 
@@ -114,6 +109,7 @@ serve(async (req) => {
       success: true,
       total_users: reportData.length,
       generated_at: new Date().toISOString(),
+      totals,
       data: reportData,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
