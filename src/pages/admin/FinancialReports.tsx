@@ -10,6 +10,7 @@ import { format, subDays, startOfMonth } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { generateUserBskReportPDF } from "@/lib/generateUserBskReport";
 import { useToast } from "@/hooks/use-toast";
+import { AdminBSKUserReport } from "@/components/admin/AdminBSKUserReport";
 
 export default function FinancialReports() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
@@ -195,11 +196,17 @@ export default function FinancialReports() {
         </Card>
       </div>
 
-      <Tabs defaultValue="summary" className="w-full">
+      <Tabs defaultValue="bsk-report" className="w-full">
         <TabsList>
+          <TabsTrigger value="bsk-report">BSK Per-User</TabsTrigger>
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="bsk-report" className="mt-6">
+          <AdminBSKUserReport />
+        </TabsContent>
+
 
         <TabsContent value="summary" className="mt-6">
           <Card>

@@ -7,10 +7,21 @@ export interface UserBskData {
   withdrawable_balance: number;
   holding_balance: number;
   total_balance: number;
+  total_held?: number;
+  total_earned?: number;
+  total_deducted?: number;
+  fees_paid?: number;
+  pending_withdrawals_count?: number;
+  pending_withdrawals_amount?: number;
+  completed_withdrawals_count?: number;
+  completed_withdrawals_amount?: number;
   wallet_status: string;
   wallet_address: string;
   created_at: string;
 }
+
+const num = (v: number | undefined) =>
+  Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
 export function generateUserBskReportPDF(users: UserBskData[], generatedAt: string) {
   const doc = new jsPDF({ orientation: 'landscape' });
@@ -26,15 +37,19 @@ export function generateUserBskReportPDF(users: UserBskData[], generatedAt: stri
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('i-SMART — All Users BSK Balance Report', 148.5, 14, { align: 'center' });
+  doc.text('i-SMART — Complete BSK Balance Report (Per User)', 148.5, 14, { align: 'center' });
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Generated: ${format(new Date(generatedAt), 'PPpp')} | Total Users: ${users.length}`, 148.5, 23, { align: 'center' });
 
   // Summary
-  const totalWithdrawable = users.reduce((s, u) => s + u.withdrawable_balance, 0);
-  const totalHolding = users.reduce((s, u) => s + u.holding_balance, 0);
-  const totalBsk = totalWithdrawable + totalHolding;
+  const sum = (k: keyof UserBskData) => users.reduce((s, u) => s + Number(u[k] || 0), 0);
+  const totalWithdrawable = sum('withdrawable_balance');
+  const totalHolding = sum('holding_balance');
+  const totalHeld = totalWithdrawable + totalHolding;
+  const totalPending = sum('pending_withdrawals_amount');
+  const totalCompleted = sum('completed_withdrawals_amount');
+  const totalFees = sum('fees_paid');
   const walletsCreated = users.filter(u => u.wallet_status === 'Created').length;
 
   let y = 38;
@@ -44,24 +59,28 @@ export function generateUserBskReportPDF(users: UserBskData[], generatedAt: stri
   doc.text('Summary', 14, y);
   y += 7;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`Total Withdrawable BSK: ${totalWithdrawable.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, 14, y);
-  doc.text(`Total Holding BSK: ${totalHolding.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, 100, y);
-  doc.text(`Grand Total BSK: ${totalBsk.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, 186, y);
-  doc.text(`Wallets Created: ${walletsCreated} / ${users.length}`, 250, y);
+  doc.setFontSize(8);
+  doc.text(`Withdrawable: ${num(totalWithdrawable)}`, 14, y);
+  doc.text(`Locked/Holding: ${num(totalHolding)}`, 70, y);
+  doc.text(`Total Held: ${num(totalHeld)}`, 130, y);
+  doc.text(`Pending W/D: ${num(totalPending)}`, 185, y);
+  doc.text(`Completed W/D: ${num(totalCompleted)}`, 235, y);
+  y += 5;
+  doc.text(`Total Fees/Deductions: ${num(totalFees)}`, 14, y);
+  doc.text(`Wallets Created: ${walletsCreated} / ${users.length}`, 130, y);
 
   // Table
-  y += 10;
-  const colWidths = [8, 40, 55, 32, 32, 32, 24, 60];
+  y += 8;
+  const colWidths = [7, 32, 42, 26, 22, 24, 22, 28, 28, 18, 16];
   const colX = [14];
   for (let i = 1; i < colWidths.length; i++) colX.push(colX[i - 1] + colWidths[i - 1]);
-  const headers = ['#', 'Username', 'Email', 'Withdrawable', 'Holding', 'Total', 'Wallet', 'Wallet Address'];
+  const headers = ['#', 'Username', 'Email', 'Withdrawable', 'Locked', 'Total Held', 'Earned', 'Pending W/D', 'Done W/D', 'Fees', 'Wallet'];
 
   const drawTableHeader = (yPos: number) => {
     doc.setFillColor(headerBg[0], headerBg[1], headerBg[2]);
     doc.rect(14, yPos - 4, 269, 7, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
     headers.forEach((h, i) => doc.text(h, colX[i] + 1, yPos));
     return yPos + 7;
@@ -69,14 +88,13 @@ export function generateUserBskReportPDF(users: UserBskData[], generatedAt: stri
 
   y = drawTableHeader(y);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.5);
+  doc.setFontSize(6);
 
   const pageHeight = 200;
 
   users.forEach((user, idx) => {
     if (y > pageHeight) {
       doc.addPage();
-      // Re-draw header on new page
       doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.rect(0, 0, 297, 12, 'F');
       doc.setTextColor(255, 255, 255);
@@ -86,28 +104,31 @@ export function generateUserBskReportPDF(users: UserBskData[], generatedAt: stri
       y = 20;
       y = drawTableHeader(y);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
+      doc.setFontSize(6);
     }
 
-    // Alternate row bg
     if (idx % 2 === 0) {
       doc.setFillColor(241, 245, 249);
       doc.rect(14, y - 3.5, 269, 5, 'F');
     }
 
     doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    const totalHeldRow = user.total_held ?? (user.withdrawable_balance + user.holding_balance);
     const row = [
       String(idx + 1),
-      (user.username || 'N/A').substring(0, 22),
-      (user.email || 'N/A').substring(0, 30),
-      user.withdrawable_balance.toLocaleString('en-IN', { maximumFractionDigits: 2 }),
-      user.holding_balance.toLocaleString('en-IN', { maximumFractionDigits: 2 }),
-      user.total_balance.toLocaleString('en-IN', { maximumFractionDigits: 2 }),
-      user.wallet_status === 'Created' ? '✓' : '✗',
-      (user.wallet_address || 'N/A').substring(0, 34),
+      (user.username || 'N/A').substring(0, 18),
+      (user.email || 'N/A').substring(0, 24),
+      num(user.withdrawable_balance),
+      num(user.holding_balance),
+      num(totalHeldRow),
+      num(user.total_earned),
+      `${num(user.pending_withdrawals_amount)} (${user.pending_withdrawals_count || 0})`,
+      `${num(user.completed_withdrawals_amount)} (${user.completed_withdrawals_count || 0})`,
+      num(user.fees_paid),
+      user.wallet_status === 'Created' ? 'Y' : 'N',
     ];
 
-    row.forEach((val, i) => doc.text(val, colX[i] + 1, y));
+    row.forEach((val, i) => doc.text(String(val), colX[i] + 1, y));
     y += 5;
   });
 
