@@ -3,7 +3,7 @@ import { Home, Wallet, TrendingUp, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocation } from "react-router-dom"
 import { useNavigation } from "@/hooks/useNavigation"
-import bskCoinLogo from "@/assets/bsk-coin-logo.jpeg.asset.json"
+import ismartCoinLogo from "@/assets/ipg-coin-center.jpeg.asset.json"
 
 const navItems = [
   {
