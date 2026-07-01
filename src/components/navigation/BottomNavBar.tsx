@@ -3,7 +3,7 @@ import { Home, Wallet, TrendingUp, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocation } from "react-router-dom"
 import { useNavigation } from "@/hooks/useNavigation"
-import bskCoinLogo from "@/assets/bsk-coin-logo.jpeg.asset.json"
+import ismartCoinLogo from "@/assets/ipg-coin-center.jpeg.asset.json"
 
 const navItems = [
   {
@@ -132,8 +132,8 @@ export function BottomNavBar() {
             <span className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-[hsl(var(--card)/0.6)] p-[3px] backdrop-blur-xl shadow-[0_8px_24px_-6px_hsl(var(--primary)/0.5)]">
               <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 via-transparent to-secondary/30" />
               <img
-                src={bskCoinLogo.url}
-                alt="BSK Coin"
+                src={ismartCoinLogo.url}
+                alt="IPG Coin"
                 className="relative h-full w-full rounded-full object-cover"
                 draggable={false}
               />
