@@ -67,8 +67,8 @@ const LandingScreen: React.FC = () => {
     },
     {
       icon: <Users className="w-6 h-6" />,
-      title: 'Earn Rewards',
-      description: '50-level referral system & BSK tokens'
+      title: 'New Crypto Airdrops',
+      description: 'Free coins on KYC completion'
     },
     {
       icon: <Zap className="w-6 h-6" />,
