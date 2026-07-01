@@ -133,7 +133,7 @@ export function BottomNavBar() {
               <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 via-transparent to-secondary/30" />
               <img
                 src={ismartCoinLogo.url}
-                alt="BSK Coin"
+                alt="IPG Coin"
                 className="relative h-full w-full rounded-full object-cover"
                 draggable={false}
               />
