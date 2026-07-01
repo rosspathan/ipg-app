@@ -135,21 +135,22 @@ const LandingScreen: React.FC = () => {
             className="space-y-4"
           >
             <Button
-              onClick={() => navigate('/auth/signup')}
-              className="w-full bg-white text-primary hover:bg-white/90 font-semibold py-6 rounded-2xl text-lg uppercase"
-              size="lg"
-            >
-              Create Account
-            </Button>
-
-            <Button
               onClick={() => navigate('/auth/login')}
-              variant="outline"
-              className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 font-semibold py-6 rounded-2xl text-lg backdrop-blur-sm uppercase"
+              className="w-full bg-white text-primary hover:bg-white/90 font-bold py-7 rounded-2xl text-xl uppercase shadow-xl shadow-black/20"
               size="lg"
             >
               Sign In
             </Button>
+
+            <div className="text-center pt-1">
+              <span className="text-white/70 text-sm uppercase">Don't have an account? </span>
+              <button
+                onClick={() => navigate('/auth/signup')}
+                className="text-white font-semibold text-sm underline underline-offset-4 hover:text-white/80 transition-colors uppercase"
+              >
+                Create Account
+              </button>
+            </div>
 
             <button
               onClick={() => navigate('/auth/recover')}
