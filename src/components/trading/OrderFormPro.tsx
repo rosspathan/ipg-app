@@ -35,6 +35,8 @@ interface OrderFormProProps {
   kycHeadline?: string;
   /** Called when user taps "Verify now" in the KYC banner */
   onOpenKyc?: () => void;
+  /** Admin-set minimum tradable price (e.g. IPG floor). 0 = no floor */
+  minPrice?: number;
 }
 
 type OrderSide = 'buy' | 'sell';
@@ -189,6 +191,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   tickSize = 0.00000001, lotSize = 0.0001, onPlaceOrder, isPlacingOrder = false,
   bestBid = 0, bestAsk = 0, selectedPrice, compact = false, asks = [], bids = [],
   kycApproved = true, kycHeadline, onOpenKyc,
+  minPrice = 0,
 }) => {
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('limit');
@@ -221,6 +224,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     if (isBuy && ep > 0) return availableQuote / ep;
     return availableBase;
   }, [isBuy, availableQuote, availableBase, numPrice, referencePrice, orderType]);
+
+  // ── Admin price-floor validation (applies to BUY and SELL) ──
+  const floorPrice = minPrice > 0 ? minPrice : 0;
+  const belowFloor =
+    floorPrice > 0 && orderType === 'limit' && numPrice > 0 && numPrice < floorPrice;
+  const marketBlockedByFloor =
+    floorPrice > 0 && orderType === 'market' && referencePrice > 0 && referencePrice < floorPrice;
+  const floorViolation = belowFloor || marketBlockedByFloor;
+  const floorMessage = `Trading below the admin-set minimum price (${floorPrice} USDT) is not allowed.`;
 
   const requiredAmount = isBuy ? total * 1.005 : numAmount;
   const hasInsufficientBalance = numAmount > 0 && requiredAmount > availableBalance;
@@ -266,6 +278,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       return;
     }
     if (numAmount <= 0) return;
+    if (floorViolation) {
+      toast.error(floorMessage);
+      return;
+    }
     if (hasInsufficientBalance) {
       toast.error(`Insufficient ${balanceCurrency}`);
       return;
@@ -471,6 +487,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       </div>
 
+      {floorViolation && (
+        <div className={cn("text-[#FF4D4F] text-center bg-[#FF4D4F]/8 rounded-md font-bold px-2", compact ? "text-[9px] py-1" : "text-[10px] py-1.5")}>
+          {floorMessage}
+        </div>
+      )}
+
       {hasInsufficientBalance && kycApproved && (
         <div className={cn("text-[#FF4D4F] text-center bg-[#FF4D4F]/8 rounded-md font-bold", compact ? "text-[9px] py-1" : "text-[10px] py-1.5")}>
           Insufficient {balanceCurrency}
@@ -500,12 +522,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* ── CTA Button ── */}
       <button
         onClick={handleSubmit}
-        disabled={isPlacingOrder || numAmount <= 0 || !kycApproved}
+        disabled={isPlacingOrder || numAmount <= 0 || !kycApproved || floorViolation}
         className={cn(
           "w-full rounded-xl font-bold tracking-wider transition-all duration-200 active:scale-[0.98] mt-auto",
           "disabled:cursor-not-allowed uppercase",
           compact ? "h-[42px] text-[13px]" : "h-[44px] text-[13px]",
-          !kycApproved ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
+          !kycApproved || floorViolation ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           hasInsufficientBalance ? "bg-[hsl(230,20%,12%)] text-[#6B7280]" :
           numAmount <= 0 ? "bg-[hsl(230,20%,12%)] text-[#6B7280]/40" :
           isBuy
@@ -515,6 +537,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       >
         {!kycApproved
           ? 'KYC Required'
+          : floorViolation
+            ? `Min price ${floorPrice} ${quoteCurrency}`
           : isPlacingOrder
             ? <Loader2 className="h-4 w-4 animate-spin mx-auto" />
             : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
