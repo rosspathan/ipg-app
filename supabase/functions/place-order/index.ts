@@ -150,6 +150,22 @@ serve(async (req) => {
     }
 
     // ================================================================
+    // IPG PRICE FLOOR (admin-controlled): no IPG order below the floor
+    // ================================================================
+    if (symbol.toUpperCase().split('/')[0] === 'IPG') {
+      const { data: floorData } = await adminClient.rpc('get_ipg_floor_price');
+      const floorPrice = Number(floorData) || 0;
+      if (floorPrice > 0) {
+        if (type === 'limit' && Number(price) < floorPrice) {
+          return businessError(
+            `Trading below the admin-set minimum price (${floorPrice} USDT) is not allowed.`,
+            'BELOW_PRICE_FLOOR',
+          );
+        }
+      }
+    }
+
+    // ================================================================
     // ENHANCEMENT 4: RATE LIMITING
     // Fetch engine settings and pair settings in parallel
     // ================================================================

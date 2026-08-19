@@ -283,7 +283,17 @@ Deno.serve(async (req) => {
               : new BigNumber(String(buyOrder.price));    // Buyer is maker
           }
 
-          if (canMatch && executionPrice.isGreaterThan(0)) {
+          // IPG PRICE FLOOR: never execute an IPG trade below the admin-set floor
+          if (canMatch && executionPrice.isGreaterThan(0) && symbol.toUpperCase().split('/')[0] === 'IPG') {
+            const { data: floorData } = await supabase.rpc('get_ipg_floor_price');
+            const ipgFloor = new BigNumber(String(floorData ?? 0));
+            if (ipgFloor.isGreaterThan(0) && executionPrice.isLessThan(ipgFloor)) {
+              console.warn(`[IPG Floor] Skipping match at ${executionPrice.toString()} below floor ${ipgFloor.toString()}`);
+              canMatch = false;
+            }
+          }
+
+          if (canMatch && executionPrice.isGreaterThan(0) && !executionPrice.isNaN()) {
             // PHASE 4.3: Circuit Breaker Check - only after MIN_TRADES_FOR_CIRCUIT_BREAKER trades
             if (referencePrice && referenceSource !== 'none') {
               const priceDeviation = executionPrice.minus(referencePrice).abs().dividedBy(referencePrice);
