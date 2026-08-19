@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { ArrowLeft, ChevronDown, Search, Loader2, Star, BarChart2 } from "lucide-react";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
+import { useIpgPriceFloor, isIpgFloorSymbol } from "@/hooks/useIpgPriceFloor";
 import { OrderBookUnified } from "@/components/trading/OrderBookUnified";
 import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
 import { TradingHistoryTabs } from "@/components/trading/TradingHistoryTabs";
@@ -112,12 +113,17 @@ function TradingPairPageContent() {
     quantity: typeof e === 'object' ? (e.quantity ?? e.remaining_amount ?? e[1]) : e[1],
   })), []);
 
+  const { floorPrice: ipgFloorPrice } = useIpgPriceFloor();
+  const activeFloor = isIpgFloorSymbol(symbol) ? ipgFloorPrice : 0;
+
   const bookAsks = useMemo(() => normalizeBook(orderBook?.asks?.slice(0, 30)), [orderBook?.asks, normalizeBook]);
   const bookBids = useMemo(() => normalizeBook(orderBook?.bids?.slice(0, 30)), [orderBook?.bids, normalizeBook]);
 
   if (!pair) return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading…</div>;
 
-  const lastTradePrice = recentTrades.length > 0 ? recentTrades[0].price : pair.price;
+  const rawLastTradePrice = recentTrades.length > 0 ? recentTrades[0].price : pair.price;
+  // IPG PRICE FLOOR: never show a last price below the admin floor
+  const lastTradePrice = activeFloor > 0 ? Math.max(rawLastTradePrice, activeFloor) : rawLastTradePrice;
 
   const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
@@ -295,6 +301,16 @@ function TradingPairPageContent() {
           </div>
         )}
 
+        {/* ═══ IPG PRICE FLOOR NOTICE ═══ */}
+        {activeFloor > 0 && (
+          <div className={cn(
+            "rounded-lg border border-warning/35 bg-warning/10 text-warning px-2.5 py-1.5 text-[11px] font-medium",
+            isMobile ? "mx-1 mt-2" : "mx-1.5 mt-2"
+          )}>
+            IPG minimum trade price is set to {activeFloor} {pair.quoteAsset} by the admin. Orders below this price are not allowed.
+          </div>
+        )}
+
         {/* ═══ KYC GATE ═══ */}
         <div className={cn(isMobile ? "mx-1 mt-2" : "mx-1.5 mt-2")}>
           <KycLockedBanner action="trade" compact />
@@ -322,6 +338,7 @@ function TradingPairPageContent() {
                 selectedPrice={selectedPrice}
                 asks={bookAsks}
                 bids={bookBids}
+                minPrice={activeFloor}
                 compact
               />
             </div>
