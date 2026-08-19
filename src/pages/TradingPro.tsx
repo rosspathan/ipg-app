@@ -3,6 +3,7 @@ import { Menu, Settings, ChevronDown, BarChart3, MoreVertical } from 'lucide-rea
 import { useNavigate } from 'react-router-dom';
 import { TradingTabs } from '@/components/trading/TradingTabs';
 import { OrderFormPro } from '@/components/trading/OrderFormPro';
+import { useIpgPriceFloor, isIpgFloorSymbol } from '@/hooks/useIpgPriceFloor';
 import { OrderBookCompact } from '@/components/trading/OrderBookCompact';
 import { OpenOrderCard } from '@/components/trading/OpenOrderCard';
 import { useTradingPairs } from '@/hooks/useTradingPairs';
@@ -23,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const TradingPro: React.FC = () => {
   const navigate = useNavigate();
+  const { floorPrice: ipgFloorPrice } = useIpgPriceFloor();
   const [activeTab, setActiveTab] = useState('Spot');
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   
@@ -166,6 +168,7 @@ const TradingPro: React.FC = () => {
         {/* Left Column - Order Form */}
         <div className="lg:w-[50%] flex-shrink-0">
           <OrderFormPro
+            minPrice={isIpgFloorSymbol(selectedPair) ? ipgFloorPrice : 0}
             baseCurrency={base}
             quoteCurrency={quote}
             availableBase={baseBalance}
