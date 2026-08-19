@@ -7209,6 +7209,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ipg_price_floor_settings: {
+        Row: {
+          created_at: string
+          floor_price: number
+          id: string
+          is_active: boolean
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          floor_price?: number
+          id?: string
+          is_active?: boolean
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          floor_price?: number
+          id?: string
+          is_active?: boolean
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ismart_spin_config: {
         Row: {
           allow_holding_balance: boolean
@@ -15771,6 +15801,10 @@ export type Database = {
           withdrawable_balance: number
         }[]
       }
+      admin_cancel_ipg_sell_orders: {
+        Args: { p_only_below_floor?: boolean }
+        Returns: Json
+      }
       admin_credit_bsk_manual: {
         Args: {
           p_amount: number
@@ -16509,6 +16543,7 @@ export type Database = {
           user_count: number
         }[]
       }
+      get_ipg_floor_price: { Args: never; Returns: number }
       get_kyc_display_status: { Args: { _user_id: string }; Returns: string }
       get_masked_profile_data: {
         Args: {
@@ -16685,6 +16720,7 @@ export type Database = {
       }
       is_account_restricted: { Args: { _user_id: string }; Returns: boolean }
       is_bsk_holding_sunset: { Args: never; Returns: boolean }
+      is_ipg_floor_symbol: { Args: { p_symbol: string }; Returns: boolean }
       is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_wallet_address_blocked: {
         Args: { _address: string }
