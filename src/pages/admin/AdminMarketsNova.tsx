@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import LogoUpload from "@/components/LogoUpload";
 import CryptoLogo from "@/components/CryptoLogo";
 import { useAssetLogos } from "@/hooks/useAssetLogos";
+import IPGPriceFloorPanel from "@/components/admin/IPGPriceFloorPanel";
 
 interface Asset {
   id: string;
@@ -625,6 +626,9 @@ export default function AdminMarketsNova() {
           Add Token
         </Button>
       </div>
+
+      {/* IPG Price Floor Protection (admin-only) */}
+      <IPGPriceFloorPanel />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

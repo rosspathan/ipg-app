@@ -53,6 +53,15 @@ export function useTradingPairs(type?: 'listed' | 'all') {
         .select('*')
         .order('last_updated', { ascending: false });
 
+      // Admin-controlled IPG price floor (public read)
+      let ipgFloor = 0;
+      try {
+        const { data: floorData } = await supabase.rpc('get_ipg_floor_price' as any);
+        ipgFloor = Number(floorData) || 0;
+      } catch {
+        ipgFloor = 0;
+      }
+
       // Create a map of market_id to price data
       const priceMap = new Map();
       prices?.forEach(price => {
@@ -72,11 +81,24 @@ export function useTradingPairs(type?: 'listed' | 'all') {
         
         // Use market_prices.current_price (updated by trigger on trades)
         // Fallback to asset initial_price if no market_prices entry yet
-        const currentPrice = priceData?.current_price || getFallbackPrice(market.base_asset.symbol);
-        
-        const priceChange24h = priceData?.price_change_percentage_24h || 0;
-        const high24h = priceData?.high_24h || currentPrice * 1.05;
-        const low24h = priceData?.low_24h || currentPrice * 0.95;
+        const rawPrice = priceData?.current_price || getFallbackPrice(market.base_asset.symbol);
+        const rawChange24h = priceData?.price_change_percentage_24h || 0;
+
+        // IPG PRICE FLOOR: never display an IPG price below the admin floor
+        const isIpgMarket = market.base_asset.symbol.toUpperCase() === 'IPG';
+        const applyFloor = isIpgMarket && ipgFloor > 0 && rawPrice < ipgFloor;
+        const currentPrice = applyFloor ? ipgFloor : rawPrice;
+
+        // Recalculate 24h change against the clamped price
+        let priceChange24h = rawChange24h;
+        if (applyFloor) {
+          const prevPrice = rawPrice / (1 + rawChange24h / 100);
+          priceChange24h = prevPrice > 0 ? ((currentPrice - prevPrice) / prevPrice) * 100 : 0;
+        }
+        const high24h = Math.max(priceData?.high_24h || currentPrice * 1.05, currentPrice);
+        const low24h = applyFloor
+          ? currentPrice
+          : (priceData?.low_24h || currentPrice * 0.95);
         const volume24h = priceData?.volume_24h || 0;
 
         return {
