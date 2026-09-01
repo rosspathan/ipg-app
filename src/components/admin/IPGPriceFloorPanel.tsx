@@ -14,8 +14,8 @@ import { toast } from "sonner";
  * and every write is re-validated server-side.
  */
 export default function IPGPriceFloorPanel() {
-  const [floorPrice, setFloorPrice] = useState<string>("500");
-  const [isActive, setIsActive] = useState(true);
+  const [floorPrice, setFloorPrice] = useState<string>("0");
+  const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
