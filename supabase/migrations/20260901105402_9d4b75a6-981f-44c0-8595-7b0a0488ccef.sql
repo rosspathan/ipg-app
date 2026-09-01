@@ -1,0 +1,1 @@
+UPDATE public.ipg_price_floor_settings SET floor_price = 0, is_active = false, updated_at = now() WHERE singleton = true; ALTER TABLE public.ipg_price_floor_settings ALTER COLUMN floor_price SET DEFAULT 0;
