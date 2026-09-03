@@ -1,0 +1,2 @@
+ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS show_in_portfolio boolean NOT NULL DEFAULT true;
+COMMENT ON COLUMN public.assets.show_in_portfolio IS 'Admin toggle: whether this token appears in user wallet/portfolio lists.';

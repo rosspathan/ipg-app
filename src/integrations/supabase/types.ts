@@ -861,6 +861,7 @@ export type Database = {
           network: string | null
           price_currency: string | null
           risk_label: string | null
+          show_in_portfolio: boolean
           symbol: string
           trading_enabled: boolean | null
           updated_at: string | null
@@ -888,6 +889,7 @@ export type Database = {
           network?: string | null
           price_currency?: string | null
           risk_label?: string | null
+          show_in_portfolio?: boolean
           symbol: string
           trading_enabled?: boolean | null
           updated_at?: string | null
@@ -915,6 +917,7 @@ export type Database = {
           network?: string | null
           price_currency?: string | null
           risk_label?: string | null
+          show_in_portfolio?: boolean
           symbol?: string
           trading_enabled?: boolean | null
           updated_at?: string | null
