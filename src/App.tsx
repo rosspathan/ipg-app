@@ -48,6 +48,8 @@ import AuthOnboardingEntry from "@/pages/auth/AuthOnboardingEntry";
 // Clean Admin Pages
 import AdminDashboardClean from "./pages/admin/AdminDashboardClean";
 import AdminDashboardUnified from "./pages/admin/AdminDashboardUnified";
+const AdminDashboardHome = React.lazy(() => import("./pages/admin/AdminDashboardHome"));
+const AdminTokenManagement = React.lazy(() => import("./pages/admin/AdminTokenManagement"));
 import AdminUsersClean from "./pages/admin/AdminUsersClean";
 import AdminProgramsClean from "./pages/admin/AdminProgramsClean";
 import AdminSettingsClean from "./pages/admin/AdminSettingsClean";
@@ -613,8 +615,10 @@ function AppContent() {
                   </AdminRouteNew>
                 </AuthProviderAdmin>
               }>
-                <Route index element={<AdminDashboardUnified />} />
-                <Route path="dashboard" element={<AdminDashboardUnified />} />
+                <Route index element={<React.Suspense fallback={<LoadingFallback />}><AdminDashboardHome /></React.Suspense>} />
+                <Route path="dashboard" element={<React.Suspense fallback={<LoadingFallback />}><AdminDashboardHome /></React.Suspense>} />
+                <Route path="dashboard/legacy" element={<AdminDashboardUnified />} />
+                <Route path="tokens" element={<React.Suspense fallback={<LoadingFallback />}><AdminTokenManagement /></React.Suspense>} />
                 
                 {/* Users Management */}
                 <Route path="users" element={<React.Suspense fallback={<LoadingFallback />}><AdminUsersManagement /></React.Suspense>} />
