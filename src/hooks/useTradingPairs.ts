@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface TradingPair {
@@ -23,6 +24,24 @@ export interface TradingPair {
 }
 
 export function useTradingPairs(type?: 'listed' | 'all') {
+  const queryClient = useQueryClient();
+
+  // Realtime: new/updated tokens or markets from Admin → Token Management appear instantly
+  useEffect(() => {
+    const channel = supabase
+      .channel('trading-pairs-catalog')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'markets' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['trading-pairs'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['trading-pairs'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['trading-pairs'],
     queryFn: async () => {

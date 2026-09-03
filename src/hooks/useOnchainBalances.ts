@@ -126,6 +126,7 @@ export function useOnchainBalances(): OnchainBalancesResult {
         .from('assets')
         .select('symbol, name, contract_address, decimals, network, logo_url')
         .eq('is_active', true)
+        .eq('show_in_portfolio', true)
         .or('network.ilike.%bep20%,network.ilike.%bsc%')
       
       if (dbAssets) {
@@ -153,6 +154,16 @@ export function useOnchainBalances(): OnchainBalancesResult {
     }
 
     fetchAssets()
+
+    // Re-fetch the token catalog when admin adds/edits tokens
+    const assetsChannel = supabase
+      .channel('onchain-assets-catalog')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => {
+        fetchAssets()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(assetsChannel) }
   }, [])
 
   // Query balances: always fetch LIVE RPC balances for instant reflection,
