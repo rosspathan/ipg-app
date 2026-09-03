@@ -70,6 +70,7 @@ export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
           .from('assets')
           .select('id, symbol, name, logo_url, network, withdraw_enabled, withdraw_fee')
           .eq('withdraw_enabled', true)
+          .eq('show_in_portfolio', true)
           .neq('network', 'fiat')
           .neq('network', 'FIAT')
           .order('symbol');

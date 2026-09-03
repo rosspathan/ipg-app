@@ -126,6 +126,7 @@ export function useOnchainBalances(): OnchainBalancesResult {
         .from('assets')
         .select('symbol, name, contract_address, decimals, network, logo_url')
         .eq('is_active', true)
+        .eq('show_in_portfolio', true)
         .or('network.ilike.%bep20%,network.ilike.%bsc%')
       
       if (dbAssets) {

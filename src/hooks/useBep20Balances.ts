@@ -99,6 +99,7 @@ export function useBep20Balances() {
         .select('id, symbol, name, contract_address, decimals, logo_url')
         .or('network.ilike.%bep20%,network.ilike.%bsc%')
         .eq('is_active', true)
+        .eq('show_in_portfolio', true)
 
       if (data) {
         setAssets(data.map(a => ({
