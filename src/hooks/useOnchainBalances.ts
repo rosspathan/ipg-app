@@ -154,6 +154,16 @@ export function useOnchainBalances(): OnchainBalancesResult {
     }
 
     fetchAssets()
+
+    // Re-fetch the token catalog when admin adds/edits tokens
+    const assetsChannel = supabase
+      .channel('onchain-assets-catalog')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => {
+        fetchAssets()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(assetsChannel) }
   }, [])
 
   // Query balances: always fetch LIVE RPC balances for instant reflection,
