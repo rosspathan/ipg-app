@@ -1,8 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { NavigationStateManager } from "@/components/navigation/NavigationGuards";
 import { AdminHeaderUnified } from "@/components/admin/unified/AdminHeaderUnified";
-import { AdminSidebarUnified } from "@/components/admin/unified/AdminSidebarUnified";
-
+import { AdminSidebarUnified, ADMIN_SIDEBAR_WIDTH } from "@/components/admin/unified/AdminSidebarUnified";
 import { MobileDrawerSidebar } from "@/components/admin/unified/MobileDrawerSidebar";
 import { CommandPalette } from "@/components/admin/unified/CommandPalette";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -11,65 +10,58 @@ import { useTransferNotifications } from "@/hooks/useTransferNotifications";
 import { useTheme } from "next-themes";
 
 /**
- * Unified Admin Layout - World-Class Admin Panel
- * Features:
- * - Responsive sidebar (desktop) + bottom dock (mobile)
+ * Unified Admin Layout
+ * - Desktop: sidebar fixed to the left edge (260px, full height)
+ * - Main content on the right with page title + breadcrumbs header
+ * - Mobile/tablet: slide-in drawer with the same sidebar
  * - Command palette (⌘K)
- * - Consistent spacing and design
- * - Safe area support
  */
 const AdminLayoutUnified = () => {
   const [commandOpen, setCommandOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { setTheme } = useTheme();
-  
-  // Force dark mode in admin panel
+
   useEffect(() => {
     setTheme("dark");
   }, [setTheme]);
-  
-  // Enable real-time notifications for large transfers
+
   useTransferNotifications();
 
   return (
     <NavigationStateManager>
       <SidebarProvider defaultOpen={true}>
-        <div className="flex min-h-screen w-full bg-[hsl(240_35%_7%)] text-foreground">
-          {/* Desktop Sidebar - Hidden on mobile/tablet */}
-          <div className="hidden lg:block">
-            <AdminSidebarUnified />
+        <div className="min-h-screen w-full bg-[hsl(240_35%_7%)] text-foreground">
+          {/* Desktop sidebar — fixed to the left edge, full viewport height */}
+          <div
+            className="hidden lg:block fixed inset-y-0 left-0 z-50"
+            style={{ width: ADMIN_SIDEBAR_WIDTH }}
+          >
+            <AdminSidebarUnified className="h-screen" />
           </div>
 
-          {/* Mobile Drawer Sidebar - slides in on lg:hidden */}
-          <MobileDrawerSidebar
-            open={mobileMenuOpen}
-            onClose={() => setMobileMenuOpen(false)}
-          />
+          {/* Mobile drawer */}
+          <MobileDrawerSidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-            {/* Header - Always visible */}
+          {/* Main column, offset by the sidebar width on desktop */}
+          <div
+            className="flex flex-col min-h-screen min-w-0 lg:pl-[var(--admin-sidebar-w)]"
+            style={{ ["--admin-sidebar-w" as string]: `${ADMIN_SIDEBAR_WIDTH}px` }}
+          >
             <AdminHeaderUnified
               onCommandOpen={() => setCommandOpen(true)}
               onMobileMenuOpen={() => setMobileMenuOpen(true)}
             />
 
-            {/* Page Content - Scrollable */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden">
+            <main className="flex-1 min-w-0">
               <div
                 className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6"
-                style={{
-                  paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))",
-                }}
+                style={{ paddingBottom: "calc(3rem + env(safe-area-inset-bottom))" }}
               >
                 <Outlet />
               </div>
             </main>
           </div>
 
-          {/* Mobile Bottom Dock is intentionally removed from admin — sidebar-only navigation */}
-
-          {/* Command Palette - Global keyboard shortcut */}
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         </div>
       </SidebarProvider>
