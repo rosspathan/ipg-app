@@ -1,6 +1,8 @@
 import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
-import { Search, User, Menu } from "lucide-react";
+import { Search, User, Menu, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Breadcrumb,
@@ -40,10 +42,10 @@ export function AdminHeaderUnified({ onCommandOpen, onMobileMenuOpen }: AdminHea
 
   return (
     <header
-      className="sticky top-0 z-40 bg-[hsl(235_28%_11%/0.92)] border-b border-[hsl(235_20%_22%/0.25)] backdrop-blur-xl"
+      className="z-40 h-16 shrink-0 border-b border-[hsl(235_20%_22%/0.25)] bg-[hsl(235_28%_11%/0.92)] backdrop-blur-xl"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="flex items-center justify-between min-h-16 px-4 lg:px-8 py-2 gap-3">
+      <div className="flex h-full min-w-0 items-center justify-between gap-2 px-4 lg:px-8">
         {/* Left: hamburger (mobile) + title + breadcrumbs */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <Button
@@ -56,11 +58,11 @@ export function AdminHeaderUnified({ onCommandOpen, onMobileMenuOpen }: AdminHea
             <Menu className="h-5 w-5" />
           </Button>
 
-          <div className="lg:hidden flex items-center shrink-0">
+          <div className="hidden shrink-0 sm:flex lg:hidden">
             <BrandLogoBlink />
           </div>
 
-          <div className="min-w-0 flex flex-col justify-center">
+          <div className="flex min-w-0 flex-col justify-center">
             <Breadcrumb className="hidden sm:block">
               <BreadcrumbList className="text-xs sm:text-xs gap-1">
                 <BreadcrumbItem>
@@ -102,7 +104,7 @@ export function AdminHeaderUnified({ onCommandOpen, onMobileMenuOpen }: AdminHea
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
@@ -114,15 +116,25 @@ export function AdminHeaderUnified({ onCommandOpen, onMobileMenuOpen }: AdminHea
             <Search className="h-5 w-5" />
           </Button>
           <AdminNotificationCenter />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/admin/profile")}
-            className="h-10 w-10 text-[hsl(240_10%_70%)] hover:text-[hsl(0_0%_98%)] hover:bg-[hsl(235_28%_15%)]"
-            aria-label="Admin profile"
-          >
-            <User className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" aria-label="Open admin account menu">
+                <Avatar className="h-8 w-8 border border-[hsl(262_100%_65%/0.45)]">
+                  <AvatarFallback className="bg-[hsl(262_100%_65%/0.14)] text-[hsl(262_100%_78%)]">A</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate("/admin/profile")} className="min-h-10 gap-2">
+                <User className="h-4 w-4" />
+                Admin profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/admin/settings")} className="min-h-10 gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
