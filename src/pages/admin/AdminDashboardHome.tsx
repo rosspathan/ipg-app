@@ -106,7 +106,7 @@ export default function AdminDashboardHome() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
         <DashboardStat label="Pending withdrawals" value={fmt(data?.pendingWithdrawals)} icon={ArrowUpFromLine} onClick={() => navigate("/admin/crypto-withdrawals")} alert={(data?.pendingWithdrawals ?? 0) > 0} />
         <DashboardStat label="Total users" value={fmt(data?.totalUsers)} icon={Users} onClick={() => navigate("/admin/users")} />
         <DashboardStat label="KYC pending" value={fmt(data?.kycPending)} icon={UserCheck} onClick={() => navigate("/admin/kyc-review")} />
