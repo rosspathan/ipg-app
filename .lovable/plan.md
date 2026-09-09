@@ -1,54 +1,41 @@
-# Scratch Card — Live Rollout Plan
+# Admin Shell Responsive Layout Refactor
 
-Your choices: **build code AND go live now**, cards issued **on referral signup**, payout **auto on claim**, reward **1–5 BSK**.
+## Goal
+Rebuild only the `/admin` presentation shell so it uses the full viewport, supports a persistent desktop icon rail, and remains clean at desktop, tablet, and phone sizes without changing routes, data, actions, or user-facing screens.
 
-## What already exists (verified)
-- DB schema, treasury invariant + phase-lock triggers.
-- RPCs: `scratch_card_reveal`, `scratch_card_create_claim_batch`, `scratch_card_mark_broadcasting`, `scratch_card_confirm_batch`, `scratch_card_fail_batch`, admin config/overview.
-- Edge functions: `scratch-claim-broadcaster` (real BSC signing path ready, gated by `SCRATCH_DRY_RUN`), `scratch-claim-confirmer` (real receipt polling ready).
-- `SCRATCH_HOTWALLET_PRIVATE_KEY` secret stored. Hot wallet funded on-chain with test BNB + BSK.
+## Implementation
 
-## Gaps that must be built
-1. **No card-creation path** — nothing issues a card on referral signup.
-2. **No treasury-funding RPC** — the on-chain BSK in the hot wallet is NOT reflected in `scratch_card_treasury_balances`, so `available_bsk = 0` and every reveal becomes non-claimable `treasury_pending`.
-3. **No auto-claim orchestration** — reveal → batch → broadcast → confirm is not chained for a user action.
-4. **No user UI**.
+### 1. Full-viewport admin shell
+- Replace the current fixed/offset layout with a single `flex h-screen w-full overflow-hidden` admin root.
+- Render the admin sidebar as the first desktop flex child.
+- Put the topbar and a single independently scrolling `<main>` in the second `min-w-0 flex-1` column.
+- Constrain only page content to `max-w-[1400px]` with the requested responsive 4/6/8 spacing; remove the existing admin shell wrappers that create narrow or competing scroll regions.
 
-## Build steps
+### 2. Responsive sidebar and mobile drawer
+- Keep the current navigation groups, links, search, badges, active-state behavior, and stored open-group state unchanged.
+- Add a desktop expanded/collapsed state persisted locally: 264px expanded and 72px icon rail collapsed.
+- In rail mode, keep icons usable with accessible labels/tooltips and provide a visible expand control.
+- Below 1024px, hide the desktop sidebar and use the existing full-height drawer at 280px with backdrop, Escape/backdrop/navigation close behavior, and body scroll locking.
+- Ensure the navigation area is the only sidebar scrollbar.
 
-### 1. Migration — card issuance on referral signup
-- New `scratch_issue_card(p_user_id)` (SECURITY DEFINER, service_role/admin): inserts one `scratch_cards` row (`source='referral_signup'`, `status='unscratched'`), with a guard so the campaign must be enabled and one-card-per-referral (idempotent on the referee event).
-- Trigger on `referral_links_new` (AFTER UPDATE OF `locked_at`, when `sponsor_id` is set and `locked_at` transitions to non-null): issues a card to the **sponsor** (referrer). De-dup via a unique key on (sponsor, referee) so a given referee only ever mints one card for the sponsor.
-- Set reward range to 1–5 (already `min=1,max=5`; confirm only).
+### 3. Admin topbar
+- Keep the 64px topbar fixed within the admin shell column.
+- Preserve mobile menu, breadcrumbs, command search, notifications, and profile navigation while presenting the profile action as an avatar menu.
+- Keep all controls at least 40px and ensure the title/action areas can shrink without clipping.
 
-### 2. Migration — treasury funding RPC
-- `scratch_fund_treasury_from_deposit(p_tx_hash, p_amount)` (admin/service_role): records a verified `scratch_card_funding_deposits` row and atomically `funded_bsk += amount`, `available_bsk += amount`, writes a `fund` ledger row (invariant preserved). This is how the on-chain hot-wallet BSK becomes claimable reserve. Admin-only, tx-verified.
+### 4. Dashboard layout
+- Add the dashboard title/subtitle row with Refresh and Add Token actions, allowing clean wrapping on narrow screens.
+- Use exactly `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4` for the four statistics.
+- Build admin-only stat cards with a normal flex row for label and icon, wrapped labels, and `text-3xl tabular-nums` values.
+- Place Withdrawal queue and Quick links in `grid lg:grid-cols-2 gap-4`.
+- Preserve all existing dashboard queries, counts, destinations, and actions; update only presentation.
+- Keep quick links as icon chip + shrink-safe text block + chevron.
 
-### 3. Edge function — `scratch-claim` (auto on claim)
-- Authenticated (validates caller JWT = card owner). Steps, server-side:
-  1. `scratch_card_create_claim_batch([card_id])` as the user.
-  2. Invoke `scratch-claim-broadcaster` internally → real signed BSC transfer (when `SCRATCH_DRY_RUN=false`).
-  3. Return `batch_id` + `tx_hash`.
-- Reveal stays a separate explicit user action (`scratch_card_reveal`); claim is the auto-broadcast step.
+### 5. Verification
+- Check `/admin` at 1440×900, 1024×768, 768×1024, and 390×844 for horizontal overflow, clipping, overlap, expected 4/4/2/1 stat columns, drawer behavior, and single-scroll-region behavior.
+- Open the existing home, trade, and portfolio user pages and compare their rendered structure to confirm the admin-only changes did not affect them.
+- Confirm the latest application build has no errors.
 
-### 4. Confirmer cron
-- Add a scheduled job (pg_cron + `net.http_post`) every ~1 min that calls `scratch-claim-confirmer` for each batch in `broadcasting` status, advancing it to `confirmed` (cards→claimed, treasury distribute) once ≥ `min_confirmations`.
-
-### 5. User UI (`/app/scratch-cards`)
-- Lists the user's cards; scratch-to-reveal animation; on reveal shows reward; "Claim to my wallet" button calls `scratch-claim`; shows tx status + BscScan link; reflects `treasury_pending` clearly when unbacked.
-- Requires the user to have `profiles.wallet_address` + approved KYC (config `require_kyc=true`).
-
-### 6. Go-live flip (sequenced, each gated)
-- Migration: `launch_phase = 2`, then `is_enabled = true`, `campaign_start_at = now()`.
-- Fund the treasury via step-2 RPC to match the on-chain BSK already in the wallet (amount you confirm).
-- Flip `SCRATCH_DRY_RUN=false` via the secret form.
-
-## Risks / decisions to confirm
-- **Treasury funding amount**: how much BSK is currently in the hot wallet that I should record as funded/available? Until this is done, no live payout can occur.
-- **Auto-broadcast on every claim** signs from the hot wallet on user action; safety caps in place: per-batch ≤ 25 BSK, BNB gas floor, key↔wallet address match, chainId 56, on-chain dedup. KYC + valid wallet required.
-- **Per-user / global rate limits** for card issuance and reveals (recommend a daily cap) — confirm if you want limits beyond one-card-per-referral.
-
-## Technical notes
-- `enforce_scratch_config_phase_lock` blocks enabling while `launch_phase=1`; the flip migration sets phase 2 first, then enables, in one transaction.
-- Sending BSK to `profiles.wallet_address` does not create a `custodial_deposit`; scanner dedups via `source='scratch_card_reward'` so no double credit.
-- All treasury mutations keep `funded = available + claimable_reserved + distributed`.
+## Scope constraints
+- Modify only admin layout, admin sidebar/topbar/drawer, and admin dashboard files.
+- Do not change shared UI components, user layouts/pages, authentication, routes, data queries, Supabase, edge functions, or business logic.
