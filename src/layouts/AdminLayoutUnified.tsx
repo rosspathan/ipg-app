@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { NavigationStateManager } from "@/components/navigation/NavigationGuards";
 import { AdminHeaderUnified } from "@/components/admin/unified/AdminHeaderUnified";
-import { AdminSidebarUnified, ADMIN_SIDEBAR_WIDTH } from "@/components/admin/unified/AdminSidebarUnified";
+import { AdminSidebarUnified } from "@/components/admin/unified/AdminSidebarUnified";
 import { MobileDrawerSidebar } from "@/components/admin/unified/MobileDrawerSidebar";
 import { CommandPalette } from "@/components/admin/unified/CommandPalette";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -19,44 +19,49 @@ import { useTheme } from "next-themes";
 const AdminLayoutUnified = () => {
   const [commandOpen, setCommandOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("admin-sidebar-collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
   const { setTheme } = useTheme();
 
   useEffect(() => {
     setTheme("dark");
   }, [setTheme]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("admin-sidebar-collapsed", String(sidebarCollapsed));
+    } catch {
+      /* ignore storage failures */
+    }
+  }, [sidebarCollapsed]);
+
   useTransferNotifications();
 
   return (
     <NavigationStateManager>
       <SidebarProvider defaultOpen={true}>
-        <div className="min-h-screen w-full bg-[hsl(240_35%_7%)] text-foreground">
-          {/* Desktop sidebar — fixed to the left edge, full viewport height */}
-          <div
-            className="hidden lg:block fixed inset-y-0 left-0 z-50"
-            style={{ width: ADMIN_SIDEBAR_WIDTH }}
-          >
-            <AdminSidebarUnified className="h-screen" />
-          </div>
+        <div className="flex h-screen w-full overflow-hidden bg-[hsl(240_35%_7%)] text-foreground">
+          <AdminSidebarUnified
+            collapsed={sidebarCollapsed}
+            onCollapsedChange={setSidebarCollapsed}
+            className={sidebarCollapsed ? "hidden h-full w-[72px] shrink-0 lg:flex" : "hidden h-full w-[264px] shrink-0 lg:flex"}
+          />
 
-          {/* Mobile drawer */}
           <MobileDrawerSidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-          {/* Main column, offset by the sidebar width on desktop */}
-          <div
-            className="flex flex-col min-h-screen min-w-0 lg:pl-[var(--admin-sidebar-w)]"
-            style={{ ["--admin-sidebar-w" as string]: `${ADMIN_SIDEBAR_WIDTH}px` }}
-          >
+          <div className="flex min-w-0 flex-1 flex-col">
             <AdminHeaderUnified
               onCommandOpen={() => setCommandOpen(true)}
               onMobileMenuOpen={() => setMobileMenuOpen(true)}
             />
 
-            <main className="flex-1 min-w-0">
-              <div
-                className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6"
-                style={{ paddingBottom: "calc(3rem + env(safe-area-inset-bottom))" }}
-              >
+            <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+              <div className="mx-auto w-full max-w-[1400px] p-4 md:p-6 lg:p-8">
                 <Outlet />
               </div>
             </main>

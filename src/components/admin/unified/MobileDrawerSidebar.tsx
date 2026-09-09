@@ -39,7 +39,7 @@ export function MobileDrawerSidebar({ open, onClose }: MobileDrawerSidebarProps)
 
       <div
         className={cn(
-          "fixed top-0 left-0 h-screen w-[260px] z-[70] lg:hidden shadow-2xl shadow-black/60",
+          "fixed left-0 top-0 z-[70] h-screen w-[280px] max-w-[calc(100vw-2rem)] lg:hidden shadow-2xl shadow-black/60",
           "transition-transform duration-300 ease-in-out",
           open ? "translate-x-0" : "-translate-x-full"
         )}
