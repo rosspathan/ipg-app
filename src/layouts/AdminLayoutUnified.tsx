@@ -45,7 +45,7 @@ const AdminLayoutUnified = () => {
   return (
     <NavigationStateManager>
       <SidebarProvider defaultOpen={true}>
-        <div className="flex h-screen w-full overflow-hidden bg-[hsl(240_35%_7%)] text-foreground">
+        <div className="flex h-screen w-full overflow-hidden">
           <AdminSidebarUnified
             collapsed={sidebarCollapsed}
             onCollapsedChange={setSidebarCollapsed}
@@ -54,7 +54,7 @@ const AdminLayoutUnified = () => {
 
           <MobileDrawerSidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col bg-[hsl(240_35%_7%)] text-foreground">
             <AdminHeaderUnified
               onCommandOpen={() => setCommandOpen(true)}
               onMobileMenuOpen={() => setMobileMenuOpen(true)}
