@@ -62,7 +62,7 @@ export function AdminHeaderUnified({ onCommandOpen, onMobileMenuOpen }: AdminHea
             <BrandLogoBlink />
           </div>
 
-          <div className="min-w-0 flex flex-col justify-center">
+          <div className="flex min-w-0 flex-col justify-center">
             <Breadcrumb className="hidden sm:block">
               <BreadcrumbList className="text-xs sm:text-xs gap-1">
                 <BreadcrumbItem>
@@ -104,7 +104,7 @@ export function AdminHeaderUnified({ onCommandOpen, onMobileMenuOpen }: AdminHea
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"

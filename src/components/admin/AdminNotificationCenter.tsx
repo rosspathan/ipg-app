@@ -54,6 +54,7 @@ export function AdminNotificationCenter() {
           variant="ghost" 
           size="icon" 
           className="h-10 w-10 text-[hsl(240_10%_70%)] hover:text-[hsl(0_0%_98%)] hover:bg-[hsl(235_28%_15%)] relative"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (

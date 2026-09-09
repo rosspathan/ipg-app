@@ -118,8 +118,8 @@ export function DataGridAdaptive<T>({
       </div>
 
       {/* Desktop Table (future implementation) */}
-      <div className="hidden md:block">
-        <div className="rounded-2xl border border-[hsl(225_24%_22%/0.16)] overflow-hidden">
+      <div className="hidden min-w-0 overflow-x-auto md:block">
+        <div className="min-w-max rounded-2xl border border-[hsl(225_24%_22%/0.16)] overflow-hidden">
           <table className="w-full">
             <thead className="bg-[hsl(229_30%_16%)] border-b border-[hsl(225_24%_22%/0.16)]">
               <tr>

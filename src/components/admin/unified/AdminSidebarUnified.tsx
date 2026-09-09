@@ -220,7 +220,14 @@ export function AdminSidebarUnified({ onNavigate, className, collapsed = false, 
               group={group}
               items={items}
               open={q ? true : !!openGroups[group.id]}
-              onToggle={() => toggle(group.id)}
+              onToggle={() => {
+                if (collapsed) {
+                  onCollapsedChange?.(false);
+                  setOpenGroups((prev) => ({ ...prev, [group.id]: true }));
+                  return;
+                }
+                toggle(group.id);
+              }}
               pathname={location.pathname}
               onNavigate={handleNavigate}
               collapsed={collapsed}
