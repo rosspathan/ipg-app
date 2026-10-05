@@ -296,6 +296,9 @@ const LoanDetailsPageUser = React.lazy(() => import("./pages/programs/LoanDetail
 const queryClient = new QueryClient();
 
 function App() {
+  // Record every sign-in / session restore with device + location details
+  React.useEffect(() => initLoginTracker(), []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
