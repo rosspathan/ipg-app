@@ -43,13 +43,22 @@ Deno.serve(async (req) => {
     const user_id = claimsData.claims.sub as string;
     const verifiedEmail = (claimsData.claims.email as string | undefined) ?? null;
 
-    let body: { user_agent?: string; referer?: string } = {};
+    let body: Record<string, unknown> = {};
     try {
       body = await req.json();
     } catch {
       body = {};
     }
-    const { user_agent, referer } = body;
+    const {
+      user_agent, referer, event_type, device_type, os, browser, screen,
+      language, timezone, platform, device_id,
+      gps_latitude, gps_longitude, gps_accuracy,
+    } = body as {
+      user_agent?: string; referer?: string; event_type?: string;
+      device_type?: string; os?: string; browser?: string; screen?: string;
+      language?: string; timezone?: string; platform?: string; device_id?: string;
+      gps_latitude?: number; gps_longitude?: number; gps_accuracy?: number;
+    };
 
     console.log("[log-login] Authenticated login event for:", verifiedEmail || user_id);
 
