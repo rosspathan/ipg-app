@@ -127,6 +127,18 @@ Deno.serve(async (req) => {
       latitude: geo.lat || null,
       longitude: geo.lon || null,
       isp: geo.isp || null,
+      event_type: event_type || "sign_in",
+      device_type: device_type || null,
+      os: os || null,
+      browser: browser || null,
+      screen: screen || null,
+      language: language || null,
+      timezone: timezone || null,
+      platform: platform || null,
+      device_id: device_id || null,
+      gps_latitude: typeof gps_latitude === "number" ? gps_latitude : null,
+      gps_longitude: typeof gps_longitude === "number" ? gps_longitude : null,
+      gps_accuracy: typeof gps_accuracy === "number" ? gps_accuracy : null,
     });
 
     if (error) {
