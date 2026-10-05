@@ -43,13 +43,22 @@ Deno.serve(async (req) => {
     const user_id = claimsData.claims.sub as string;
     const verifiedEmail = (claimsData.claims.email as string | undefined) ?? null;
 
-    let body: { user_agent?: string; referer?: string } = {};
+    let body: Record<string, unknown> = {};
     try {
       body = await req.json();
     } catch {
       body = {};
     }
-    const { user_agent, referer } = body;
+    const {
+      user_agent, referer, event_type, device_type, os, browser, screen,
+      language, timezone, platform, device_id,
+      gps_latitude, gps_longitude, gps_accuracy,
+    } = body as {
+      user_agent?: string; referer?: string; event_type?: string;
+      device_type?: string; os?: string; browser?: string; screen?: string;
+      language?: string; timezone?: string; platform?: string; device_id?: string;
+      gps_latitude?: number; gps_longitude?: number; gps_accuracy?: number;
+    };
 
     console.log("[log-login] Authenticated login event for:", verifiedEmail || user_id);
 
@@ -118,6 +127,18 @@ Deno.serve(async (req) => {
       latitude: geo.lat || null,
       longitude: geo.lon || null,
       isp: geo.isp || null,
+      event_type: event_type || "sign_in",
+      device_type: device_type || null,
+      os: os || null,
+      browser: browser || null,
+      screen: screen || null,
+      language: language || null,
+      timezone: timezone || null,
+      platform: platform || null,
+      device_id: device_id || null,
+      gps_latitude: typeof gps_latitude === "number" ? gps_latitude : null,
+      gps_longitude: typeof gps_longitude === "number" ? gps_longitude : null,
+      gps_accuracy: typeof gps_accuracy === "number" ? gps_accuracy : null,
     });
 
     if (error) {

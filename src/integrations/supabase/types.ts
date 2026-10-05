@@ -8257,47 +8257,86 @@ export type Database = {
       }
       login_history: {
         Row: {
+          browser: string | null
           city: string | null
           country: string | null
           created_at: string
+          device_id: string | null
+          device_type: string | null
           email: string | null
+          event_type: string | null
+          extra: Json | null
+          gps_accuracy: number | null
+          gps_latitude: number | null
+          gps_longitude: number | null
           id: string
           ip_address: string | null
           isp: string | null
+          language: string | null
           latitude: number | null
           longitude: number | null
+          os: string | null
+          platform: string | null
           referer: string | null
           region: string | null
+          screen: string | null
+          timezone: string | null
           user_agent: string | null
           user_id: string
         }
         Insert: {
+          browser?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
+          device_id?: string | null
+          device_type?: string | null
           email?: string | null
+          event_type?: string | null
+          extra?: Json | null
+          gps_accuracy?: number | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           id?: string
           ip_address?: string | null
           isp?: string | null
+          language?: string | null
           latitude?: number | null
           longitude?: number | null
+          os?: string | null
+          platform?: string | null
           referer?: string | null
           region?: string | null
+          screen?: string | null
+          timezone?: string | null
           user_agent?: string | null
           user_id: string
         }
         Update: {
+          browser?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
+          device_id?: string | null
+          device_type?: string | null
           email?: string | null
+          event_type?: string | null
+          extra?: Json | null
+          gps_accuracy?: number | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           id?: string
           ip_address?: string | null
           isp?: string | null
+          language?: string | null
           latitude?: number | null
           longitude?: number | null
+          os?: string | null
+          platform?: string | null
           referer?: string | null
           region?: string | null
+          screen?: string | null
+          timezone?: string | null
           user_agent?: string | null
           user_id?: string
         }
