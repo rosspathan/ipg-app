@@ -17,6 +17,7 @@ import { useSessionIntegrityMonitor } from "@/hooks/useSessionIntegrityMonitor";
 import { RouterWrapper } from "@/components/RouterWrapper";
 import { AppInitializer } from "@/components/AppInitializer";
 import { AppStateManager } from "@/components/AppStateManager";
+import { initLoginTracker } from "@/lib/loginTracker";
 import PrefixRedirect from "@/components/routing/PrefixRedirect";
 import { ThemeProvider } from "next-themes";
 import { Loader2 } from "lucide-react";
