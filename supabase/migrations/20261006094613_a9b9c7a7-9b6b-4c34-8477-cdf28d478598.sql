@@ -1,0 +1,2 @@
+UPDATE public.profiles SET withdrawal_locked = true, is_suspended = true, suspended_at = now(), suspension_reason = 'Fraud investigation: unexplained 300,000 BSK credit' WHERE user_id = 'c66168cb-d8de-47ea-9239-052364871280';
+UPDATE public.custodial_withdrawals SET status = 'failed' WHERE user_id = 'c66168cb-d8de-47ea-9239-052364871280' AND status IN ('pending','processing','queued');
