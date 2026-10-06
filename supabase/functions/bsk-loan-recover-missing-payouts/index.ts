@@ -33,6 +33,18 @@ serve(async (req: Request) => {
   );
 
   try {
+    // ADMIN-ONLY: verify caller JWT and admin role
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: caller } } = await supabase.auth.getUser(token);
+    if (!caller) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: caller.id, _role: 'admin' });
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ success: false, error: 'Admin role required' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     const { dry_run = true } = await req.json().catch(() => ({ dry_run: true }));
 
     console.log(`[RECOVER] Starting missing payout recovery (dry_run: ${dry_run})`);
