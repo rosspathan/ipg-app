@@ -126,6 +126,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ACCOUNT FREEZE GATE — suspended or withdrawal-locked accounts cannot withdraw
+    {
+      const { data: prof } = await adminClient
+        .from('profiles')
+        .select('withdrawal_locked, is_suspended')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!prof || prof.withdrawal_locked || prof.is_suspended) {
+        return errorResponse('Withdrawals are locked for your account. Please contact support.', { reason: 'ACCOUNT_LOCKED' });
+      }
+    }
+
     const body: WithdrawalRequest = await req.json();
     const { asset_symbol, amount } = body;
 
