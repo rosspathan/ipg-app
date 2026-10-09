@@ -198,17 +198,9 @@ export function WalletPage() {
   return (
     <div className="space-y-5 pb-32 bg-background min-h-screen" data-testid="page-wallet">
 
-      {/* Integrity Banner */}
-      {walletIntegrity.hasMismatch && !integrityDismissed && walletIntegrity.mismatchType && (
-        <WalletIntegrityBanner
-          mismatchType={walletIntegrity.mismatchType}
-          profileWallet={walletIntegrity.profileWallet}
-          backupWallet={walletIntegrity.backupWallet}
-          bscWallet={walletIntegrity.bscWallet}
-          onDismiss={walletIntegrity.mismatchType === 'profile_vs_bsc' ? () => setIntegrityDismissed(true) : undefined}
-          onFixed={() => walletIntegrity.refetch()}
-        />
-      )}
+      {/* Integrity banner intentionally hidden from users: a stale old backup
+          address is not actionable by them and the "Fix" flow could switch
+          their account to an old wallet. Mismatches are an admin concern. */}
 
       {/* ── 1. PORTFOLIO HERO CARD ── */}
       <div className="px-4 pt-4 animate-fade-in">
