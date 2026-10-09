@@ -1,10 +1,24 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Plus, Download } from "lucide-react";
+import { useExistingWallet } from "@/hooks/useExistingWallet";
 
 const WalletSelectionScreen = () => {
   const navigate = useNavigate();
+  const { hasWallet, isChecking } = useExistingWallet();
+
+  // Users who already have a wallet should never see wallet creation options
+  useEffect(() => {
+    if (!isChecking && hasWallet) {
+      navigate("/app/home", { replace: true });
+    }
+  }, [hasWallet, isChecking, navigate]);
+
+  if (isChecking || hasWallet) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 py-8">

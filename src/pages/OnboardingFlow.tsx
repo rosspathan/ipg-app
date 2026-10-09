@@ -27,6 +27,7 @@ const OnboardingFlow: React.FC = () => {
   const { user, loading } = useAuthUser();
   const { toast } = useToast();
   const { createBackup } = useEncryptedWalletBackup();
+  const { hasWallet, isChecking: isCheckingWallet } = useExistingWallet();
   const {
     state,
     setStep,
@@ -77,6 +78,22 @@ const OnboardingFlow: React.FC = () => {
       setStep(targetStep as any);
     }
   }, [user, loading, navigate, setStep, state.step]);
+
+  // Block wallet creation for users who already have a wallet:
+  // send them straight into the app instead of showing create screens.
+  useEffect(() => {
+    if (loading || isCheckingWallet || !user) return;
+    if (!hasWallet) return;
+
+    const path = window.location.pathname;
+    const isCreatePath = path === '/onboarding/wallet/create';
+    const isChoicePath = path === '/onboarding/wallet' || path === '/onboarding';
+
+    if (isCreatePath || (isChoicePath && state.step === 'create-wallet')) {
+      console.log('[ONBOARDING] Wallet already exists - blocking create flow');
+      navigate('/app/home', { replace: true });
+    }
+  }, [hasWallet, isCheckingWallet, loading, user, state.step, navigate]);
 
   const handleWalletChoice = (choice: 'create' | 'import') => {
     setStep(choice + '-wallet' as any);
