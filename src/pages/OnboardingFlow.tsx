@@ -12,6 +12,7 @@ import { AlertCircle } from 'lucide-react';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 import PinEntryDialog from '@/components/profile/PinEntryDialog';
 import { useEncryptedWalletBackup } from '@/hooks/useEncryptedWalletBackup';
+import { useExistingWallet } from '@/hooks/useExistingWallet';
 import { useToast } from '@/hooks/use-toast';
 
 /**
