@@ -12,6 +12,7 @@ import { AlertCircle } from 'lucide-react';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 import PinEntryDialog from '@/components/profile/PinEntryDialog';
 import { useEncryptedWalletBackup } from '@/hooks/useEncryptedWalletBackup';
+import { useExistingWallet } from '@/hooks/useExistingWallet';
 import { useToast } from '@/hooks/use-toast';
 
 /**
@@ -26,6 +27,7 @@ const OnboardingFlow: React.FC = () => {
   const { user, loading } = useAuthUser();
   const { toast } = useToast();
   const { createBackup } = useEncryptedWalletBackup();
+  const { hasWallet, isChecking: isCheckingWallet } = useExistingWallet();
   const {
     state,
     setStep,
@@ -77,11 +79,38 @@ const OnboardingFlow: React.FC = () => {
     }
   }, [user, loading, navigate, setStep, state.step]);
 
+  // Block wallet creation for users who already have a wallet:
+  // send them straight into the app instead of showing create screens.
+  useEffect(() => {
+    if (loading || isCheckingWallet || !user) return;
+    if (!hasWallet) return;
+
+    const path = window.location.pathname;
+    const isCreatePath = path === '/onboarding/wallet/create';
+    const isChoicePath = path === '/onboarding/wallet' || path === '/onboarding';
+
+    if (isCreatePath || (isChoicePath && state.step === 'create-wallet')) {
+      console.log('[ONBOARDING] Wallet already exists - blocking create flow');
+      navigate('/app/home', { replace: true });
+    }
+  }, [hasWallet, isCheckingWallet, loading, user, state.step, navigate]);
+
   const handleWalletChoice = (choice: 'create' | 'import') => {
     setStep(choice + '-wallet' as any);
   };
 
   const handleWalletCreated = async (wallet: any) => {
+    // Final guard: never create a second wallet for a user who already has one
+    if (hasWallet) {
+      toast({
+        title: "Wallet Already Exists",
+        description: "Your account already has a wallet. Creating a new one is not allowed.",
+        variant: "destructive"
+      });
+      navigate('/app/home', { replace: true });
+      return;
+    }
+
     // Store wallet IMMEDIATELY to localStorage before anything else
     try {
       const { storeWallet, setWalletStorageUserId } = await import('@/utils/walletStorage');
@@ -274,6 +303,7 @@ const OnboardingFlow: React.FC = () => {
             onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
             onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
             onBack={() => navigate('/auth/signup')}
+            hideCreate={hasWallet === true}
           />
         );
       
@@ -307,6 +337,7 @@ const OnboardingFlow: React.FC = () => {
             onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
             onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
             onBack={() => navigate('/auth/signup')}
+            hideCreate={hasWallet === true}
           />
         );
     }

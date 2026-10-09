@@ -11,12 +11,15 @@ interface WalletChoiceScreenProps {
   onCreateWallet: () => void;
   onImportWallet: () => void;
   onBack: () => void;
+  /** When true, the "Create New Wallet" option is hidden (user already has a wallet) */
+  hideCreate?: boolean;
 }
 
 const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
   onCreateWallet,
   onImportWallet,
-  onBack
+  onBack,
+  hideCreate = false
 }) => {
   const walletOptions = [
     {
@@ -35,9 +38,9 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
       icon: Download,
       gradient: 'from-purple-500 to-pink-500',
       action: onImportWallet,
-      recommended: false
+      recommended: !hideCreate ? false : true
     }
-  ];
+  ].filter((option) => !(hideCreate && option.id === 'create'));
 
   return (
     <OnboardingLayout gradientVariant="primary" className="px-0">

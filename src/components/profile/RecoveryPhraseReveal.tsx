@@ -529,18 +529,7 @@ Generated: ${new Date().toISOString()}
                 Re-import with Recovery Phrase
               </Button>
               
-              <Button 
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  onOpenChange(false);
-                  navigate("/onboarding/wallet");
-                }}
-              >
-                Create New Wallet
-              </Button>
-
-              <Button 
+              <Button
                 variant="ghost"
                 className="w-full"
                 onClick={() => onOpenChange(false)}
