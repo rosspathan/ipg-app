@@ -100,6 +100,17 @@ const OnboardingFlow: React.FC = () => {
   };
 
   const handleWalletCreated = async (wallet: any) => {
+    // Final guard: never create a second wallet for a user who already has one
+    if (hasWallet) {
+      toast({
+        title: "Wallet Already Exists",
+        description: "Your account already has a wallet. Creating a new one is not allowed.",
+        variant: "destructive"
+      });
+      navigate('/app/home', { replace: true });
+      return;
+    }
+
     // Store wallet IMMEDIATELY to localStorage before anything else
     try {
       const { storeWallet, setWalletStorageUserId } = await import('@/utils/walletStorage');
@@ -292,6 +303,7 @@ const OnboardingFlow: React.FC = () => {
             onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
             onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
             onBack={() => navigate('/auth/signup')}
+            hideCreate={hasWallet === true}
           />
         );
       
@@ -325,6 +337,7 @@ const OnboardingFlow: React.FC = () => {
             onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
             onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
             onBack={() => navigate('/auth/signup')}
+            hideCreate={hasWallet === true}
           />
         );
     }
